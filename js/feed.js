@@ -1,12 +1,13 @@
 // ============================================================
-// LYNK By Legends — Feed Module
+// LYNK By Legends — Feed Module (with Notifications)
 // ============================================================
 
 import { auth, db, storage } from './firebase-config.js';
 import { ThemeManager } from './theme.js';
+import { initNotifications, sendNotification, showToast } from './notifications.js';
 import {
   collection, addDoc, getDocs, getDoc, doc, setDoc, updateDoc, deleteDoc,
-  query, orderBy, limit, startAfter, where, onSnapshot, serverTimestamp,
+  query, orderBy, limit, startAfter, where, serverTimestamp,
   arrayUnion, arrayRemove, increment
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
@@ -19,7 +20,6 @@ let currentUserData = null;
 let lastPostDoc = null;
 let currentFilter = 'all';
 let activePostId = null;
-let pollOptionCount = 2;
 window._postMediaFile = null;
 
 // Guard — require auth
@@ -29,6 +29,7 @@ onAuthStateChanged(auth, async (user) => {
   const snap = await getDoc(doc(db, 'users', user.uid));
   currentUserData = snap.data() || {};
   populateSidebar();
+  await initNotifications(user.uid);
   loadFeed();
   loadSuggestions();
   loadTrendingCommunities();
@@ -49,7 +50,6 @@ function populateSidebar() {
   if (fl) fl.textContent = d.faculty || 'My Faculty';
   const dl = document.getElementById('dept-link');
   if (dl) dl.textContent = d.department || 'My Department';
-  // Show admin link if applicable
   if (d.adminRole || d.role === 'admin') {
     document.getElementById('admin-link')?.classList.remove('hidden');
   }
@@ -61,8 +61,8 @@ async function loadFeed(reset = true) {
     lastPostDoc = null;
     document.getElementById('feed-container').innerHTML = skeletons(3);
   }
-  let q;
   const postsRef = collection(db, 'posts');
+  let q;
   if (currentFilter === 'faculty' && currentUserData.faculty) {
     q = query(postsRef, where('faculty', '==', currentUserData.faculty), orderBy('createdAt', 'desc'), limit(10));
   } else if (currentFilter === 'trending') {
@@ -70,7 +70,9 @@ async function loadFeed(reset = true) {
   } else {
     q = query(postsRef, orderBy('createdAt', 'desc'), limit(10));
   }
-  if (lastPostDoc) q = query(postsRef, orderBy('createdAt', 'desc'), startAfter(lastPostDoc), limit(10));
+  if (!reset && lastPostDoc) {
+    q = query(postsRef, orderBy('createdAt', 'desc'), startAfter(lastPostDoc), limit(10));
+  }
   try {
     const snap = await getDocs(q);
     lastPostDoc = snap.docs[snap.docs.length - 1];
@@ -85,12 +87,14 @@ async function loadFeed(reset = true) {
     }
     if (reset) document.getElementById('feed-container').innerHTML = '';
     snap.docs.forEach(d => {
-      const html = buildPostCard(d.id, d.data());
-      document.getElementById('feed-container').insertAdjacentHTML('beforeend', html);
+      document.getElementById('feed-container').insertAdjacentHTML('beforeend', buildPostCard(d.id, d.data()));
     });
     document.getElementById('load-more-btn')?.classList.toggle('hidden', snap.docs.length < 10);
   } catch (e) {
-    if (reset) document.getElementById('feed-container').innerHTML = `<div class="lynk-card p-6 text-center text-sm" style="color:var(--text-muted)">Error loading feed. Check your connection.</div>`;
+    if (reset) document.getElementById('feed-container').innerHTML = `
+      <div class="lynk-card p-6 text-center text-sm" style="color:var(--text-muted)">
+        Error loading feed. Check your connection.
+      </div>`;
   }
 }
 
@@ -126,13 +130,13 @@ function buildPostCard(postId, data) {
   }
 
   let pollHtml = '';
-  if (d.poll && d.poll.options) {
+  if (d.poll?.options) {
     const total = d.poll.votes ? Object.values(d.poll.votes).reduce((a,b) => a + (b?.length||0), 0) : 0;
     pollHtml = `<div class="mt-3 flex flex-col gap-2">
       ${d.poll.options.map((opt, i) => {
         const votes = d.poll.votes?.[i]?.length || 0;
         const pct = total > 0 ? Math.round((votes/total)*100) : 0;
-        return `<div class="poll-option" onclick="votePoll('${postId}', ${i})">
+        return `<div class="poll-option" onclick="votePoll('${postId}', ${i}, '${d.authorId}', '${escHtml(opt)}')">
           <div class="poll-fill" style="width:${pct}%"></div>
           <div class="flex items-center justify-between">
             <span class="text-sm font-medium">${opt}</span>
@@ -157,13 +161,15 @@ function buildPostCard(postId, data) {
               <span class="text-xs ml-2 lynk-badge" style="background:var(--bg-card-hover);color:var(--text-muted)">${d.faculty || d.university || ''}</span>
               <p class="text-xs mt-0.5" style="color:var(--text-muted)">${ts} · ${d.visibility === 'public' ? '🌍' : d.visibility === 'faculty' ? '🏛️' : '👥'}</p>
             </div>
-            ${isOwn ? `<button onclick="deletePost('${postId}')" class="lynk-btn lynk-btn-ghost p-1 text-xs" style="color:var(--text-muted)">🗑</button>` : `<button onclick="reportPost('${postId}')" class="lynk-btn lynk-btn-ghost p-1 text-xs" style="color:var(--text-muted)">⚑</button>`}
+            ${isOwn
+              ? `<button onclick="deletePost('${postId}')" class="lynk-btn lynk-btn-ghost p-1 text-xs" style="color:var(--text-muted)">🗑</button>`
+              : `<button onclick="reportPost('${postId}')" class="lynk-btn lynk-btn-ghost p-1 text-xs" style="color:var(--text-muted)" data-tooltip="Report post">⚑</button>`}
           </div>
           ${d.content ? `<p class="text-sm mt-2 whitespace-pre-wrap">${escHtml(d.content)}</p>` : ''}
           ${mediaHtml}
           ${pollHtml}
           <div class="flex items-center gap-2 mt-4 pt-3 border-t" style="border-color:var(--border)">
-            <button class="reaction-btn ${liked?'active':''}" onclick="toggleLike('${postId}')">
+            <button class="reaction-btn ${liked?'active':''}" onclick="toggleLike('${postId}', '${d.authorId}', ${JSON.stringify(d.authorName||'')})">
               ❤️ <span id="likes-${postId}">${d.likesCount||0}</span>
             </button>
             <button class="reaction-btn" onclick="openPostModal('${postId}')">
@@ -184,25 +190,22 @@ window.submitPost = async () => {
   const content = document.getElementById('post-content').value.trim();
   const visibility = document.getElementById('post-visibility').value;
 
-  // Collect poll options
   let poll = null;
-  const pollContainer = document.getElementById('poll-options');
   if (!document.getElementById('poll-builder').classList.contains('hidden')) {
-    const opts = Array.from(pollContainer.children).map(el => el.value.trim()).filter(Boolean);
-    if (opts.length >= 2) {
-      poll = { options: opts, votes: {} };
-    }
+    const opts = Array.from(document.getElementById('poll-options').children)
+      .map(el => el.value.trim()).filter(Boolean);
+    if (opts.length >= 2) poll = { options: opts, votes: {} };
   }
 
   if (!content && !window._postMediaFile && !poll) {
-    alert('Write something or add media first!');
+    showToast('Oops!', 'Write something or add media first.', '');
     return;
   }
 
   const btn = document.getElementById('btn-post');
   btn.disabled = true; btn.textContent = 'Posting...';
 
-  let mediaUrl = null; let mediaType = null;
+  let mediaUrl = null, mediaType = null;
   if (window._postMediaFile) {
     const fileRef = ref(storage, `posts/${currentUser.uid}/${Date.now()}-${window._postMediaFile.name}`);
     await uploadBytes(fileRef, window._postMediaFile);
@@ -211,24 +214,17 @@ window.submitPost = async () => {
   }
 
   await addDoc(collection(db, 'posts'), {
-    content,
-    authorId: currentUser.uid,
+    content, authorId: currentUser.uid,
     authorName: currentUserData.displayName || 'LYNK User',
     authorPhoto: currentUserData.photoURL || '',
     university: currentUserData.university || '',
     faculty: currentUserData.faculty || '',
     department: currentUserData.department || '',
-    visibility,
-    mediaUrl,
-    mediaType,
-    poll,
-    likes: [],
-    likesCount: 0,
-    commentsCount: 0,
+    visibility, mediaUrl, mediaType, poll,
+    likes: [], likesCount: 0, commentsCount: 0,
     createdAt: serverTimestamp()
   });
 
-  // Increment user post count
   await updateDoc(doc(db, 'users', currentUser.uid), { postsCount: increment(1) });
 
   document.getElementById('post-content').value = '';
@@ -240,31 +236,58 @@ window.submitPost = async () => {
     <input type="text" class="lynk-input text-sm py-2" placeholder="Option 2" id="poll-opt-1" />`;
 
   btn.disabled = false; btn.textContent = 'Post';
+  showToast('Posted!', 'Your post is live on the feed.', currentUserData.photoURL || '');
   loadFeed();
 };
 
-// ===== LIKE =====
-window.toggleLike = async (postId) => {
+// ===== LIKE — fires notification =====
+window.toggleLike = async (postId, authorId, authorName) => {
   if (!currentUser) return;
   const postRef = doc(db, 'posts', postId);
   const snap = await getDoc(postRef);
   const data = snap.data();
   const liked = data.likes?.includes(currentUser.uid);
+
   await updateDoc(postRef, {
     likes: liked ? arrayRemove(currentUser.uid) : arrayUnion(currentUser.uid),
-    likesCount: liked ? Math.max((data.likesCount||1)-1,0) : (data.likesCount||0)+1
+    likesCount: liked ? Math.max((data.likesCount||1)-1, 0) : (data.likesCount||0)+1
   });
+
+  const newCount = liked ? Math.max((data.likesCount||1)-1, 0) : (data.likesCount||0)+1;
   const el = document.getElementById(`likes-${postId}`);
-  if (el) el.textContent = liked ? Math.max((data.likesCount||1)-1,0) : (data.likesCount||0)+1;
+  if (el) el.textContent = newCount;
   const btn = el?.closest('.reaction-btn');
   if (btn) btn.classList.toggle('active', !liked);
+
+  // Send notification if newly liked (not un-liking)
+  if (!liked) {
+    await sendNotification({
+      toUid: authorId,
+      fromUid: currentUser.uid,
+      fromName: currentUserData.displayName || 'Someone',
+      fromPhoto: currentUserData.photoURL || '',
+      type: 'like',
+      message: 'liked your post',
+      preview: data.content?.slice(0, 80) || ''
+    });
+  }
 };
 
-// ===== VOTE POLL =====
-window.votePoll = async (postId, optIndex) => {
+// ===== POLL VOTE =====
+window.votePoll = async (postId, optIndex, authorId, optLabel) => {
   if (!currentUser) return;
-  const postRef = doc(db, 'posts', postId);
-  await updateDoc(postRef, { [`poll.votes.${optIndex}`]: arrayUnion(currentUser.uid) });
+  await updateDoc(doc(db, 'posts', postId), {
+    [`poll.votes.${optIndex}`]: arrayUnion(currentUser.uid)
+  });
+  await sendNotification({
+    toUid: authorId,
+    fromUid: currentUser.uid,
+    fromName: currentUserData.displayName || 'Someone',
+    fromPhoto: currentUserData.photoURL || '',
+    type: 'poll',
+    message: 'voted on your poll',
+    preview: optLabel
+  });
 };
 
 // ===== DELETE POST =====
@@ -277,19 +300,17 @@ window.deletePost = async (postId) => {
 // ===== REPORT =====
 window.reportPost = async (postId) => {
   await addDoc(collection(db, 'reports'), {
-    postId,
-    reportedBy: currentUser.uid,
-    reason: 'User report',
-    status: 'open',
+    postId, reportedBy: currentUser.uid,
+    reason: 'User report', status: 'open',
     createdAt: serverTimestamp()
   });
-  alert('Post reported. Our moderation team will review it.');
+  showToast('Reported', 'Our moderation team will review this post.', '');
 };
 
 // ===== SHARE =====
 window.sharePost = (postId) => {
-  const url = `${window.location.origin}/feed.html?post=${postId}`;
-  navigator.clipboard?.writeText(url).then(() => alert('Link copied to clipboard!'));
+  const url = `${window.location.origin}${window.location.pathname.replace('feed.html', '')}feed.html?post=${postId}`;
+  navigator.clipboard?.writeText(url).then(() => showToast('Copied!', 'Post link copied to clipboard.', ''));
 };
 
 // ===== POST MODAL (Comments) =====
@@ -297,11 +318,9 @@ window.openPostModal = async (postId) => {
   activePostId = postId;
   const snap = await getDoc(doc(db, 'posts', postId));
   if (!snap.exists()) return;
-  const data = snap.data();
-  document.getElementById('post-modal-content').innerHTML = buildPostCard(postId, data);
+  document.getElementById('post-modal-content').innerHTML = buildPostCard(postId, snap.data());
   document.getElementById('post-modal').classList.remove('hidden');
-  const avatarUrl = currentUserData.photoURL || `https://ui-avatars.com/api/?name=U&background=a855f7&color=fff`;
-  document.getElementById('comment-avatar').src = avatarUrl;
+  document.getElementById('comment-avatar').src = currentUserData.photoURL || `https://ui-avatars.com/api/?name=U&background=a855f7&color=fff`;
   loadComments(postId);
 };
 
@@ -313,8 +332,14 @@ window.closePostModal = () => {
 async function loadComments(postId) {
   const list = document.getElementById('comments-list');
   list.innerHTML = '<div class="text-xs" style="color:var(--text-muted)">Loading...</div>';
-  const snap = await getDocs(query(collection(db, 'posts', postId, 'comments'), orderBy('createdAt', 'asc'), limit(50)));
-  if (snap.empty) { list.innerHTML = '<div class="text-xs" style="color:var(--text-muted)">No comments yet. Be first!</div>'; return; }
+  const snap = await getDocs(query(
+    collection(db, 'posts', postId, 'comments'),
+    orderBy('createdAt', 'asc'), limit(50)
+  ));
+  if (snap.empty) {
+    list.innerHTML = '<div class="text-xs" style="color:var(--text-muted)">No comments yet. Be first!</div>';
+    return;
+  }
   list.innerHTML = '';
   snap.docs.forEach(d => {
     const c = d.data();
@@ -330,19 +355,37 @@ async function loadComments(postId) {
   });
 }
 
+// ===== COMMENT — fires notification =====
 window.submitComment = async () => {
   if (!activePostId || !currentUser) return;
   const input = document.getElementById('comment-input');
   const content = input.value.trim();
   if (!content) return;
+
   await addDoc(collection(db, 'posts', activePostId, 'comments'), {
-    content,
-    authorId: currentUser.uid,
+    content, authorId: currentUser.uid,
     authorName: currentUserData.displayName || 'User',
     authorPhoto: currentUserData.photoURL || '',
     createdAt: serverTimestamp()
   });
+
+  const postSnap = await getDoc(doc(db, 'posts', activePostId));
+  const postData = postSnap.data();
   await updateDoc(doc(db, 'posts', activePostId), { commentsCount: increment(1) });
+
+  // Notify post author
+  if (postData?.authorId) {
+    await sendNotification({
+      toUid: postData.authorId,
+      fromUid: currentUser.uid,
+      fromName: currentUserData.displayName || 'Someone',
+      fromPhoto: currentUserData.photoURL || '',
+      type: 'comment',
+      message: 'commented on your post',
+      preview: content.slice(0, 80)
+    });
+  }
+
   input.value = '';
   loadComments(activePostId);
 };
@@ -355,7 +398,6 @@ window.setFilter = (filter, btn) => {
   loadFeed();
 };
 
-// ===== LOAD MORE =====
 window.loadMorePosts = () => loadFeed(false);
 
 // ===== MEDIA UPLOAD =====
@@ -363,11 +405,9 @@ window.handleMediaUpload = (input) => {
   const file = input.files[0];
   if (!file) return;
   window._postMediaFile = file;
-  const preview = document.getElementById('media-preview');
-  const previewImg = document.getElementById('media-preview-img');
   if (file.type.startsWith('image')) {
-    previewImg.src = URL.createObjectURL(file);
-    preview.classList.remove('hidden');
+    document.getElementById('media-preview-img').src = URL.createObjectURL(file);
+    document.getElementById('media-preview').classList.remove('hidden');
   }
 };
 
@@ -375,7 +415,7 @@ window.handleMediaUpload = (input) => {
 async function loadSuggestions() {
   const list = document.getElementById('suggestions-list');
   if (!list) return;
-  const q = query(collection(db, 'users'), where('university', '==', currentUserData.university || ''), limit(5));
+  const q = query(collection(db, 'users'), where('university', '==', currentUserData.university || ''), limit(6));
   const snap = await getDocs(q);
   if (snap.empty) { list.innerHTML = '<div class="text-xs" style="color:var(--text-muted)">No suggestions yet.</div>'; return; }
   list.innerHTML = '';
@@ -390,7 +430,7 @@ async function loadSuggestions() {
           <p class="text-xs font-semibold truncate">${u.displayName}</p>
           <p class="text-xs truncate" style="color:var(--text-muted)">${u.department || u.faculty || ''}</p>
         </div>
-        <button onclick="sendFriendRequest('${d.id}')" class="lynk-btn lynk-btn-primary text-xs py-1 px-2 rounded-lg">+Add</button>
+        <button onclick="sendFriendRequest('${d.id}', '${escHtml(u.displayName||'')}')" class="lynk-btn lynk-btn-primary text-xs py-1 px-2 rounded-lg">+Add</button>
       </div>`);
   });
 }
@@ -412,8 +452,8 @@ async function loadTrendingCommunities() {
   if (snap.empty) list.innerHTML = '<div class="text-xs" style="color:var(--text-muted)">No communities yet.</div>';
 }
 
-// ===== FRIEND REQUEST =====
-window.sendFriendRequest = async (toUid) => {
+// ===== FRIEND REQUEST — fires notification =====
+window.sendFriendRequest = async (toUid, toName) => {
   if (!currentUser) return;
   await setDoc(doc(db, 'friends', `${currentUser.uid}_${toUid}`), {
     from: currentUser.uid,
@@ -421,17 +461,27 @@ window.sendFriendRequest = async (toUid) => {
     status: 'pending',
     createdAt: serverTimestamp()
   });
-  alert('Friend request sent!');
+  await sendNotification({
+    toUid,
+    fromUid: currentUser.uid,
+    fromName: currentUserData.displayName || 'Someone',
+    fromPhoto: currentUserData.photoURL || '',
+    type: 'friend_request',
+    message: 'sent you a friend request',
+    preview: `${currentUserData.faculty || ''} · ${currentUserData.university || ''}`
+  });
+  showToast('Request Sent!', `Friend request sent to ${toName || 'them'}.`, currentUserData.photoURL || '');
 };
 
 // ===== SIGN OUT =====
 window.signOut = async () => {
-  if (currentUser) await setDoc(doc(db, 'users', currentUser.uid), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true });
+  if (currentUser) {
+    await setDoc(doc(db, 'users', currentUser.uid), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true });
+  }
   await firebaseSignOut(auth);
   window.location.href = 'auth.html';
 };
 
-// Helper
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
