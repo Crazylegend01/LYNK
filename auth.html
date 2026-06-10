@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In — LYNK By Legends</title>
+  <link rel="icon" href="assets/logo.jpg" type="image/jpeg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/custom.css" />
+</head>
+<body class="min-h-screen flex">
+
+<!-- Left Panel — Branding -->
+<div class="hidden lg:flex flex-col justify-between w-[45%] relative overflow-hidden p-10" style="background:var(--bg-card)">
+  <div class="absolute inset-0 pointer-events-none">
+    <div class="absolute w-96 h-96 rounded-full opacity-20 blur-3xl" style="background:var(--grad-1);top:-80px;left:-60px"></div>
+    <div class="absolute w-80 h-80 rounded-full opacity-15 blur-3xl" style="background:var(--grad-2);bottom:-60px;right:-40px"></div>
+  </div>
+  <a href="index.html" class="relative flex flex-col leading-none">
+    <span class="logo-text text-3xl">LYNK</span>
+    <span class="logo-sub">By Legends</span>
+  </a>
+  <div class="relative">
+    <img src="assets/logo.jpg" alt="LYNK" class="w-32 h-32 rounded-3xl mb-8 shadow-2xl" style="box-shadow:0 0 60px rgba(168,85,247,0.35)" />
+    <h2 class="text-4xl font-black mb-4" style="color:var(--text-primary)">Your campus.<br/>Your community.</h2>
+    <p class="text-lg mb-8" style="color:var(--text-secondary)">Connect with peers, discover communities, and build your university network on LYNK.</p>
+    <div class="flex flex-col gap-3">
+      <div class="flex items-center gap-3 text-sm" style="color:var(--text-secondary)">
+        <span class="w-8 h-8 rounded-full lynk-gradient flex items-center justify-center text-white font-bold flex-shrink-0">✓</span>
+        Free for all university students
+      </div>
+      <div class="flex items-center gap-3 text-sm" style="color:var(--text-secondary)">
+        <span class="w-8 h-8 rounded-full lynk-gradient flex items-center justify-center text-white font-bold flex-shrink-0">✓</span>
+        Auto-join your Faculty & Department
+      </div>
+      <div class="flex items-center gap-3 text-sm" style="color:var(--text-secondary)">
+        <span class="w-8 h-8 rounded-full lynk-gradient flex items-center justify-center text-white font-bold flex-shrink-0">✓</span>
+        Secure email verification & 2FA
+      </div>
+    </div>
+  </div>
+  <p class="relative text-xs" style="color:var(--text-muted)">© 2026 LYNK By Legends · Connect · Learn · Grow</p>
+</div>
+
+<!-- Right Panel — Form -->
+<div class="flex-1 flex items-center justify-center p-6" style="background:var(--bg-primary)">
+  <div class="w-full max-w-md">
+
+    <!-- Mobile logo -->
+    <div class="lg:hidden text-center mb-8">
+      <img src="assets/logo.jpg" alt="LYNK" class="w-16 h-16 rounded-2xl mx-auto mb-3" />
+      <span class="logo-text text-2xl">LYNK</span>
+      <span class="logo-sub">By Legends</span>
+    </div>
+
+    <!-- Top controls -->
+    <div class="flex justify-between items-center mb-6">
+      <div class="flex gap-1 p-1 rounded-xl" style="background:var(--bg-card)">
+        <button id="tab-login" class="lynk-tab active" onclick="switchTab('login')">Sign In</button>
+        <button id="tab-signup" class="lynk-tab" onclick="switchTab('signup')">Sign Up</button>
+      </div>
+      <button id="theme-toggle" class="lynk-btn lynk-btn-ghost p-2 rounded-full"><span id="theme-icon">☀️</span></button>
+    </div>
+
+    <!-- Alert -->
+    <div id="auth-alert" class="hidden mb-4 p-3 rounded-xl text-sm font-medium" style="background:var(--bg-card);border:1px solid var(--border)"></div>
+
+    <!-- ===== LOGIN FORM ===== -->
+    <form id="form-login" class="lynk-card p-8 fade-in">
+      <h2 class="text-2xl font-bold mb-1">Welcome back 👋</h2>
+      <p class="text-sm mb-6" style="color:var(--text-secondary)">Sign in to your LYNK account</p>
+
+      <div class="flex flex-col gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Email</label>
+          <input id="login-email" type="email" class="lynk-input" placeholder="your@university.edu" required />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Password</label>
+          <div class="relative">
+            <input id="login-password" type="password" class="lynk-input" placeholder="••••••••" required />
+            <button type="button" onclick="togglePwd('login-password')" class="absolute right-3 top-1/2 -translate-y-1/2 text-sm" style="color:var(--text-muted)">👁</button>
+          </div>
+          <div class="flex justify-end mt-1">
+            <button type="button" onclick="showResetModal()" class="text-xs lynk-gradient-text hover:opacity-80">Forgot password?</button>
+          </div>
+        </div>
+
+        <button type="submit" id="btn-login" class="lynk-btn lynk-btn-primary w-full py-3 rounded-xl text-base mt-2">
+          Sign In
+        </button>
+
+        <div class="relative flex items-center gap-3 my-1">
+          <div class="flex-1 h-px" style="background:var(--border)"></div>
+          <span class="text-xs" style="color:var(--text-muted)">or</span>
+          <div class="flex-1 h-px" style="background:var(--border)"></div>
+        </div>
+
+        <button type="button" id="btn-google" onclick="signInWithGoogle()" class="lynk-btn lynk-btn-secondary w-full py-3 rounded-xl gap-3">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" alt="Google" />
+          Continue with Google
+        </button>
+      </div>
+
+      <p class="text-center text-sm mt-6" style="color:var(--text-muted)">
+        No account? <button type="button" onclick="switchTab('signup')" class="lynk-gradient-text font-semibold">Sign up free</button>
+      </p>
+    </form>
+
+    <!-- ===== SIGNUP FORM ===== -->
+    <form id="form-signup" class="lynk-card p-8 fade-in hidden">
+      <h2 class="text-2xl font-bold mb-1">Join LYNK 🎓</h2>
+      <p class="text-sm mb-6" style="color:var(--text-secondary)">Create your university account</p>
+
+      <div class="flex flex-col gap-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">First Name</label>
+            <input id="signup-fname" type="text" class="lynk-input" placeholder="John" required />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Last Name</label>
+            <input id="signup-lname" type="text" class="lynk-input" placeholder="Doe" required />
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Email</label>
+          <input id="signup-email" type="email" class="lynk-input" placeholder="your@university.edu" required />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">University</label>
+          <input id="signup-university" type="text" class="lynk-input" placeholder="e.g. University of Lagos" required />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Faculty</label>
+            <input id="signup-faculty" type="text" class="lynk-input" placeholder="e.g. Science" required />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Department</label>
+            <input id="signup-department" type="text" class="lynk-input" placeholder="e.g. Computer Sci" required />
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Password</label>
+          <div class="relative">
+            <input id="signup-password" type="password" class="lynk-input" placeholder="Min 8 characters" required minlength="8" />
+            <button type="button" onclick="togglePwd('signup-password')" class="absolute right-3 top-1/2 -translate-y-1/2 text-sm" style="color:var(--text-muted)">👁</button>
+          </div>
+        </div>
+        <!-- Password strength -->
+        <div id="pwd-strength" class="flex gap-1 h-1.5">
+          <div class="flex-1 rounded-full" style="background:var(--border)" id="ps1"></div>
+          <div class="flex-1 rounded-full" style="background:var(--border)" id="ps2"></div>
+          <div class="flex-1 rounded-full" style="background:var(--border)" id="ps3"></div>
+          <div class="flex-1 rounded-full" style="background:var(--border)" id="ps4"></div>
+        </div>
+
+        <div class="flex items-start gap-2 text-sm" style="color:var(--text-secondary)">
+          <input type="checkbox" id="terms-check" class="mt-0.5 accent-purple-500" required />
+          <label for="terms-check">I agree to the <span class="lynk-gradient-text cursor-pointer">Terms of Service</span> and <span class="lynk-gradient-text cursor-pointer">Privacy Policy</span></label>
+        </div>
+
+        <button type="submit" id="btn-signup" class="lynk-btn lynk-btn-primary w-full py-3 rounded-xl text-base mt-1">
+          Create Account
+        </button>
+      </div>
+
+      <p class="text-center text-sm mt-6" style="color:var(--text-muted)">
+        Already have an account? <button type="button" onclick="switchTab('login')" class="lynk-gradient-text font-semibold">Sign in</button>
+      </p>
+    </form>
+
+    <!-- ===== VERIFY EMAIL NOTICE ===== -->
+    <div id="form-verify" class="lynk-card p-8 fade-in hidden text-center">
+      <div class="text-5xl mb-4">📧</div>
+      <h2 class="text-2xl font-bold mb-2">Check your inbox</h2>
+      <p class="mb-6" style="color:var(--text-secondary)">We sent a verification email to <strong id="verify-email-addr"></strong>. Click the link to activate your account.</p>
+      <button onclick="resendVerification()" class="lynk-btn lynk-btn-secondary w-full py-3 rounded-xl mb-3">Resend Email</button>
+      <button onclick="switchTab('login')" class="lynk-btn lynk-btn-ghost w-full py-3 rounded-xl">Back to Sign In</button>
+    </div>
+
+    <!-- ===== 2FA PANEL ===== -->
+    <div id="form-2fa" class="lynk-card p-8 fade-in hidden text-center">
+      <div class="text-5xl mb-4">🔐</div>
+      <h2 class="text-2xl font-bold mb-2">Two-Factor Auth</h2>
+      <p class="mb-6" style="color:var(--text-secondary)">Enter the 6-digit code sent to your email.</p>
+      <div class="flex gap-2 justify-center mb-6">
+        <input id="otp-input" type="text" maxlength="6" class="lynk-input text-center text-2xl font-bold tracking-widest w-48" placeholder="000000" />
+      </div>
+      <button onclick="verify2FA()" class="lynk-btn lynk-btn-primary w-full py-3 rounded-xl">Verify Code</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== RESET PASSWORD MODAL ===== -->
+<div id="reset-modal" class="lynk-modal-overlay hidden">
+  <div class="lynk-card p-8 w-full max-w-sm mx-4">
+    <h3 class="text-xl font-bold mb-2">Reset Password</h3>
+    <p class="text-sm mb-5" style="color:var(--text-secondary)">Enter your email and we'll send a reset link.</p>
+    <input id="reset-email" type="email" class="lynk-input mb-4" placeholder="your@university.edu" />
+    <div class="flex gap-3">
+      <button onclick="sendReset()" class="lynk-btn lynk-btn-primary flex-1 py-3 rounded-xl">Send Link</button>
+      <button onclick="hideResetModal()" class="lynk-btn lynk-btn-secondary flex-1 py-3 rounded-xl">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/auth.js"></script>
+<script>
+  // Tab switching
+  function switchTab(tab) {
+    ['login','signup','verify','2fa'].forEach(t => {
+      document.getElementById(`form-${t}`)?.classList.add('hidden');
+      document.getElementById(`tab-${t}`)?.classList.remove('active');
+    });
+    document.getElementById(`form-${tab}`)?.classList.remove('hidden');
+    document.getElementById(`tab-${tab}`)?.classList.add('active');
+  }
+  function togglePwd(id) {
+    const el = document.getElementById(id);
+    el.type = el.type === 'password' ? 'text' : 'password';
+  }
+  function showResetModal() { document.getElementById('reset-modal').classList.remove('hidden'); }
+  function hideResetModal() { document.getElementById('reset-modal').classList.add('hidden'); }
+
+  // Check URL param for default tab
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('mode') === 'signup') switchTab('signup');
+
+  // Password strength meter
+  document.getElementById('signup-password')?.addEventListener('input', function() {
+    const v = this.value;
+    let score = 0;
+    if (v.length >= 8) score++;
+    if (/[A-Z]/.test(v)) score++;
+    if (/[0-9]/.test(v)) score++;
+    if (/[^A-Za-z0-9]/.test(v)) score++;
+    const colors = ['','#ef4444','#f97316','#eab308','#22c55e'];
+    for (let i = 1; i <= 4; i++) {
+      document.getElementById(`ps${i}`).style.background = i <= score ? colors[score] : 'var(--border)';
+    }
+  });
+</script>
+</body>
+</html>
