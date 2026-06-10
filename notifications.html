@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notifications — LYNK By Legends</title>
+  <link rel="icon" href="assets/logo.jpg" type="image/jpeg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/custom.css" />
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="lynk-nav h-16 flex items-center px-6 justify-between">
+  <a href="index.html" class="flex flex-col leading-none">
+    <span class="logo-text">LYNK</span>
+    <span class="logo-sub">By Legends</span>
+  </a>
+  <div class="flex items-center gap-3">
+    <button id="theme-toggle" class="lynk-btn lynk-btn-ghost p-2 rounded-full"><span id="theme-icon">☀️</span></button>
+    <a href="feed.html" class="lynk-btn lynk-btn-secondary text-sm">← Feed</a>
+  </div>
+</nav>
+
+<!-- SIDEBAR -->
+<aside class="lynk-sidebar pt-4 pb-20">
+  <nav class="flex flex-col gap-0.5">
+    <a href="feed.html" class="lynk-sidebar-link">🏠 <span>Home Feed</span></a>
+    <a href="profile.html" class="lynk-sidebar-link">👤 <span>My Profile</span></a>
+    <a href="chat.html" class="lynk-sidebar-link">💬 <span>Messages</span></a>
+    <a href="notifications.html" class="lynk-sidebar-link active">🔔 <span>Notifications</span></a>
+    <div class="px-4 mt-4 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Settings</div>
+    <a href="#" onclick="signOut()" class="lynk-sidebar-link" style="color:#ef4444">🚪 <span>Sign Out</span></a>
+  </nav>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+  <div class="max-w-2xl mx-auto px-4 py-6">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <h1 class="text-2xl font-bold">Notifications</h1>
+        <p class="text-sm" style="color:var(--text-secondary)">Stay up to date with your campus activity</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="markAllReadFull()" class="lynk-btn lynk-btn-secondary text-sm py-2 px-4 rounded-xl">✓ Mark all read</button>
+        <button id="push-toggle-btn" onclick="togglePushPermission()" class="lynk-btn lynk-btn-primary text-sm py-2 px-4 rounded-xl">🔔 Enable Push</button>
+      </div>
+    </div>
+
+    <!-- Push notification status banner -->
+    <div id="push-banner" class="lynk-card p-4 mb-5 hidden">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">📱</span>
+        <div class="flex-1">
+          <p class="font-semibold text-sm">Get notified even when LYNK is closed</p>
+          <p class="text-xs mt-0.5" style="color:var(--text-secondary)">Enable browser push notifications to receive alerts for messages, likes, and friend requests.</p>
+        </div>
+        <button onclick="togglePushPermission()" class="lynk-btn lynk-btn-primary text-sm py-2 px-4 rounded-xl flex-shrink-0">Enable</button>
+      </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="flex gap-1 mb-5 p-1 rounded-xl" style="background:var(--bg-card)">
+      <button class="lynk-tab active flex-1 text-sm" onclick="filterNotifs('all', this)">All</button>
+      <button class="lynk-tab flex-1 text-sm" onclick="filterNotifs('unread', this)">Unread</button>
+      <button class="lynk-tab flex-1 text-sm" onclick="filterNotifs('like', this)">❤️ Likes</button>
+      <button class="lynk-tab flex-1 text-sm" onclick="filterNotifs('comment', this)">💬 Comments</button>
+      <button class="lynk-tab flex-1 text-sm" onclick="filterNotifs('friend_request', this)">🤝 Friends</button>
+    </div>
+
+    <!-- Notifications List -->
+    <div id="full-notif-list" class="flex flex-col gap-0 lynk-card overflow-hidden">
+      <!-- Skeleton -->
+      <div class="p-4 animate-pulse border-b" style="border-color:var(--border)">
+        <div class="flex gap-3">
+          <div class="w-10 h-10 rounded-full flex-shrink-0" style="background:var(--border)"></div>
+          <div class="flex-1">
+            <div class="h-3 rounded w-2/3 mb-2" style="background:var(--border)"></div>
+            <div class="h-3 rounded w-1/3" style="background:var(--border)"></div>
+          </div>
+        </div>
+      </div>
+      <div class="p-4 animate-pulse border-b" style="border-color:var(--border)">
+        <div class="flex gap-3">
+          <div class="w-10 h-10 rounded-full flex-shrink-0" style="background:var(--border)"></div>
+          <div class="flex-1">
+            <div class="h-3 rounded w-1/2 mb-2" style="background:var(--border)"></div>
+            <div class="h-3 rounded w-1/4" style="background:var(--border)"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script type="module">
+  import { auth, db } from './js/firebase-config.js';
+  import { ThemeManager } from './js/theme.js';
+  import {
+    collection, query, where, orderBy, limit, onSnapshot,
+    updateDoc, doc, getDocs, writeBatch, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { requestPushPermission } from './js/notifications.js';
+
+  ThemeManager.init();
+
+  let currentUser = null;
+  let currentFilter = 'all';
+  let allNotifications = [];
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) { window.location.href = 'auth.html'; return; }
+    currentUser = user;
+    listenNotifications(user.uid);
+    checkPushStatus();
+  });
+
+  function listenNotifications(uid) {
+    const q = query(
+      collection(db, 'notifications'),
+      where('toUid', '==', uid),
+      orderBy('createdAt', 'desc'),
+      limit(100)
+    );
+    onSnapshot(q, (snap) => {
+      allNotifications = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderFull(allNotifications, currentFilter);
+    });
+  }
+
+  function renderFull(notifs, filter) {
+    const list = document.getElementById('full-notif-list');
+    if (!list) return;
+    let filtered = notifs;
+    if (filter === 'unread') filtered = notifs.filter(n => !n.read);
+    else if (filter !== 'all') filtered = notifs.filter(n => n.type === filter || n.type?.startsWith(filter));
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="p-12 text-center">
+        <div class="text-5xl mb-3">🔔</div>
+        <h3 class="font-semibold mb-1">${filter === 'unread' ? 'All caught up!' : 'No notifications here'}</h3>
+        <p class="text-sm" style="color:var(--text-muted)">
+          ${filter === 'unread' ? 'You have no unread notifications.' : 'Notifications will appear here when people interact with you.'}
+        </p>
+      </div>`;
+      return;
+    }
+
+    const icons = { like:'❤️', comment:'💬', friend_request:'🤝', friend_accepted:'✅', message:'💌', mention:'📣' };
+    const links = {
+      like: 'feed.html', comment: 'feed.html',
+      friend_request: (n) => `profile.html?uid=${n.fromUid}`,
+      friend_accepted: (n) => `profile.html?uid=${n.fromUid}`,
+      message: (n) => `chat.html?uid=${n.fromUid}`,
+      mention: 'feed.html'
+    };
+
+    list.innerHTML = filtered.map(n => {
+      const ava = n.fromPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(n.fromName||'U')}&background=a855f7&color=fff&size=80`;
+      const ts = n.createdAt?.toDate?.()?.toLocaleString() || '';
+      const href = typeof links[n.type] === 'function' ? links[n.type](n) : (links[n.type] || 'feed.html');
+      return `
+        <a href="${href}" onclick="markOneRead('${n.id}')"
+           class="flex items-start gap-4 px-5 py-4 border-b transition-colors hover:opacity-90 block"
+           style="background:${n.read ? 'transparent' : 'linear-gradient(135deg,var(--grad-1)06,var(--grad-3)06)'};border-color:var(--border);text-decoration:none;color:inherit">
+          <div class="relative flex-shrink-0 mt-0.5">
+            <img src="${ava}" class="lynk-avatar w-11 h-11" />
+            <span class="absolute -bottom-1 -right-1 text-base leading-none">${icons[n.type] || '🔔'}</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm leading-snug">
+              <strong>${n.fromName || 'Someone'}</strong>
+              <span style="color:var(--text-secondary)"> ${n.message || ''}</span>
+            </p>
+            ${n.preview ? `<p class="text-xs mt-1 truncate px-3 py-1.5 rounded-lg" style="background:var(--bg-card-hover);color:var(--text-muted)">"${n.preview}"</p>` : ''}
+            <p class="text-xs mt-1.5" style="color:var(--text-muted)">${ts}</p>
+          </div>
+          ${!n.read ? `<span class="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5 lynk-gradient"></span>` : ''}
+        </a>`;
+    }).join('');
+  }
+
+  window.filterNotifs = (filter, btn) => {
+    currentFilter = filter;
+    document.querySelectorAll('.lynk-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderFull(allNotifications, filter);
+  };
+
+  window.markOneRead = async (id) => {
+    await updateDoc(doc(db, 'notifications', id), { read: true });
+  };
+
+  window.markAllReadFull = async () => {
+    if (!currentUser) return;
+    const q = query(collection(db, 'notifications'), where('toUid', '==', currentUser.uid), where('read', '==', false));
+    const snap = await getDocs(q);
+    const batch = writeBatch(db);
+    snap.docs.forEach(d => batch.update(d.ref, { read: true }));
+    await batch.commit();
+  };
+
+  function checkPushStatus() {
+    const banner = document.getElementById('push-banner');
+    const btn = document.getElementById('push-toggle-btn');
+    if (!('Notification' in window)) { btn?.classList.add('hidden'); return; }
+    if (Notification.permission === 'default') {
+      banner?.classList.remove('hidden');
+      if (btn) btn.textContent = '🔔 Enable Push';
+    } else if (Notification.permission === 'granted') {
+      if (btn) btn.textContent = '✅ Push On';
+      banner?.classList.add('hidden');
+    } else {
+      if (btn) btn.textContent = '🚫 Push Blocked';
+    }
+  }
+
+  window.togglePushPermission = async () => {
+    if (!currentUser) return;
+    if (Notification.permission === 'granted') return;
+    const granted = await requestPushPermission(currentUser.uid);
+    if (granted) {
+      document.getElementById('push-toggle-btn').textContent = '✅ Push On';
+      document.getElementById('push-banner')?.classList.add('hidden');
+    }
+  };
+
+  window.signOut = async () => {
+    await firebaseSignOut(auth);
+    window.location.href = 'auth.html';
+  };
+</script>
+</body>
+</html>
