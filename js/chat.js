@@ -1,12 +1,13 @@
 // ============================================================
-// LYNK By Legends — Real-time Chat Module
+// LYNK By Legends — Real-time Chat Module (with Notifications)
 // ============================================================
 
 import { auth, db, storage } from './firebase-config.js';
 import { ThemeManager } from './theme.js';
+import { initNotifications, sendNotification } from './notifications.js';
 import {
   collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, query,
-  where, orderBy, limit, onSnapshot, serverTimestamp, or
+  where, orderBy, limit, onSnapshot, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -16,6 +17,7 @@ ThemeManager.init();
 let currentUser = null;
 let currentUserData = null;
 let activeConvId = null;
+let activeOtherUid = null;
 let messagesUnsub = null;
 let typingTimeout = null;
 
@@ -25,20 +27,19 @@ onAuthStateChanged(auth, async (user) => {
   const snap = await getDoc(doc(db, 'users', user.uid));
   currentUserData = snap.data() || {};
   await setDoc(doc(db, 'users', user.uid), { isOnline: true, lastSeen: serverTimestamp() }, { merge: true });
+  await initNotifications(user.uid);
   loadConversations();
 
-  // Check for deep-link uid
   const params = new URLSearchParams(window.location.search);
   const deepUid = params.get('uid');
   if (deepUid) await openOrCreateConversation(deepUid);
 });
 
-// ===== LOAD CONVERSATIONS LIST =====
+// ===== LOAD CONVERSATIONS =====
 async function loadConversations() {
   const convList = document.getElementById('conversations-list');
   if (!convList) return;
 
-  // Real-time listener on conversations where current user is a participant
   const q = query(
     collection(db, 'conversations'),
     where('participants', 'array-contains', currentUser.uid),
@@ -60,11 +61,11 @@ async function loadConversations() {
       const other = usnap.data() || {};
       const ava = other.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(other.displayName||'U')}&background=a855f7&color=fff`;
       const ts = conv.lastMessageAt?.toDate?.()?.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) || '';
-      const isActive = d.id === activeConvId;
       const unread = conv.unread?.[currentUser.uid] || 0;
+      const isActive = d.id === activeConvId;
 
       convList.insertAdjacentHTML('beforeend', `
-        <div class="conv-item flex items-center gap-3 p-4 cursor-pointer transition-colors border-b ${isActive ? 'active' : ''}"
+        <div class="conv-item flex items-center gap-3 p-4 cursor-pointer transition-colors border-b"
              style="border-color:var(--border);background:${isActive?'var(--bg-card-hover)':'transparent'}"
              id="conv-item-${d.id}"
              onclick="selectConversation('${d.id}', '${otherUid}')">
@@ -77,7 +78,7 @@ async function loadConversations() {
               <p class="font-semibold text-sm truncate">${other.displayName || 'LYNK User'}</p>
               <span class="text-xs flex-shrink-0 ml-2" style="color:var(--text-muted)">${ts}</span>
             </div>
-            <p class="text-xs truncate mt-0.5 ${unread>0?'font-semibold':'opacity-70'}" style="color:${unread>0?'var(--text-primary)':'var(--text-muted)'}">
+            <p class="text-xs truncate mt-0.5 ${unread>0?'font-semibold':''}" style="color:${unread>0?'var(--text-primary)':'var(--text-muted)'}">
               ${conv.lastMessage || 'Say hello! 👋'}
             </p>
           </div>
@@ -90,32 +91,28 @@ async function loadConversations() {
 // ===== SELECT CONVERSATION =====
 window.selectConversation = async (convId, otherUid) => {
   activeConvId = convId;
-  // Stop previous messages listener
+  activeOtherUid = otherUid;
   if (messagesUnsub) messagesUnsub();
 
-  // Update UI
   document.querySelectorAll('.conv-item').forEach(el => {
     el.style.background = 'transparent';
-    el.classList.remove('active');
   });
   const item = document.getElementById(`conv-item-${convId}`);
-  if (item) { item.style.background = 'var(--bg-card-hover)'; item.classList.add('active'); }
+  if (item) item.style.background = 'var(--bg-card-hover)';
 
-  // Get other user data
   const usnap = await getDoc(doc(db, 'users', otherUid));
   const other = usnap.data() || {};
   const ava = other.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(other.displayName||'U')}&background=a855f7&color=fff`;
 
-  // Show chat window
   document.getElementById('chat-empty-state').classList.add('hidden');
   document.getElementById('chat-header').classList.remove('hidden');
   document.getElementById('messages-area').classList.remove('hidden');
   document.getElementById('message-input-area').classList.remove('hidden');
 
-  // Update header
   document.getElementById('chat-header-avatar').src = ava;
   document.getElementById('chat-header-name').textContent = other.displayName || 'LYNK User';
   document.getElementById('chat-header-profile').href = `profile.html?uid=${otherUid}`;
+
   const statusEl = document.getElementById('chat-header-status');
   const dotEl = document.getElementById('chat-online-dot');
   if (other.isOnline) {
@@ -124,15 +121,17 @@ window.selectConversation = async (convId, otherUid) => {
     dotEl.classList.remove('hidden');
   } else {
     const lastSeen = other.lastSeen?.toDate?.()?.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) || '';
-    statusEl.textContent = `Last seen ${lastSeen}`;
+    statusEl.textContent = lastSeen ? `Last seen ${lastSeen}` : 'Offline';
     statusEl.style.color = 'var(--text-muted)';
     dotEl.classList.add('hidden');
   }
 
-  // Reset unread
-  await updateDoc(doc(db, 'conversations', convId), { [`unread.${currentUser.uid}`]: 0 });
+  // Reset unread count
+  await updateDoc(doc(db, 'conversations', convId), {
+    [`unread.${currentUser.uid}`]: 0
+  });
 
-  // Listen for messages in real-time
+  // Real-time messages
   const msgQ = query(
     collection(db, 'conversations', convId, 'messages'),
     orderBy('createdAt', 'asc'),
@@ -141,14 +140,11 @@ window.selectConversation = async (convId, otherUid) => {
   const messagesArea = document.getElementById('messages-area');
   messagesUnsub = onSnapshot(msgQ, (snap) => {
     messagesArea.innerHTML = '';
-    snap.docs.forEach(d => {
-      const msg = d.data();
-      renderMessage(msg);
-    });
+    snap.docs.forEach(d => renderMessage(d.data()));
     messagesArea.scrollTop = messagesArea.scrollHeight;
   });
 
-  // Listen for typing indicator
+  // Typing indicator listener
   onSnapshot(doc(db, 'conversations', convId), (snap) => {
     const data = snap.data();
     const typingUids = data?.typing || [];
@@ -184,7 +180,7 @@ function renderMessage(msg) {
     </div>`);
 }
 
-// ===== SEND MESSAGE =====
+// ===== SEND MESSAGE — fires notification =====
 window.sendMessage = async () => {
   if (!activeConvId || !currentUser) return;
   const input = document.getElementById('msg-input');
@@ -194,35 +190,43 @@ window.sendMessage = async () => {
   input.value = '';
   input.style.height = 'auto';
 
-  const msgData = {
-    content,
-    type: 'text',
+  const convSnap = await getDoc(doc(db, 'conversations', activeConvId));
+  const otherUid = convSnap.data()?.participants?.find(uid => uid !== currentUser.uid);
+  const currentUnread = convSnap.data()?.unread?.[otherUid] || 0;
+
+  await addDoc(collection(db, 'conversations', activeConvId, 'messages'), {
+    content, type: 'text',
     senderId: currentUser.uid,
     senderName: currentUserData.displayName || 'LYNK User',
     senderPhoto: currentUserData.photoURL || '',
     createdAt: serverTimestamp()
-  };
+  });
 
-  // Get other participant
-  const convSnap = await getDoc(doc(db, 'conversations', activeConvId));
-  const otherUid = convSnap.data()?.participants?.find(uid => uid !== currentUser.uid);
-
-  await addDoc(collection(db, 'conversations', activeConvId, 'messages'), msgData);
-
-  // Update conversation meta
   await updateDoc(doc(db, 'conversations', activeConvId), {
     lastMessage: content.length > 50 ? content.slice(0,50)+'…' : content,
     lastMessageAt: serverTimestamp(),
     lastSenderId: currentUser.uid,
-    [`unread.${otherUid}`]: (convSnap.data()?.unread?.[otherUid] || 0) + 1,
+    [`unread.${otherUid}`]: currentUnread + 1,
     typing: []
   });
 
-  // Clear typing
+  // Send notification to recipient
+  if (otherUid) {
+    await sendNotification({
+      toUid: otherUid,
+      fromUid: currentUser.uid,
+      fromName: currentUserData.displayName || 'Someone',
+      fromPhoto: currentUserData.photoURL || '',
+      type: 'message',
+      message: 'sent you a message',
+      preview: content.slice(0, 80)
+    });
+  }
+
   clearTyping();
 };
 
-// ===== TYPING INDICATOR =====
+// ===== TYPING =====
 window.handleTyping = async () => {
   if (!activeConvId || !currentUser) return;
   await updateDoc(doc(db, 'conversations', activeConvId), {
@@ -239,11 +243,7 @@ async function clearTyping() {
 
 // ===== OPEN OR CREATE CONVERSATION =====
 window.openOrCreateConversation = async (otherUid) => {
-  // Check if conversation already exists
-  const q = query(
-    collection(db, 'conversations'),
-    where('participants', 'array-contains', currentUser.uid)
-  );
+  const q = query(collection(db, 'conversations'), where('participants', 'array-contains', currentUser.uid));
   const snap = await getDocs(q);
   let existingId = null;
   snap.docs.forEach(d => {
@@ -253,7 +253,6 @@ window.openOrCreateConversation = async (otherUid) => {
   if (existingId) {
     window.selectConversation(existingId, otherUid);
   } else {
-    // Create new conversation
     const newConv = await addDoc(collection(db, 'conversations'), {
       participants: [currentUser.uid, otherUid],
       createdAt: serverTimestamp(),
@@ -264,13 +263,12 @@ window.openOrCreateConversation = async (otherUid) => {
     });
     window.selectConversation(newConv.id, otherUid);
   }
-  hideNewChatModal();
+  window.hideNewChatModal();
 };
 
 // ===== SEARCH CONVERSATIONS =====
 window.searchConversations = (term) => {
-  const items = document.querySelectorAll('.conv-item');
-  items.forEach(item => {
+  document.querySelectorAll('.conv-item').forEach(item => {
     const name = item.querySelector('p')?.textContent?.toLowerCase() || '';
     item.style.display = name.includes(term.toLowerCase()) ? '' : 'none';
   });
@@ -288,8 +286,7 @@ window.searchFriendsForChat = async (term) => {
   results.innerHTML = '';
   const filtered = snap.docs.filter(d => {
     if (d.id === currentUser.uid) return false;
-    const name = d.data().displayName?.toLowerCase() || '';
-    return name.includes(term.toLowerCase());
+    return (d.data().displayName || '').toLowerCase().includes(term.toLowerCase());
   });
   if (filtered.length === 0) {
     results.innerHTML = '<p class="text-sm text-center py-4" style="color:var(--text-muted)">No users found.</p>';
@@ -299,7 +296,7 @@ window.searchFriendsForChat = async (term) => {
     const u = d.data();
     const ava = u.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.displayName||'U')}&background=a855f7&color=fff`;
     results.insertAdjacentHTML('beforeend', `
-      <div class="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-opacity-80 transition-colors"
+      <div class="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors"
            style="background:var(--bg-card-hover)"
            onclick="openOrCreateConversation('${d.id}')">
         <img src="${ava}" class="lynk-avatar w-10 h-10" />
@@ -321,25 +318,38 @@ window.attachFile = async (input) => {
   const url = await getDownloadURL(r);
   const convSnap = await getDoc(doc(db, 'conversations', activeConvId));
   const otherUid = convSnap.data()?.participants?.find(uid => uid !== currentUser.uid);
+  const currentUnread = convSnap.data()?.unread?.[otherUid] || 0;
+
   await addDoc(collection(db, 'conversations', activeConvId, 'messages'), {
-    content: '',
-    type: 'image',
-    mediaUrl: url,
+    content: '', type: 'image', mediaUrl: url,
     senderId: currentUser.uid,
     senderName: currentUserData.displayName || '',
     senderPhoto: currentUserData.photoURL || '',
     createdAt: serverTimestamp()
   });
   await updateDoc(doc(db, 'conversations', activeConvId), {
-    lastMessage: '📎 Attachment',
+    lastMessage: '📎 Sent an attachment',
     lastMessageAt: serverTimestamp(),
-    [`unread.${otherUid}`]: (convSnap.data()?.unread?.[otherUid] || 0) + 1
+    [`unread.${otherUid}`]: currentUnread + 1
   });
+  if (otherUid) {
+    await sendNotification({
+      toUid: otherUid,
+      fromUid: currentUser.uid,
+      fromName: currentUserData.displayName || 'Someone',
+      fromPhoto: currentUserData.photoURL || '',
+      type: 'message',
+      message: 'sent you an attachment',
+      preview: '📎 Image'
+    });
+  }
 };
 
 // ===== SIGN OUT =====
 window.signOut = async () => {
-  if (currentUser) await setDoc(doc(db, 'users', currentUser.uid), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true });
+  if (currentUser) {
+    await setDoc(doc(db, 'users', currentUser.uid), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true });
+  }
   await firebaseSignOut(auth);
   window.location.href = 'auth.html';
 };
@@ -348,5 +358,5 @@ window.hideNewChatModal = () => document.getElementById('new-chat-modal')?.class
 window.showNewChatModal = () => document.getElementById('new-chat-modal')?.classList.remove('hidden');
 
 function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
