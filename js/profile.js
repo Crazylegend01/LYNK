@@ -1,9 +1,10 @@
 // ============================================================
-// LYNK By Legends — Profile Module
+// LYNK By Legends — Profile Module (with Notifications)
 // ============================================================
 
 import { auth, db, storage } from './firebase-config.js';
 import { ThemeManager } from './theme.js';
+import { initNotifications, sendNotification, showToast } from './notifications.js';
 import {
   doc, getDoc, getDocs, setDoc, updateDoc, collection, query,
   where, orderBy, limit, serverTimestamp, increment
@@ -25,11 +26,11 @@ onAuthStateChanged(auth, async (user) => {
   const snap = await getDoc(doc(db, 'users', user.uid));
   currentUserData = snap.data() || {};
 
-  // Get target uid from URL ?uid= param
   const params = new URLSearchParams(window.location.search);
   profileUid = params.get('uid') || user.uid;
   isOwnProfile = profileUid === user.uid;
 
+  await initNotifications(user.uid);
   await loadProfile();
   loadProfilePosts();
   loadFriends();
@@ -56,7 +57,7 @@ async function loadProfile() {
   document.getElementById('profile-joined').textContent = `📅 Joined ${joined || 'LYNK'}`;
   document.getElementById('friends-count').textContent = d.friendsCount || 0;
   document.getElementById('posts-count').textContent = d.postsCount || 0;
-  document.getElementById('communities-count').textContent = 2; // faculty + dept
+  document.getElementById('communities-count').textContent = 2;
 
   // About tab
   document.getElementById('about-name').textContent = d.displayName || '—';
@@ -65,35 +66,36 @@ async function loadProfile() {
   document.getElementById('about-dept').textContent = d.department || '—';
   document.getElementById('about-joined').textContent = joined || '—';
 
-  // Sidebar links
+  // Sidebar community links
   const fl = document.getElementById('faculty-link');
   if (fl) fl.textContent = currentUserData.faculty || 'My Faculty';
   const dl = document.getElementById('dept-link');
   if (dl) dl.textContent = currentUserData.department || 'My Department';
 
-  // Show correct action buttons
   if (isOwnProfile) {
     document.getElementById('btn-edit-profile')?.classList.remove('hidden');
     document.getElementById('avatar-edit')?.classList.remove('hidden');
     document.getElementById('cover-edit')?.classList.remove('hidden');
-    // Pre-fill edit modal
     document.getElementById('edit-name').value = d.displayName || '';
     document.getElementById('edit-bio').value = d.bio || '';
     document.getElementById('edit-university').value = d.university || '';
     document.getElementById('edit-faculty').value = d.faculty || '';
     document.getElementById('edit-dept').value = d.department || '';
   } else {
-    // Check friend status
-    const friendSnap = await getDoc(doc(db, 'friends', `${currentUser.uid}_${profileUid}`));
-    const reverseSnap = await getDoc(doc(db, 'friends', `${profileUid}_${currentUser.uid}`));
+    // Determine friend status
+    const [friendSnap, reverseSnap] = await Promise.all([
+      getDoc(doc(db, 'friends', `${currentUser.uid}_${profileUid}`)),
+      getDoc(doc(db, 'friends', `${profileUid}_${currentUser.uid}`))
+    ]);
     const btn = document.getElementById('btn-friend-action');
     btn?.classList.remove('hidden');
     document.getElementById('btn-message')?.classList.remove('hidden');
     document.getElementById('btn-message').href = `chat.html?uid=${profileUid}`;
+
     if (friendSnap.exists()) {
       const status = friendSnap.data().status;
-      if (status === 'accepted') btn.textContent = '✓ Friends';
-      else if (status === 'pending') btn.textContent = '⏳ Request Sent';
+      if (status === 'accepted') { btn.textContent = '✓ Friends'; btn.disabled = true; }
+      else if (status === 'pending') { btn.textContent = '⏳ Request Sent'; btn.disabled = true; }
       else btn.textContent = '+ Add Friend';
     } else if (reverseSnap.exists() && reverseSnap.data().status === 'pending') {
       btn.textContent = '✅ Accept Request';
@@ -106,23 +108,41 @@ async function loadProfile() {
 // ===== LOAD POSTS =====
 async function loadProfilePosts() {
   const container = document.getElementById('tab-posts');
-  container.innerHTML = '<div class="lynk-card p-5 animate-pulse"><div class="h-4 rounded w-3/4 mb-2" style="background:var(--border)"></div><div class="h-4 rounded w-1/2" style="background:var(--border)"></div></div>';
-  const q = query(collection(db, 'posts'), where('authorId', '==', profileUid), orderBy('createdAt', 'desc'), limit(20));
+  container.innerHTML = `<div class="lynk-card p-5 animate-pulse">
+    <div class="h-4 rounded w-3/4 mb-2" style="background:var(--border)"></div>
+    <div class="h-4 rounded w-1/2" style="background:var(--border)"></div>
+  </div>`;
+
+  const q = query(
+    collection(db, 'posts'),
+    where('authorId', '==', profileUid),
+    orderBy('createdAt', 'desc'),
+    limit(20)
+  );
   const snap = await getDocs(q);
+
   if (snap.empty) {
-    container.innerHTML = `<div class="lynk-card p-8 text-center"><div class="text-4xl mb-3">📭</div><p style="color:var(--text-secondary);font-size:0.875rem">${isOwnProfile ? "You haven't posted anything yet." : "No posts yet."}</p></div>`;
+    container.innerHTML = `<div class="lynk-card p-8 text-center">
+      <div class="text-4xl mb-3">📭</div>
+      <p style="color:var(--text-secondary);font-size:0.875rem">
+        ${isOwnProfile ? "You haven't posted anything yet." : "No posts yet."}
+      </p>
+    </div>`;
     return;
   }
+
   container.innerHTML = '';
   snap.docs.forEach(d => {
     const data = d.data();
     const ts = data.createdAt?.toDate?.()?.toLocaleString() || '';
     container.insertAdjacentHTML('beforeend', `
       <div class="lynk-card p-5 fade-in">
-        <p class="text-xs mb-3" style="color:var(--text-muted)">${ts}</p>
-        ${data.content ? `<p class="text-sm">${data.content}</p>` : ''}
-        ${data.mediaUrl && data.mediaType !== 'video' ? `<img src="${data.mediaUrl}" class="rounded-xl mt-3 max-h-64 object-cover w-full" />` : ''}
-        <div class="flex gap-3 mt-3 pt-3 border-t text-xs" style="border-color:var(--border);color:var(--text-muted)">
+        <p class="text-xs mb-2" style="color:var(--text-muted)">${ts}</p>
+        ${data.content ? `<p class="text-sm whitespace-pre-wrap">${data.content}</p>` : ''}
+        ${data.mediaUrl && data.mediaType !== 'video'
+          ? `<img src="${data.mediaUrl}" class="rounded-xl mt-3 max-h-64 object-cover w-full" />`
+          : ''}
+        <div class="flex gap-4 mt-3 pt-3 border-t text-xs" style="border-color:var(--border);color:var(--text-muted)">
           <span>❤️ ${data.likesCount||0}</span>
           <span>💬 ${data.commentsCount||0}</span>
         </div>
@@ -134,11 +154,12 @@ async function loadProfilePosts() {
 async function loadFriends() {
   const grid = document.getElementById('friends-grid');
   if (!grid) return;
-  const q = query(collection(db, 'friends'), where('status', '==', 'accepted'),
-    where('from', 'in', [profileUid]));
-  const q2 = query(collection(db, 'friends'), where('status', '==', 'accepted'),
-    where('to', '==', profileUid));
-  const [snap1, snap2] = await Promise.all([getDocs(q), getDocs(q2)]);
+
+  const [snap1, snap2] = await Promise.all([
+    getDocs(query(collection(db, 'friends'), where('status','==','accepted'), where('from','==',profileUid))),
+    getDocs(query(collection(db, 'friends'), where('status','==','accepted'), where('to','==',profileUid)))
+  ]);
+
   const friendUids = new Set();
   snap1.docs.forEach(d => friendUids.add(d.data().to));
   snap2.docs.forEach(d => friendUids.add(d.data().from));
@@ -147,12 +168,17 @@ async function loadFriends() {
   document.getElementById('friends-count').textContent = friendUids.size;
 
   if (friendUids.size === 0) {
-    grid.innerHTML = `<div class="col-span-full lynk-card p-8 text-center"><div class="text-4xl mb-3">🤝</div><p style="color:var(--text-secondary);font-size:0.875rem">${isOwnProfile ? "You haven't connected with anyone yet." : "No friends yet."}</p></div>`;
+    grid.innerHTML = `<div class="col-span-full lynk-card p-8 text-center">
+      <div class="text-4xl mb-3">🤝</div>
+      <p style="color:var(--text-secondary);font-size:0.875rem">
+        ${isOwnProfile ? "You haven't connected with anyone yet." : "No friends yet."}
+      </p>
+    </div>`;
     return;
   }
 
   grid.innerHTML = '';
-  for (const uid of [...friendUids].slice(0,12)) {
+  for (const uid of [...friendUids].slice(0, 12)) {
     const usnap = await getDoc(doc(db, 'users', uid));
     if (!usnap.exists()) continue;
     const u = usnap.data();
@@ -165,9 +191,13 @@ async function loadFriends() {
       </a>`);
   }
 
-  // Load pending requests (own profile only)
+  // Pending incoming requests (own profile only)
   if (isOwnProfile) {
-    const reqSnap = await getDocs(query(collection(db, 'friends'), where('to', '==', currentUser.uid), where('status', '==', 'pending')));
+    const reqSnap = await getDocs(query(
+      collection(db, 'friends'),
+      where('to', '==', currentUser.uid),
+      where('status', '==', 'pending')
+    ));
     if (!reqSnap.empty) {
       document.getElementById('friend-requests-section')?.classList.remove('hidden');
       document.getElementById('requests-count').textContent = reqSnap.size;
@@ -194,19 +224,37 @@ async function loadFriends() {
   }
 }
 
-// ===== FRIEND ACTIONS =====
+// ===== FRIEND ACTIONS — fires notifications =====
 window.handleFriendAction = async () => {
   if (!currentUser || !profileData) return;
   const btn = document.getElementById('btn-friend-action');
   const text = btn.textContent.trim();
+
   if (text.includes('Accept')) {
-    // Accept incoming request
-    const reqSnap = await getDocs(query(collection(db, 'friends'), where('from','==',profileUid), where('to','==',currentUser.uid)));
+    const reqSnap = await getDocs(query(
+      collection(db, 'friends'),
+      where('from', '==', profileUid),
+      where('to', '==', currentUser.uid)
+    ));
     if (!reqSnap.empty) {
       await updateDoc(reqSnap.docs[0].ref, { status: 'accepted' });
-      await updateDoc(doc(db, 'users', currentUser.uid), { friendsCount: increment(1) });
-      await updateDoc(doc(db, 'users', profileUid), { friendsCount: increment(1) });
+      await Promise.all([
+        updateDoc(doc(db, 'users', currentUser.uid), { friendsCount: increment(1) }),
+        updateDoc(doc(db, 'users', profileUid), { friendsCount: increment(1) })
+      ]);
+      // Notify the requester that their request was accepted
+      await sendNotification({
+        toUid: profileUid,
+        fromUid: currentUser.uid,
+        fromName: currentUserData.displayName || 'Someone',
+        fromPhoto: currentUserData.photoURL || '',
+        type: 'friend_accepted',
+        message: 'accepted your friend request',
+        preview: `${currentUserData.faculty || ''} · ${currentUserData.university || ''}`
+      });
       btn.textContent = '✓ Friends';
+      btn.disabled = true;
+      showToast('Connected!', `You and ${profileData.displayName} are now friends.`, profileData.photoURL || '');
     }
   } else if (text.includes('Add')) {
     await setDoc(doc(db, 'friends', `${currentUser.uid}_${profileUid}`), {
@@ -215,15 +263,40 @@ window.handleFriendAction = async () => {
       status: 'pending',
       createdAt: serverTimestamp()
     });
+    // Notify the recipient
+    await sendNotification({
+      toUid: profileUid,
+      fromUid: currentUser.uid,
+      fromName: currentUserData.displayName || 'Someone',
+      fromPhoto: currentUserData.photoURL || '',
+      type: 'friend_request',
+      message: 'sent you a friend request',
+      preview: `${currentUserData.faculty || ''} · ${currentUserData.university || ''}`
+    });
     btn.textContent = '⏳ Request Sent';
+    btn.disabled = true;
+    showToast('Request Sent!', `Friend request sent to ${profileData.displayName}.`, profileData.photoURL || '');
   }
 };
 
+// ===== RESPOND TO REQUEST — fires notification =====
 window.respondToRequest = async (docId, fromUid, status) => {
   await updateDoc(doc(db, 'friends', docId), { status });
   if (status === 'accepted') {
-    await updateDoc(doc(db, 'users', currentUser.uid), { friendsCount: increment(1) });
-    await updateDoc(doc(db, 'users', fromUid), { friendsCount: increment(1) });
+    await Promise.all([
+      updateDoc(doc(db, 'users', currentUser.uid), { friendsCount: increment(1) }),
+      updateDoc(doc(db, 'users', fromUid), { friendsCount: increment(1) })
+    ]);
+    await sendNotification({
+      toUid: fromUid,
+      fromUid: currentUser.uid,
+      fromName: currentUserData.displayName || 'Someone',
+      fromPhoto: currentUserData.photoURL || '',
+      type: 'friend_accepted',
+      message: 'accepted your friend request',
+      preview: `${currentUserData.faculty || ''} · ${currentUserData.university || ''}`
+    });
+    showToast('Friend Added!', 'You are now connected.', '');
   }
   loadFriends();
 };
@@ -241,7 +314,7 @@ window.saveProfile = async () => {
   });
   closeEditModal();
   await loadProfile();
-  alert('Profile updated!');
+  showToast('Profile Updated!', 'Your changes have been saved.', currentUserData.photoURL || '');
 };
 
 // ===== AVATAR UPLOAD =====
@@ -253,6 +326,7 @@ window.updateAvatar = async (input) => {
   const url = await getDownloadURL(r);
   await updateDoc(doc(db, 'users', currentUser.uid), { photoURL: url });
   document.getElementById('profile-avatar').src = url;
+  showToast('Photo Updated!', 'Your profile picture has been changed.', url);
 };
 
 // ===== COVER UPLOAD =====
@@ -263,11 +337,14 @@ window.updateCover = async (input) => {
   await uploadBytes(r, file);
   const url = await getDownloadURL(r);
   await updateDoc(doc(db, 'users', currentUser.uid), { coverURL: url });
+  showToast('Cover Updated!', 'Your cover photo has been changed.', url);
 };
 
 // ===== SIGN OUT =====
 window.signOut = async () => {
-  if (currentUser) await updateDoc(doc(db, 'users', currentUser.uid), { isOnline: false, lastSeen: serverTimestamp() });
+  if (currentUser) {
+    await updateDoc(doc(db, 'users', currentUser.uid), { isOnline: false, lastSeen: serverTimestamp() });
+  }
   await firebaseSignOut(auth);
   window.location.href = 'auth.html';
 };
@@ -275,7 +352,6 @@ window.signOut = async () => {
 window.closeEditModal = () => document.getElementById('edit-modal')?.classList.add('hidden');
 window.openEditModal = () => document.getElementById('edit-modal')?.classList.remove('hidden');
 window.showFriends = () => {
-  document.getElementById('tab-posts').classList.add('hidden');
-  document.getElementById('tab-about').classList.add('hidden');
-  document.getElementById('tab-friends').classList.remove('hidden');
+  ['posts','about'].forEach(t => document.getElementById(`tab-${t}`)?.classList.add('hidden'));
+  document.getElementById('tab-friends')?.classList.remove('hidden');
 };
