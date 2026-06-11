@@ -16,7 +16,7 @@ import app from './firebase-config.js';
 // ===== VAPID KEY =====
 // Get this from Firebase Console → Project Settings → Cloud Messaging → Web Push Certificates
 // Click "Generate key pair" and paste it here
-const VAPID_KEY = 'YOUR_VAPID_KEY_HERE';
+const VAPID_KEY = 'BKbN3IxNBozzZdG1P2vJVyb-LJzyaHMRoapJ2wDapc7aFNHm2Uylb3Vs4S3Jh5WfAWrOIIViUHGznyNCBdyBysQ';
 
 let messaging = null;
 let currentUid = null;
