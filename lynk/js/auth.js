@@ -15,7 +15,7 @@ import {
   signOut as firebaseSignOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  doc, setDoc, getDoc, serverTimestamp
+  doc, setDoc, getDoc, getDocs, collection, query, where, limit, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 ThemeManager.init();
@@ -23,22 +23,24 @@ ThemeManager.init();
 const showAlert = (msg, type = 'error') => {
   const el = document.getElementById('auth-alert');
   if (!el) return;
-  el.className = `mb-4 p-3 rounded-xl text-sm font-medium ${type === 'error' ? 'border-red-500 text-red-400' : 'border-green-500 text-green-400'}`;
+  el.className = `mb-4 p-3 rounded-xl text-sm font-medium`;
   el.style.background = type === 'error' ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)';
   el.style.border = `1px solid ${type === 'error' ? '#ef4444' : '#22c55e'}`;
+  el.style.color = type === 'error' ? '#f87171' : '#4ade80';
   el.textContent = msg;
   el.classList.remove('hidden');
   setTimeout(() => el.classList.add('hidden'), 6000);
 };
 
-const setLoading = (btnId, loading) => {
+const setLoading = (btnId, loading, label = '') => {
   const btn = document.getElementById(btnId);
   if (!btn) return;
   btn.disabled = loading;
-  btn.textContent = loading ? '⏳ Please wait...' : (btnId === 'btn-login' ? 'Sign In' : 'Create Account');
+  btn.textContent = loading ? '⏳ Please wait...' : (label || btn.dataset.label || btn.textContent);
+  if (label) btn.dataset.label = label;
 };
 
-// Redirect to feed if already fully signed in and verified
+// ===== REDIRECT IF ALREADY SIGNED IN & VERIFIED =====
 onAuthStateChanged(auth, async (user) => {
   if (user && user.emailVerified) {
     const snap = await getDoc(doc(db, 'users', user.uid));
@@ -48,21 +50,228 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
+// ===== USERNAME AVAILABILITY =====
+let usernameTimer = null;
+window.checkUsername = (value) => {
+  const status = document.getElementById('username-status');
+  const clean = value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+  if (value !== clean) {
+    document.getElementById('signup-username').value = clean;
+  }
+  if (!status) return;
+  if (clean.length < 3) {
+    status.textContent = 'Username must be at least 3 characters';
+    status.style.color = '#f87171';
+    return;
+  }
+  clearTimeout(usernameTimer);
+  status.textContent = 'Checking...';
+  status.style.color = 'var(--text-muted)';
+  usernameTimer = setTimeout(async () => {
+    const snap = await getDocs(query(collection(db, 'users'), where('username', '==', clean), limit(1)));
+    if (snap.empty) {
+      status.textContent = `✓ @${clean} is available`;
+      status.style.color = '#4ade80';
+    } else {
+      status.textContent = `✗ @${clean} is taken`;
+      status.style.color = '#f87171';
+    }
+  }, 600);
+};
+
+// ===== SCHOOL DROPDOWN LOGIC =====
+let schoolsData = {};
+
+async function loadSchools() {
+  const select = document.getElementById('uni-select');
+  if (!select) return;
+  const snap = await getDocs(collection(db, 'schools'));
+  if (snap.empty) {
+    document.getElementById('no-schools-note')?.classList.remove('hidden');
+    return;
+  }
+  snap.docs.forEach(d => {
+    const s = d.data();
+    schoolsData[d.id] = s;
+    const opt = document.createElement('option');
+    opt.value = d.id;
+    opt.textContent = s.name;
+    select.appendChild(opt);
+  });
+}
+
+window.loadFaculties = (schoolId) => {
+  const facSelect = document.getElementById('faculty-select');
+  const deptSelect = document.getElementById('dept-select');
+  const facWrapper = document.getElementById('faculty-wrapper');
+  const deptWrapper = document.getElementById('dept-wrapper');
+  if (!schoolId || !schoolsData[schoolId]) {
+    facWrapper?.classList.add('hidden');
+    deptWrapper?.classList.add('hidden');
+    return;
+  }
+  const faculties = Object.keys(schoolsData[schoolId].faculties || {});
+  facSelect.innerHTML = '<option value="">-- Select faculty --</option>';
+  faculties.forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f; opt.textContent = f;
+    facSelect.appendChild(opt);
+  });
+  facWrapper?.classList.remove('hidden');
+  deptWrapper?.classList.add('hidden');
+};
+
+window.loadDepartments = (faculty) => {
+  const schoolId = document.getElementById('uni-select').value;
+  const deptSelect = document.getElementById('dept-select');
+  const deptWrapper = document.getElementById('dept-wrapper');
+  if (!faculty || !schoolId) { deptWrapper?.classList.add('hidden'); return; }
+  const depts = schoolsData[schoolId]?.faculties?.[faculty] || [];
+  deptSelect.innerHTML = '<option value="">-- Select department --</option>';
+  depts.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d; opt.textContent = d;
+    deptSelect.appendChild(opt);
+  });
+  deptWrapper?.classList.remove('hidden');
+};
+
+// Load schools when page loads
+loadSchools();
+
+// ===== SIGNUP STEP 1 =====
+let pendingUserUid = null;
+let pendingUserEmail = null;
+
+document.getElementById('form-signup')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fname    = document.getElementById('signup-fname').value.trim();
+  const lname    = document.getElementById('signup-lname').value.trim();
+  const username = document.getElementById('signup-username').value.trim().toLowerCase();
+  const email    = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  const userType = document.querySelector('input[name="user-type"]:checked')?.value || 'student';
+  const position = document.getElementById('signup-position')?.value.trim() || '';
+
+  // Validations
+  if (!username || username.length < 3) {
+    showAlert('Username must be at least 3 characters.'); return;
+  }
+  if (!/^[a-z0-9_]+$/.test(username)) {
+    showAlert('Username can only contain letters, numbers and underscores.'); return;
+  }
+  if (userType === 'staff' && !position) {
+    showAlert('Please enter your position or rank.'); return;
+  }
+  if (!document.getElementById('terms-check').checked) {
+    showAlert('Please accept the Terms of Service to continue.'); return;
+  }
+
+  // Check username uniqueness
+  const uSnap = await getDocs(query(collection(db, 'users'), where('username', '==', username), limit(1)));
+  if (!uSnap.empty) { showAlert('That username is already taken. Please choose another.'); return; }
+
+  setLoading('btn-signup', true, 'Continue →');
+  try {
+    const { user } = await createUserWithEmailAndPassword(auth, email, password);
+    pendingUserUid = user.uid;
+    pendingUserEmail = email;
+
+    // Create user profile
+    await setDoc(doc(db, 'users', user.uid), {
+      uid: user.uid,
+      email,
+      displayName: `${fname} ${lname}`,
+      firstName: fname,
+      lastName: lname,
+      username,
+      userType,       // 'student' | 'staff'
+      position: userType === 'staff' ? position : '',
+      university: '',
+      faculty: '',
+      department: '',
+      bio: '',
+      photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(fname+' '+lname)}&background=a855f7&color=fff&size=200`,
+      coverURL: '',
+      role: 'user',
+      adminRole: null,
+      isOnline: false,
+      profileComplete: false,
+      createdAt: serverTimestamp(),
+      lastSeen: serverTimestamp(),
+      friendsCount: 0,
+      postsCount: 0
+    });
+
+    await sendEmailVerification(user);
+    await firebaseSignOut(auth);
+
+    setLoading('btn-signup', false, 'Continue →');
+    document.getElementById('verify-email-addr').textContent = email;
+    window.switchTab('verify');
+  } catch (err) {
+    const msgs = {
+      'auth/email-already-in-use': 'An account with this email already exists.',
+      'auth/weak-password': 'Password must be at least 8 characters.',
+      'auth/invalid-email': 'Please enter a valid email address.'
+    };
+    showAlert(msgs[err.code] || err.message);
+    setLoading('btn-signup', false, 'Continue →');
+  }
+});
+
+// ===== STEP 2 — University Info =====
+window.completeUniversityInfo = async () => {
+  const schoolId   = document.getElementById('uni-select')?.value;
+  const facultyVal = document.getElementById('faculty-select')?.value;
+  const deptVal    = document.getElementById('dept-select')?.value;
+
+  if (!pendingUserUid) { window.location.href = 'feed.html'; return; }
+
+  const universityName = schoolId ? (schoolsData[schoolId]?.name || '') : '';
+  await setDoc(doc(db, 'users', pendingUserUid), {
+    university: universityName,
+    faculty: facultyVal || '',
+    department: deptVal || '',
+    profileComplete: !!(universityName && facultyVal && deptVal)
+  }, { merge: true });
+
+  if (universityName && facultyVal) {
+    await setDoc(doc(db, 'communities', `${universityName}-${facultyVal}`.replace(/\s+/g,'-').toLowerCase()), {
+      name: `${facultyVal} — ${universityName}`, type: 'faculty',
+      university: universityName, faculty: facultyVal, memberCount: 1, createdAt: serverTimestamp()
+    }, { merge: true });
+  }
+  if (universityName && deptVal) {
+    await setDoc(doc(db, 'communities', `${universityName}-${deptVal}`.replace(/\s+/g,'-').toLowerCase()), {
+      name: `${deptVal} — ${universityName}`, type: 'department',
+      university: universityName, faculty: facultyVal || '', department: deptVal, memberCount: 1, createdAt: serverTimestamp()
+    }, { merge: true });
+  }
+
+  document.getElementById('verify-email-addr').textContent = pendingUserEmail || '';
+  window.switchTab('verify');
+};
+
+window.skipUniversityInfo = () => {
+  document.getElementById('verify-email-addr').textContent = pendingUserEmail || '';
+  window.switchTab('verify');
+};
+
 // ===== LOGIN =====
 document.getElementById('form-login')?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const email = document.getElementById('login-email').value.trim();
+  const email    = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
-  setLoading('btn-login', true);
+  setLoading('btn-login', true, 'Sign In');
   try {
     const { user } = await signInWithEmailAndPassword(auth, email, password);
     if (!user.emailVerified) {
-      showAlert('Please verify your email before signing in. Check your inbox.', 'error');
+      showAlert('Please verify your email before signing in. Check your inbox.');
       await firebaseSignOut(auth);
-      setLoading('btn-login', false);
+      setLoading('btn-login', false, 'Sign In');
       return;
     }
-    // Update online status
     await setDoc(doc(db, 'users', user.uid), { isOnline: true, lastSeen: serverTimestamp() }, { merge: true });
     window.location.href = 'feed.html';
   } catch (err) {
@@ -73,87 +282,8 @@ document.getElementById('form-login')?.addEventListener('submit', async (e) => {
       'auth/too-many-requests': 'Too many failed attempts. Try again later.',
       'auth/invalid-credential': 'Invalid email or password.'
     };
-    showAlert(msgs[err.code] || err.message, 'error');
-    setLoading('btn-login', false);
-  }
-});
-
-// ===== SIGN UP =====
-document.getElementById('form-signup')?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const fname = document.getElementById('signup-fname').value.trim();
-  const lname = document.getElementById('signup-lname').value.trim();
-  const email = document.getElementById('signup-email').value.trim();
-  const university = document.getElementById('signup-university').value.trim();
-  const faculty = document.getElementById('signup-faculty').value.trim();
-  const department = document.getElementById('signup-department').value.trim();
-  const password = document.getElementById('signup-password').value;
-
-  if (!document.getElementById('terms-check').checked) {
-    showAlert('Please accept the Terms of Service to continue.', 'error');
-    return;
-  }
-
-  setLoading('btn-signup', true);
-  try {
-    const { user } = await createUserWithEmailAndPassword(auth, email, password);
-
-    // Create user profile in Firestore
-    await setDoc(doc(db, 'users', user.uid), {
-      uid: user.uid,
-      email,
-      displayName: `${fname} ${lname}`,
-      firstName: fname,
-      lastName: lname,
-      university,
-      faculty,
-      department,
-      bio: '',
-      photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(fname+' '+lname)}&background=a855f7&color=fff&size=200`,
-      coverURL: '',
-      role: 'user',
-      adminRole: null,
-      isOnline: false,
-      createdAt: serverTimestamp(),
-      lastSeen: serverTimestamp(),
-      friendsCount: 0,
-      postsCount: 0
-    });
-
-    // Auto-join faculty community
-    await setDoc(doc(db, 'communities', `${university}-${faculty}`.replace(/\s+/g,'-').toLowerCase()), {
-      name: `${faculty} — ${university}`,
-      type: 'faculty',
-      university,
-      faculty,
-      memberCount: 1,
-      createdAt: serverTimestamp()
-    }, { merge: true });
-
-    // Auto-join department community
-    await setDoc(doc(db, 'communities', `${university}-${department}`.replace(/\s+/g,'-').toLowerCase()), {
-      name: `${department} — ${university}`,
-      type: 'department',
-      university,
-      faculty,
-      department,
-      memberCount: 1,
-      createdAt: serverTimestamp()
-    }, { merge: true });
-
-    // Send email verification
-    await sendEmailVerification(user);
-    document.getElementById('verify-email-addr').textContent = email;
-    window.switchTab('verify');
-    await firebaseSignOut(auth);
-  } catch (err) {
-    const msgs = {
-      'auth/email-already-in-use': 'An account with this email already exists.',
-      'auth/weak-password': 'Password must be at least 8 characters.',
-      'auth/invalid-email': 'Please enter a valid email address.'
-    };
-    showAlert(msgs[err.code] || err.message, 'error');
-    setLoading('btn-signup', false);
+    showAlert(msgs[err.code] || err.message);
+    setLoading('btn-login', false, 'Sign In');
   }
 });
 
@@ -166,46 +296,53 @@ window.signInWithGoogle = async () => {
     const userRef = doc(db, 'users', user.uid);
     const snap = await getDoc(userRef);
     if (!snap.exists()) {
-      // New Google user — create profile
       const [fname, ...rest] = (user.displayName || 'LYNK User').split(' ');
+      const baseUsername = (user.displayName || 'user').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0,15);
+      let username = baseUsername;
+      let counter = 1;
+      while (true) {
+        const uSnap = await getDocs(query(collection(db, 'users'), where('username', '==', username), limit(1)));
+        if (uSnap.empty) break;
+        username = `${baseUsername}${counter++}`;
+      }
       await setDoc(userRef, {
-        uid: user.uid,
-        email: user.email,
+        uid: user.uid, email: user.email,
         displayName: user.displayName || 'LYNK User',
-        firstName: fname,
-        lastName: rest.join(' '),
-        university: '',
-        faculty: '',
-        department: '',
+        firstName: fname, lastName: rest.join(' '),
+        username,
+        userType: 'student',
+        position: '',
+        university: '', faculty: '', department: '',
         bio: '',
-        photoURL: user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'User')}&background=a855f7&color=fff&size=200`,
-        coverURL: '',
-        role: 'user',
-        adminRole: null,
-        isOnline: true,
-        createdAt: serverTimestamp(),
-        lastSeen: serverTimestamp(),
-        friendsCount: 0,
-        postsCount: 0
+        photoURL: user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName||'User')}&background=a855f7&color=fff`,
+        coverURL: '', role: 'user', adminRole: null,
+        isOnline: true, profileComplete: false,
+        createdAt: serverTimestamp(), lastSeen: serverTimestamp(),
+        friendsCount: 0, postsCount: 0
       });
+      pendingUserUid = user.uid;
+      pendingUserEmail = user.email;
+      await loadSchools();
+      window.switchTab('university');
+      return;
     }
     await setDoc(userRef, { isOnline: true, lastSeen: serverTimestamp() }, { merge: true });
     window.location.href = 'feed.html';
   } catch (err) {
-    showAlert('Google sign-in failed. Please try again.', 'error');
+    showAlert('Google sign-in failed. Please try again.');
   }
 };
 
 // ===== PASSWORD RESET =====
 window.sendReset = async () => {
   const email = document.getElementById('reset-email').value.trim();
-  if (!email) { showAlert('Enter your email to reset password.', 'error'); return; }
+  if (!email) { showAlert('Enter your email to reset password.'); return; }
   try {
     await sendPasswordResetEmail(auth, email);
     showAlert('Reset link sent! Check your inbox.', 'success');
     window.hideResetModal();
   } catch (err) {
-    showAlert('Could not send reset email. Check the address.', 'error');
+    showAlert('Could not send reset email. Check the address.');
   }
 };
 
@@ -218,23 +355,7 @@ window.resendVerification = async () => {
   }
 };
 
-// ===== 2FA VERIFY (Placeholder — Firebase 2FA uses phone, this is a UI stub) =====
-window.verify2FA = () => {
-  const code = document.getElementById('otp-input').value;
-  if (code.length === 6) {
-    showAlert('2FA verified! Redirecting...', 'success');
-    setTimeout(() => { window.location.href = 'feed.html'; }, 1000);
-  } else {
-    showAlert('Enter the full 6-digit code.', 'error');
-  }
-};
-
-// Global sign out
 window.signOut = async () => {
-  const user = auth.currentUser;
-  if (user) {
-    await setDoc(doc(db, 'users', user.uid), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true });
-  }
   await firebaseSignOut(auth);
   window.location.href = 'auth.html';
 };
