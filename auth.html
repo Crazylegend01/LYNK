@@ -28,15 +28,15 @@
     <div class="flex flex-col gap-3">
       <div class="flex items-center gap-3 text-sm" style="color:var(--text-secondary)">
         <span class="w-8 h-8 rounded-full lynk-gradient flex items-center justify-center text-white font-bold flex-shrink-0">✓</span>
-        Free for all university students
+        Free for all university students & staff
       </div>
       <div class="flex items-center gap-3 text-sm" style="color:var(--text-secondary)">
         <span class="w-8 h-8 rounded-full lynk-gradient flex items-center justify-center text-white font-bold flex-shrink-0">✓</span>
-        Auto-join your Faculty & Department
+        Your own @username — separate from your real name
       </div>
       <div class="flex items-center gap-3 text-sm" style="color:var(--text-secondary)">
         <span class="w-8 h-8 rounded-full lynk-gradient flex items-center justify-center text-white font-bold flex-shrink-0">✓</span>
-        Secure email verification & 2FA
+        Secure email verification & instant push alerts
       </div>
     </div>
   </div>
@@ -44,8 +44,8 @@
 </div>
 
 <!-- Right Panel — Form -->
-<div class="flex-1 flex items-center justify-center p-6" style="background:var(--bg-primary)">
-  <div class="w-full max-w-md">
+<div class="flex-1 flex items-center justify-center p-6 overflow-y-auto" style="background:var(--bg-primary)">
+  <div class="w-full max-w-md py-6">
 
     <!-- Mobile logo -->
     <div class="lg:hidden text-center mb-8">
@@ -70,7 +70,6 @@
     <form id="form-login" class="lynk-card p-8 fade-in">
       <h2 class="text-2xl font-bold mb-1">Welcome back 👋</h2>
       <p class="text-sm mb-6" style="color:var(--text-secondary)">Sign in to your LYNK account</p>
-
       <div class="flex flex-col gap-4">
         <div>
           <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Email</label>
@@ -86,70 +85,94 @@
             <button type="button" onclick="showResetModal()" class="text-xs lynk-gradient-text hover:opacity-80">Forgot password?</button>
           </div>
         </div>
-
-        <button type="submit" id="btn-login" class="lynk-btn lynk-btn-primary w-full py-3 rounded-xl text-base mt-2">
-          Sign In
-        </button>
-
+        <button type="submit" id="btn-login" class="lynk-btn lynk-btn-primary w-full py-3 rounded-xl text-base mt-2">Sign In</button>
         <div class="relative flex items-center gap-3 my-1">
           <div class="flex-1 h-px" style="background:var(--border)"></div>
           <span class="text-xs" style="color:var(--text-muted)">or</span>
           <div class="flex-1 h-px" style="background:var(--border)"></div>
         </div>
-
         <button type="button" id="btn-google" onclick="signInWithGoogle()" class="lynk-btn lynk-btn-secondary w-full py-3 rounded-xl gap-3">
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" alt="Google" />
           Continue with Google
         </button>
       </div>
-
       <p class="text-center text-sm mt-6" style="color:var(--text-muted)">
         No account? <button type="button" onclick="switchTab('signup')" class="lynk-gradient-text font-semibold">Sign up free</button>
       </p>
     </form>
 
-    <!-- ===== SIGNUP FORM ===== -->
+    <!-- ===== SIGNUP STEP 1: Basic Info ===== -->
     <form id="form-signup" class="lynk-card p-8 fade-in hidden">
-      <h2 class="text-2xl font-bold mb-1">Join LYNK 🎓</h2>
-      <p class="text-sm mb-6" style="color:var(--text-secondary)">Create your university account</p>
+      <div class="flex items-center justify-between mb-1">
+        <h2 class="text-2xl font-bold">Join LYNK 🎓</h2>
+        <span class="text-xs lynk-badge" style="background:var(--bg-card-hover);color:var(--text-muted)">Step 1 of 2</span>
+      </div>
+      <p class="text-sm mb-6" style="color:var(--text-secondary)">Create your account — university info can be added later</p>
 
       <div class="flex flex-col gap-4">
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">First Name</label>
+            <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">First Name *</label>
             <input id="signup-fname" type="text" class="lynk-input" placeholder="John" required />
           </div>
           <div>
-            <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Last Name</label>
+            <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Last Name *</label>
             <input id="signup-lname" type="text" class="lynk-input" placeholder="Doe" required />
           </div>
         </div>
+
         <div>
-          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Email</label>
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Username *
+            <span class="font-normal text-xs ml-1" style="color:var(--text-muted)">(your @handle — different from your real name)</span>
+          </label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 font-semibold" style="color:var(--text-muted)">@</span>
+            <input id="signup-username" type="text" class="lynk-input pl-7" placeholder="johnlegend" required
+                   oninput="checkUsername(this.value)" pattern="[a-zA-Z0-9_]+" title="Letters, numbers and underscores only" />
+          </div>
+          <p id="username-status" class="text-xs mt-1" style="color:var(--text-muted)">Letters, numbers and _ only</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Email *</label>
           <input id="signup-email" type="email" class="lynk-input" placeholder="your@university.edu" required />
         </div>
+
+        <!-- User Type Toggle -->
         <div>
-          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">University</label>
-          <input id="signup-university" type="text" class="lynk-input" placeholder="e.g. University of Lagos" required />
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Faculty</label>
-            <input id="signup-faculty" type="text" class="lynk-input" placeholder="e.g. Science" required />
+          <label class="block text-sm font-medium mb-2" style="color:var(--text-secondary)">I am a *</label>
+          <div class="flex gap-2">
+            <label class="flex-1 cursor-pointer">
+              <input type="radio" name="user-type" value="student" id="type-student" class="hidden" checked onchange="toggleUserType('student')" />
+              <div id="label-student" class="text-center py-2.5 rounded-xl border-2 text-sm font-medium transition-all"
+                   style="border-color:var(--grad-1);background:linear-gradient(135deg,var(--grad-1)20,var(--grad-3)10);color:var(--text-primary)">
+                🎓 Student
+              </div>
+            </label>
+            <label class="flex-1 cursor-pointer">
+              <input type="radio" name="user-type" value="staff" id="type-staff" class="hidden" onchange="toggleUserType('staff')" />
+              <div id="label-staff" class="text-center py-2.5 rounded-xl border-2 text-sm font-medium transition-all"
+                   style="border-color:var(--border);color:var(--text-muted)">
+                👨‍🏫 Staff
+              </div>
+            </label>
           </div>
-          <div>
-            <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Department</label>
-            <input id="signup-department" type="text" class="lynk-input" placeholder="e.g. Computer Sci" required />
-          </div>
         </div>
+
+        <!-- Staff Position (shown only for staff) -->
+        <div id="staff-fields" class="hidden">
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Position / Rank *</label>
+          <input id="signup-position" type="text" class="lynk-input" placeholder="e.g. Sub-dean, Lecturer I, Professor" />
+          <p class="text-xs mt-1" style="color:var(--text-muted)">Your official university title or role</p>
+        </div>
+
         <div>
-          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Password</label>
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Password *</label>
           <div class="relative">
             <input id="signup-password" type="password" class="lynk-input" placeholder="Min 8 characters" required minlength="8" />
             <button type="button" onclick="togglePwd('signup-password')" class="absolute right-3 top-1/2 -translate-y-1/2 text-sm" style="color:var(--text-muted)">👁</button>
           </div>
         </div>
-        <!-- Password strength -->
         <div id="pwd-strength" class="flex gap-1 h-1.5">
           <div class="flex-1 rounded-full" style="background:var(--border)" id="ps1"></div>
           <div class="flex-1 rounded-full" style="background:var(--border)" id="ps2"></div>
@@ -163,7 +186,12 @@
         </div>
 
         <button type="submit" id="btn-signup" class="lynk-btn lynk-btn-primary w-full py-3 rounded-xl text-base mt-1">
-          Create Account
+          Continue →
+        </button>
+
+        <button type="button" id="btn-google-signup" onclick="signInWithGoogle()" class="lynk-btn lynk-btn-secondary w-full py-3 rounded-xl gap-3">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" alt="Google" />
+          Continue with Google
         </button>
       </div>
 
@@ -172,7 +200,45 @@
       </p>
     </form>
 
-    <!-- ===== VERIFY EMAIL NOTICE ===== -->
+    <!-- ===== SIGNUP STEP 2: University Info ===== -->
+    <div id="form-university" class="lynk-card p-8 fade-in hidden">
+      <div class="flex items-center justify-between mb-1">
+        <h2 class="text-xl font-bold">University Info 🏛️</h2>
+        <span class="text-xs lynk-badge" style="background:var(--bg-card-hover);color:var(--text-muted)">Step 2 of 2</span>
+      </div>
+      <p class="text-sm mb-5" style="color:var(--text-secondary)">Select your university, faculty and department. You can skip this and fill it in later from your profile.</p>
+
+      <div class="flex flex-col gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">University</label>
+          <select id="uni-select" class="lynk-input" onchange="loadFaculties(this.value)">
+            <option value="">-- Select your university --</option>
+          </select>
+          <p id="no-schools-note" class="text-xs mt-1 hidden" style="color:var(--text-muted)">No schools added yet — an admin must add schools first.</p>
+        </div>
+
+        <div id="faculty-wrapper" class="hidden">
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Faculty</label>
+          <select id="faculty-select" class="lynk-input" onchange="loadDepartments(this.value)">
+            <option value="">-- Select faculty --</option>
+          </select>
+        </div>
+
+        <div id="dept-wrapper" class="hidden">
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Department</label>
+          <select id="dept-select" class="lynk-input">
+            <option value="">-- Select department --</option>
+          </select>
+        </div>
+
+        <div class="flex gap-3 mt-2">
+          <button onclick="completeUniversityInfo()" class="lynk-btn lynk-btn-primary flex-1 py-3 rounded-xl">Complete Setup ✓</button>
+          <button onclick="skipUniversityInfo()" class="lynk-btn lynk-btn-secondary py-3 px-4 rounded-xl text-sm">Skip for now →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== VERIFY EMAIL ===== -->
     <div id="form-verify" class="lynk-card p-8 fade-in hidden text-center">
       <div class="text-5xl mb-4">📧</div>
       <h2 class="text-2xl font-bold mb-2">Check your inbox</h2>
@@ -181,21 +247,10 @@
       <button onclick="switchTab('login')" class="lynk-btn lynk-btn-ghost w-full py-3 rounded-xl">Back to Sign In</button>
     </div>
 
-    <!-- ===== 2FA PANEL ===== -->
-    <div id="form-2fa" class="lynk-card p-8 fade-in hidden text-center">
-      <div class="text-5xl mb-4">🔐</div>
-      <h2 class="text-2xl font-bold mb-2">Two-Factor Auth</h2>
-      <p class="mb-6" style="color:var(--text-secondary)">Enter the 6-digit code sent to your email.</p>
-      <div class="flex gap-2 justify-center mb-6">
-        <input id="otp-input" type="text" maxlength="6" class="lynk-input text-center text-2xl font-bold tracking-widest w-48" placeholder="000000" />
-      </div>
-      <button onclick="verify2FA()" class="lynk-btn lynk-btn-primary w-full py-3 rounded-xl">Verify Code</button>
-    </div>
-
   </div>
 </div>
 
-<!-- ===== RESET PASSWORD MODAL ===== -->
+<!-- RESET PASSWORD MODAL -->
 <div id="reset-modal" class="lynk-modal-overlay hidden">
   <div class="lynk-card p-8 w-full max-w-sm mx-4">
     <h3 class="text-xl font-bold mb-2">Reset Password</h3>
@@ -210,9 +265,9 @@
 
 <script type="module" src="js/auth.js"></script>
 <script>
-  // Tab switching
   function switchTab(tab) {
-    ['login','signup','verify','2fa'].forEach(t => {
+    const panels = ['login','signup','university','verify'];
+    panels.forEach(t => {
       document.getElementById(`form-${t}`)?.classList.add('hidden');
       document.getElementById(`tab-${t}`)?.classList.remove('active');
     });
@@ -226,11 +281,26 @@
   function showResetModal() { document.getElementById('reset-modal').classList.remove('hidden'); }
   function hideResetModal() { document.getElementById('reset-modal').classList.add('hidden'); }
 
-  // Check URL param for default tab
+  function toggleUserType(type) {
+    const staffFields = document.getElementById('staff-fields');
+    const labelStudent = document.getElementById('label-student');
+    const labelStaff = document.getElementById('label-staff');
+    if (type === 'staff') {
+      staffFields.classList.remove('hidden');
+      labelStaff.style.cssText = 'border-color:var(--grad-1);background:linear-gradient(135deg,var(--grad-1)20,var(--grad-3)10);color:var(--text-primary);text-align:center;padding:10px 0;border-radius:12px;border-width:2px;font-size:0.875rem;font-weight:500;transition:all 0.2s';
+      labelStudent.style.cssText = 'border-color:var(--border);color:var(--text-muted);text-align:center;padding:10px 0;border-radius:12px;border-width:2px;font-size:0.875rem;font-weight:500;transition:all 0.2s';
+    } else {
+      staffFields.classList.add('hidden');
+      labelStudent.style.cssText = 'border-color:var(--grad-1);background:linear-gradient(135deg,var(--grad-1)20,var(--grad-3)10);color:var(--text-primary);text-align:center;padding:10px 0;border-radius:12px;border-width:2px;font-size:0.875rem;font-weight:500;transition:all 0.2s';
+      labelStaff.style.cssText = 'border-color:var(--border);color:var(--text-muted);text-align:center;padding:10px 0;border-radius:12px;border-width:2px;font-size:0.875rem;font-weight:500;transition:all 0.2s';
+    }
+  }
+
+  // Check URL param
   const params = new URLSearchParams(window.location.search);
   if (params.get('mode') === 'signup') switchTab('signup');
 
-  // Password strength meter
+  // Password strength
   document.getElementById('signup-password')?.addEventListener('input', function() {
     const v = this.value;
     let score = 0;
