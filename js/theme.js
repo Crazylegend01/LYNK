@@ -5,9 +5,9 @@
 export const ThemeManager = {
   // Default gradient stops (hue values)
   defaults: {
-    stop1: '#a855f7', // purple
-    stop2: '#06b6d4', // cyan
-    stop3: '#3b82f6', // blue
+    g1: '#a855f7', // purple
+    g2: '#06b6d4', // cyan
+    g3: '#3b82f6', // blue
   },
 
   init() {
