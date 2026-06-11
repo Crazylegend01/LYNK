@@ -108,6 +108,21 @@
       </div>
     </div>
 
+    <!-- People You May Know (mobile — hidden on xl where sidebar shows) -->
+    <div class="xl:hidden mb-5">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-semibold text-sm">👥 People You May Know</h3>
+        <button onclick="loadSuggestions()" class="text-xs lynk-gradient-text">Refresh</button>
+      </div>
+      <div id="mobile-suggestions-list" class="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+        <div class="flex-shrink-0 w-28 lynk-card p-3 animate-pulse">
+          <div class="w-12 h-12 rounded-full mx-auto mb-2" style="background:var(--border)"></div>
+          <div class="h-2 rounded w-3/4 mx-auto mb-1" style="background:var(--border)"></div>
+          <div class="h-2 rounded w-1/2 mx-auto" style="background:var(--border)"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Feed Filter Tabs -->
     <div class="flex gap-1 mb-4 p-1 rounded-xl" style="background:var(--bg-card)">
       <button class="lynk-tab active flex-1 text-sm" onclick="setFilter('all', this)">All</button>
@@ -154,7 +169,7 @@
 <aside class="fixed right-0 top-16 w-72 h-[calc(100vh-64px)] overflow-y-auto p-4 hidden xl:block" style="border-left:1px solid var(--border)">
   <!-- Suggested Friends -->
   <div class="lynk-card p-4 mb-4">
-    <h3 class="font-semibold text-sm mb-3">👥 Suggested Friends</h3>
+    <h3 class="font-semibold text-sm mb-3">👥 People You May Know</h3>
     <div id="suggestions-list" class="flex flex-col gap-3">
       <div class="text-xs" style="color:var(--text-muted)">Loading suggestions...</div>
     </div>
@@ -242,6 +257,99 @@
       <div class="h-8 rounded-xl lynk-gradient"></div>
       <button onclick="resetGradient()" class="lynk-btn lynk-btn-ghost text-sm py-2 rounded-xl">Reset to Default</button>
     </div>
+  </div>
+</div>
+
+<!-- ===== ONBOARDING MODAL ===== -->
+<div id="onboarding-modal" class="lynk-modal-overlay hidden" style="z-index:9999">
+  <div class="lynk-card w-full max-w-md mx-4 overflow-hidden">
+
+    <!-- Progress bar -->
+    <div class="h-1 lynk-gradient" id="onboard-progress" style="width:33%;transition:width 0.4s ease"></div>
+
+    <!-- Step 1: Welcome -->
+    <div id="onboard-step-1" class="p-8 text-center">
+      <div class="text-5xl mb-4">🎉</div>
+      <h2 class="text-2xl font-black mb-2">Welcome to LYNK!</h2>
+      <p class="text-sm mb-2" style="color:var(--text-secondary)">You're in — let's set up your campus identity.</p>
+      <p class="text-xs mb-6" style="color:var(--text-muted)">Takes less than 30 seconds. You can skip any step.</p>
+
+      <div class="lynk-card p-4 mb-6 text-left flex items-center gap-4">
+        <img id="onboard-avatar" src="" class="lynk-avatar w-14 h-14 flex-shrink-0" />
+        <div>
+          <p id="onboard-name" class="font-bold"></p>
+          <p id="onboard-handle" class="text-sm lynk-gradient-text"></p>
+          <p id="onboard-type" class="text-xs mt-0.5" style="color:var(--text-muted)"></p>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button onclick="onboardNext(2)" class="lynk-btn lynk-btn-primary flex-1 py-3 rounded-xl font-semibold">
+          Let's go! →
+        </button>
+        <button onclick="dismissOnboarding()" class="lynk-btn lynk-btn-ghost py-3 px-4 rounded-xl text-sm" style="color:var(--text-muted)">
+          Skip
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: University -->
+    <div id="onboard-step-2" class="p-8 hidden">
+      <div class="text-4xl mb-3">🏛️</div>
+      <h2 class="text-xl font-black mb-1">Your University</h2>
+      <p class="text-sm mb-5" style="color:var(--text-secondary)">Pick your university so LYNK can connect you with your campus community.</p>
+
+      <div class="flex flex-col gap-4">
+        <div>
+          <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">University</label>
+          <select id="onboard-uni" class="lynk-input" onchange="onboardLoadFaculties(this.value)">
+            <option value="">-- Select your university --</option>
+          </select>
+          <p id="onboard-no-schools" class="hidden text-xs mt-1.5" style="color:var(--text-muted)">
+            ⚠️ No universities added yet — ask your admin to add schools first.
+          </p>
+        </div>
+
+        <div id="onboard-faculty-wrap" class="hidden">
+          <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Faculty</label>
+          <select id="onboard-faculty" class="lynk-input" onchange="onboardLoadDepts(this.value)">
+            <option value="">-- Select faculty --</option>
+          </select>
+        </div>
+
+        <div id="onboard-dept-wrap" class="hidden">
+          <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Department</label>
+          <select id="onboard-dept" class="lynk-input">
+            <option value="">-- Select department --</option>
+          </select>
+        </div>
+
+        <div id="onboard-position-wrap" class="hidden">
+          <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Your Position / Rank</label>
+          <input id="onboard-position" type="text" class="lynk-input" placeholder="e.g. Sub-dean, Lecturer I, Professor" />
+        </div>
+      </div>
+
+      <div class="flex gap-3 mt-6">
+        <button onclick="onboardBack(1)" class="lynk-btn lynk-btn-ghost py-3 px-4 rounded-xl">← Back</button>
+        <button onclick="onboardNext(3)" class="lynk-btn lynk-btn-primary flex-1 py-3 rounded-xl font-semibold">Continue →</button>
+        <button onclick="dismissOnboarding()" class="lynk-btn lynk-btn-ghost py-3 px-4 rounded-xl text-sm" style="color:var(--text-muted)">Skip</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Done -->
+    <div id="onboard-step-3" class="p-8 text-center hidden">
+      <div class="text-5xl mb-4">🚀</div>
+      <h2 class="text-2xl font-black mb-2">You're all set!</h2>
+      <p class="text-sm mb-6" style="color:var(--text-secondary)">Your profile is ready. Start exploring your campus community on LYNK.</p>
+
+      <div id="onboard-summary" class="lynk-card p-4 mb-6 text-left text-sm flex flex-col gap-2"></div>
+
+      <button onclick="finishOnboarding()" class="lynk-btn lynk-btn-primary w-full py-3 rounded-xl font-semibold text-base">
+        Enter LYNK 🎓
+      </button>
+    </div>
+
   </div>
 </div>
 
