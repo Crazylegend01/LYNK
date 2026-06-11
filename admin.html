@@ -40,6 +40,7 @@
     <a href="#" class="lynk-sidebar-link" onclick="showSection('users', this)">👥 <span>Users</span></a>
     <a href="#" class="lynk-sidebar-link" onclick="showSection('content', this)">📝 <span>Content</span></a>
     <a href="#" class="lynk-sidebar-link" onclick="showSection('communities', this)">🏛️ <span>Communities</span></a>
+    <a href="#" class="lynk-sidebar-link" onclick="showSection('schools', this)">🎓 <span>Schools</span></a>
     <div class="px-4 mt-3 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Security</div>
     <a href="#" class="lynk-sidebar-link" onclick="showSection('security', this)">🔐 <span>Security Logs</span></a>
     <a href="#" class="lynk-sidebar-link" onclick="showSection('reports', this)">🚨 <span>Reports</span></a>
@@ -54,7 +55,7 @@
 <!-- MAIN -->
 <main class="main-content px-6 py-6">
 
-  <!-- Access Denied (shown if not admin) -->
+  <!-- Access Denied -->
   <div id="access-denied" class="hidden text-center py-20">
     <div class="text-6xl mb-4">🚫</div>
     <h2 class="text-2xl font-bold mb-2">Access Denied</h2>
@@ -62,10 +63,9 @@
     <a href="feed.html" class="lynk-btn lynk-btn-primary px-6 py-3 rounded-xl">Back to Feed</a>
   </div>
 
-  <!-- Admin content wrapper -->
   <div id="admin-content">
 
-    <!-- ===== OVERVIEW SECTION ===== -->
+    <!-- ===== OVERVIEW ===== -->
     <section id="section-overview" class="fade-in">
       <div class="flex items-center justify-between mb-6">
         <div>
@@ -74,86 +74,41 @@
         </div>
         <button onclick="refreshDashboard()" class="lynk-btn lynk-btn-secondary text-sm py-2 px-4 rounded-xl">🔄 Refresh</button>
       </div>
-
-      <!-- Stats Grid -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div class="stat-card">
-          <div class="text-3xl font-black lynk-gradient-text mb-1" id="stat-users">—</div>
-          <div class="text-sm font-medium mb-1">Total Users</div>
-          <div class="text-xs" style="color:var(--text-muted)" id="stat-users-growth">+0 this week</div>
-        </div>
-        <div class="stat-card">
-          <div class="text-3xl font-black lynk-gradient-text mb-1" id="stat-posts">—</div>
-          <div class="text-sm font-medium mb-1">Total Posts</div>
-          <div class="text-xs" style="color:var(--text-muted)" id="stat-posts-growth">+0 today</div>
-        </div>
-        <div class="stat-card">
-          <div class="text-3xl font-black lynk-gradient-text mb-1" id="stat-active">—</div>
-          <div class="text-sm font-medium mb-1">Active Now</div>
-          <div class="text-xs" style="color:#22c55e">● Live</div>
-        </div>
-        <div class="stat-card">
-          <div class="text-3xl font-black lynk-gradient-text mb-1" id="stat-reports">—</div>
-          <div class="text-sm font-medium mb-1">Open Reports</div>
-          <div class="text-xs" style="color:var(--text-muted)">Needs review</div>
-        </div>
+        <div class="stat-card"><div class="text-3xl font-black lynk-gradient-text mb-1" id="stat-users">—</div><div class="text-sm font-medium mb-1">Total Users</div><div class="text-xs" style="color:var(--text-muted)" id="stat-users-growth">+0 this week</div></div>
+        <div class="stat-card"><div class="text-3xl font-black lynk-gradient-text mb-1" id="stat-posts">—</div><div class="text-sm font-medium mb-1">Total Posts</div><div class="text-xs" style="color:var(--text-muted)" id="stat-posts-growth">+0 today</div></div>
+        <div class="stat-card"><div class="text-3xl font-black lynk-gradient-text mb-1" id="stat-active">—</div><div class="text-sm font-medium mb-1">Active Now</div><div class="text-xs" style="color:#22c55e">● Live</div></div>
+        <div class="stat-card"><div class="text-3xl font-black lynk-gradient-text mb-1" id="stat-reports">—</div><div class="text-sm font-medium mb-1">Open Reports</div><div class="text-xs" style="color:var(--text-muted)">Needs review</div></div>
       </div>
-
-      <!-- Charts -->
       <div class="grid lg:grid-cols-2 gap-5 mb-6">
-        <div class="lynk-card p-5">
-          <h3 class="font-semibold mb-4 text-sm">User Growth (7 days)</h3>
-          <canvas id="chart-growth" height="200"></canvas>
-        </div>
-        <div class="lynk-card p-5">
-          <h3 class="font-semibold mb-4 text-sm">Activity Distribution</h3>
-          <canvas id="chart-activity" height="200"></canvas>
-        </div>
+        <div class="lynk-card p-5"><h3 class="font-semibold mb-4 text-sm">User Growth (7 days)</h3><canvas id="chart-growth" height="200"></canvas></div>
+        <div class="lynk-card p-5"><h3 class="font-semibold mb-4 text-sm">Activity Distribution</h3><canvas id="chart-activity" height="200"></canvas></div>
       </div>
-
       <div class="grid lg:grid-cols-2 gap-5">
-        <div class="lynk-card p-5">
-          <h3 class="font-semibold mb-4 text-sm">Posts by Faculty</h3>
-          <canvas id="chart-faculty" height="200"></canvas>
-        </div>
+        <div class="lynk-card p-5"><h3 class="font-semibold mb-4 text-sm">Posts by Faculty</h3><canvas id="chart-faculty" height="200"></canvas></div>
         <div class="lynk-card p-5">
           <h3 class="font-semibold mb-4 text-sm">Platform Health</h3>
           <div class="flex flex-col gap-3">
-            <div>
-              <div class="flex justify-between text-xs mb-1"><span>Firestore</span><span style="color:#22c55e">Healthy</span></div>
-              <div class="h-2 rounded-full" style="background:var(--border)"><div class="h-full w-[98%] rounded-full" style="background:#22c55e"></div></div>
-            </div>
-            <div>
-              <div class="flex justify-between text-xs mb-1"><span>Firebase Auth</span><span style="color:#22c55e">Healthy</span></div>
-              <div class="h-2 rounded-full" style="background:var(--border)"><div class="h-full w-[100%] rounded-full" style="background:#22c55e"></div></div>
-            </div>
-            <div>
-              <div class="flex justify-between text-xs mb-1"><span>Storage</span><span style="color:#22c55e">Healthy</span></div>
-              <div class="h-2 rounded-full" style="background:var(--border)"><div class="h-full w-[95%] rounded-full" style="background:#22c55e"></div></div>
-            </div>
-            <div>
-              <div class="flex justify-between text-xs mb-1"><span>Uptime</span><span style="color:#22c55e">99.9%</span></div>
-              <div class="h-2 rounded-full" style="background:var(--border)"><div class="h-full lynk-gradient w-[99.9%] rounded-full"></div></div>
-            </div>
+            <div><div class="flex justify-between text-xs mb-1"><span>Firestore</span><span style="color:#22c55e">Healthy</span></div><div class="h-2 rounded-full" style="background:var(--border)"><div class="h-full w-[98%] rounded-full" style="background:#22c55e"></div></div></div>
+            <div><div class="flex justify-between text-xs mb-1"><span>Firebase Auth</span><span style="color:#22c55e">Healthy</span></div><div class="h-2 rounded-full" style="background:var(--border)"><div class="h-full w-[100%] rounded-full" style="background:#22c55e"></div></div></div>
+            <div><div class="flex justify-between text-xs mb-1"><span>Storage</span><span style="color:#22c55e">Healthy</span></div><div class="h-2 rounded-full" style="background:var(--border)"><div class="h-full w-[95%] rounded-full" style="background:#22c55e"></div></div></div>
+            <div><div class="flex justify-between text-xs mb-1"><span>Uptime</span><span style="color:#22c55e">99.9%</span></div><div class="h-2 rounded-full" style="background:var(--border)"><div class="h-full lynk-gradient w-[99.9%] rounded-full"></div></div></div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ===== USERS SECTION ===== -->
+    <!-- ===== USERS ===== -->
     <section id="section-users" class="hidden fade-in">
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold">User Management</h1>
-        <div class="flex gap-2">
-          <input type="text" id="user-search" class="lynk-input text-sm py-2 w-64" placeholder="🔍 Search users..." oninput="searchUsers(this.value)" />
-        </div>
+        <input type="text" id="user-search" class="lynk-input text-sm py-2 w-64" placeholder="🔍 Search users..." oninput="searchUsers(this.value)" />
       </div>
-      <!-- Filter Tabs -->
       <div class="flex gap-1 mb-5 p-1 rounded-xl w-fit" style="background:var(--bg-card)">
         <button class="lynk-tab active text-sm" onclick="filterUsers('all', this)">All</button>
-        <button class="lynk-tab text-sm" onclick="filterUsers('active', this)">Active</button>
+        <button class="lynk-tab text-sm" onclick="filterUsers('staff', this)">Staff</button>
+        <button class="lynk-tab text-sm" onclick="filterUsers('active', this)">Online</button>
         <button class="lynk-tab text-sm" onclick="filterUsers('suspended', this)">Suspended</button>
-        <button class="lynk-tab text-sm" onclick="filterUsers('unverified', this)">Unverified</button>
       </div>
       <div class="lynk-card overflow-hidden">
         <div class="overflow-x-auto">
@@ -161,7 +116,7 @@
             <thead>
               <tr style="border-bottom:1px solid var(--border)">
                 <th class="text-left p-4 font-medium" style="color:var(--text-muted)">User</th>
-                <th class="text-left p-4 font-medium" style="color:var(--text-muted)">University</th>
+                <th class="text-left p-4 font-medium" style="color:var(--text-muted)">University / Role</th>
                 <th class="text-left p-4 font-medium" style="color:var(--text-muted)">Joined</th>
                 <th class="text-left p-4 font-medium" style="color:var(--text-muted)">Status</th>
                 <th class="text-left p-4 font-medium" style="color:var(--text-muted)">Actions</th>
@@ -175,20 +130,43 @@
       </div>
     </section>
 
-    <!-- ===== CONTENT SECTION ===== -->
+    <!-- ===== CONTENT ===== -->
     <section id="section-content" class="hidden fade-in">
       <h1 class="text-2xl font-bold mb-6">Content Moderation</h1>
       <div class="flex gap-1 mb-5 p-1 rounded-xl w-fit" style="background:var(--bg-card)">
         <button class="lynk-tab active text-sm" onclick="filterContent('all', this)">All Posts</button>
         <button class="lynk-tab text-sm" onclick="filterContent('reported', this)">Reported</button>
-        <button class="lynk-tab text-sm" onclick="filterContent('removed', this)">Removed</button>
       </div>
       <div id="content-list" class="flex flex-col gap-4">
         <div class="lynk-card p-5 animate-pulse"><div class="h-4 rounded w-3/4 mb-2" style="background:var(--border)"></div><div class="h-4 rounded w-1/2" style="background:var(--border)"></div></div>
       </div>
     </section>
 
-    <!-- ===== SECURITY SECTION ===== -->
+    <!-- ===== COMMUNITIES ===== -->
+    <section id="section-communities" class="hidden fade-in">
+      <h1 class="text-2xl font-bold mb-6">Communities</h1>
+      <div id="communities-list" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="lynk-card p-5 animate-pulse"><div class="h-4 rounded w-3/4 mb-2" style="background:var(--border)"></div></div>
+      </div>
+    </section>
+
+    <!-- ===== SCHOOLS ===== -->
+    <section id="section-schools" class="hidden fade-in">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-2xl font-bold">Schools Management 🎓</h1>
+          <p class="text-sm" style="color:var(--text-secondary)">Add universities — students and staff choose from this list when registering</p>
+        </div>
+        <button onclick="showAddSchoolModal()" class="lynk-btn lynk-btn-primary text-sm py-2 px-4 rounded-xl">+ Add University</button>
+      </div>
+
+      <!-- Schools List -->
+      <div id="schools-list" class="flex flex-col gap-4">
+        <div class="lynk-card p-5 animate-pulse"><div class="h-4 rounded w-1/2 mb-2" style="background:var(--border)"></div></div>
+      </div>
+    </section>
+
+    <!-- ===== SECURITY ===== -->
     <section id="section-security" class="hidden fade-in">
       <h1 class="text-2xl font-bold mb-6">Security Logs</h1>
       <div class="lynk-card overflow-hidden">
@@ -202,7 +180,7 @@
       </div>
     </section>
 
-    <!-- ===== REPORTS SECTION ===== -->
+    <!-- ===== REPORTS ===== -->
     <section id="section-reports" class="hidden fade-in">
       <h1 class="text-2xl font-bold mb-6">User Reports</h1>
       <div id="reports-list" class="flex flex-col gap-4">
@@ -210,7 +188,7 @@
       </div>
     </section>
 
-    <!-- ===== ANALYTICS SECTION ===== -->
+    <!-- ===== ANALYTICS ===== -->
     <section id="section-analytics" class="hidden fade-in">
       <h1 class="text-2xl font-bold mb-6">Platform Analytics</h1>
       <div class="grid lg:grid-cols-3 gap-4 mb-6">
@@ -219,26 +197,12 @@
         <div class="stat-card"><div class="text-2xl font-bold lynk-gradient-text" id="ana-messages">—</div><div class="text-sm mt-1">Messages Sent Today</div></div>
       </div>
       <div class="grid lg:grid-cols-2 gap-5">
-        <div class="lynk-card p-5">
-          <h3 class="font-semibold mb-4 text-sm">30-Day User Trend</h3>
-          <canvas id="chart-30day" height="200"></canvas>
-        </div>
-        <div class="lynk-card p-5">
-          <h3 class="font-semibold mb-4 text-sm">Content Types Breakdown</h3>
-          <canvas id="chart-content-types" height="200"></canvas>
-        </div>
+        <div class="lynk-card p-5"><h3 class="font-semibold mb-4 text-sm">30-Day User Trend</h3><canvas id="chart-30day" height="200"></canvas></div>
+        <div class="lynk-card p-5"><h3 class="font-semibold mb-4 text-sm">Content Types Breakdown</h3><canvas id="chart-content-types" height="200"></canvas></div>
       </div>
     </section>
 
-    <!-- ===== COMMUNITIES SECTION ===== -->
-    <section id="section-communities" class="hidden fade-in">
-      <h1 class="text-2xl font-bold mb-6">Communities</h1>
-      <div id="communities-list" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div class="lynk-card p-5 animate-pulse"><div class="h-4 rounded w-3/4 mb-2" style="background:var(--border)"></div></div>
-      </div>
-    </section>
-
-    <!-- ===== ADMINS SECTION ===== -->
+    <!-- ===== ADMINS ===== -->
     <section id="section-admins" class="hidden fade-in">
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold">Admin Management</h1>
@@ -248,26 +212,11 @@
         <div class="lynk-card p-5">
           <h3 class="font-semibold text-sm mb-3">Admin Roles</h3>
           <div class="flex flex-col gap-2 text-sm">
-            <div class="flex items-center justify-between p-3 rounded-xl" style="background:var(--bg-card-hover)">
-              <span>🌟 Super Admin</span>
-              <span style="color:var(--text-muted)">Full access</span>
-            </div>
-            <div class="flex items-center justify-between p-3 rounded-xl" style="background:var(--bg-card-hover)">
-              <span>🔐 Security Admin</span>
-              <span style="color:var(--text-muted)">Logs & bans</span>
-            </div>
-            <div class="flex items-center justify-between p-3 rounded-xl" style="background:var(--bg-card-hover)">
-              <span>📊 Analytics Admin</span>
-              <span style="color:var(--text-muted)">Read-only analytics</span>
-            </div>
-            <div class="flex items-center justify-between p-3 rounded-xl" style="background:var(--bg-card-hover)">
-              <span>🎯 Support Admin</span>
-              <span style="color:var(--text-muted)">User issues</span>
-            </div>
-            <div class="flex items-center justify-between p-3 rounded-xl" style="background:var(--bg-card-hover)">
-              <span>📝 Content Admin</span>
-              <span style="color:var(--text-muted)">Moderation</span>
-            </div>
+            <div class="flex items-center justify-between p-3 rounded-xl" style="background:var(--bg-card-hover)"><span>🌟 Super Admin</span><span style="color:var(--text-muted)">Full access</span></div>
+            <div class="flex items-center justify-between p-3 rounded-xl" style="background:var(--bg-card-hover)"><span>🔐 Security Admin</span><span style="color:var(--text-muted)">Logs & bans</span></div>
+            <div class="flex items-center justify-between p-3 rounded-xl" style="background:var(--bg-card-hover)"><span>📊 Analytics Admin</span><span style="color:var(--text-muted)">Read-only analytics</span></div>
+            <div class="flex items-center justify-between p-3 rounded-xl" style="background:var(--bg-card-hover)"><span>🎯 Support Admin</span><span style="color:var(--text-muted)">User issues</span></div>
+            <div class="flex items-center justify-between p-3 rounded-xl" style="background:var(--bg-card-hover)"><span>📝 Content Admin</span><span style="color:var(--text-muted)">Moderation</span></div>
           </div>
         </div>
         <div class="lynk-card p-5">
@@ -277,7 +226,7 @@
       </div>
     </section>
 
-  </div><!-- /admin-content -->
+  </div>
 </main>
 
 <!-- USER ACTION MODAL -->
@@ -319,8 +268,56 @@
   </div>
 </div>
 
+<!-- ADD SCHOOL MODAL -->
+<div id="add-school-modal" class="lynk-modal-overlay hidden">
+  <div class="lynk-card p-6 w-full max-w-lg mx-4" style="max-height:90vh;overflow-y:auto">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-bold text-lg">Add University</h3>
+      <button onclick="hideAddSchoolModal()" class="lynk-btn lynk-btn-ghost p-1">✕</button>
+    </div>
+    <div class="flex flex-col gap-4">
+      <div>
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">University Full Name *</label>
+        <input id="school-name" type="text" class="lynk-input" placeholder="e.g. University of Benin" />
+      </div>
+      <div>
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Short Name / Abbreviation</label>
+        <input id="school-short" type="text" class="lynk-input" placeholder="e.g. UNIBEN" />
+      </div>
+      <div>
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Location</label>
+        <input id="school-location" type="text" class="lynk-input" placeholder="e.g. Benin City, Edo State" />
+      </div>
+
+      <!-- Faculties & Departments -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-sm font-medium" style="color:var(--text-secondary)">Faculties & Departments</label>
+          <button type="button" onclick="addFacultyRow()" class="lynk-btn lynk-btn-secondary text-xs py-1 px-3 rounded-lg">+ Add Faculty</button>
+        </div>
+        <div id="faculties-builder" class="flex flex-col gap-3">
+          <!-- Faculty rows added dynamically -->
+        </div>
+        <p class="text-xs mt-2" style="color:var(--text-muted)">For each faculty, list departments separated by commas</p>
+      </div>
+
+      <button onclick="saveSchool()" class="lynk-btn lynk-btn-primary py-3 rounded-xl mt-2">Save University</button>
+    </div>
+  </div>
+</div>
+
+<!-- MANAGE FACULTIES MODAL -->
+<div id="manage-school-modal" class="lynk-modal-overlay hidden">
+  <div class="lynk-card p-6 w-full max-w-lg mx-4" style="max-height:90vh;overflow-y:auto">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-bold text-lg" id="manage-school-title">Manage University</h3>
+      <button onclick="hideManageSchoolModal()" class="lynk-btn lynk-btn-ghost p-1">✕</button>
+    </div>
+    <div id="manage-school-content" class="flex flex-col gap-4"></div>
+  </div>
+</div>
+
 <script>
-  // Section switching
   function showSection(name, el) {
     document.querySelectorAll('[id^="section-"]').forEach(s => s.classList.add('hidden'));
     document.querySelectorAll('.lynk-sidebar-link').forEach(l => l.classList.remove('active'));
@@ -330,6 +327,30 @@
   function showGrantAdminModal() { document.getElementById('grant-admin-modal').classList.remove('hidden'); }
   function hideGrantAdminModal() { document.getElementById('grant-admin-modal').classList.add('hidden'); }
   function closeUserActionModal() { document.getElementById('user-action-modal').classList.add('hidden'); }
+  function showAddSchoolModal() {
+    document.getElementById('faculties-builder').innerHTML = '';
+    document.getElementById('school-name').value = '';
+    document.getElementById('school-short').value = '';
+    document.getElementById('school-location').value = '';
+    addFacultyRow();
+    document.getElementById('add-school-modal').classList.remove('hidden');
+  }
+  function hideAddSchoolModal() { document.getElementById('add-school-modal').classList.add('hidden'); }
+  function hideManageSchoolModal() { document.getElementById('manage-school-modal').classList.add('hidden'); }
+
+  let facultyCounter = 0;
+  function addFacultyRow(name = '', depts = '') {
+    const id = facultyCounter++;
+    const builder = document.getElementById('faculties-builder');
+    builder.insertAdjacentHTML('beforeend', `
+      <div id="faculty-row-${id}" class="lynk-card p-3">
+        <div class="flex gap-2 mb-2">
+          <input type="text" class="lynk-input text-sm py-2 flex-1" placeholder="Faculty name (e.g. Engineering)" id="fac-name-${id}" value="${name}" />
+          <button onclick="document.getElementById('faculty-row-${id}').remove()" class="lynk-btn lynk-btn-ghost text-xs px-2 rounded-lg" style="color:#ef4444">✕</button>
+        </div>
+        <input type="text" class="lynk-input text-sm py-2 w-full" placeholder="Departments (comma-separated): Computer Sci, Electrical Eng, Civil Eng" id="fac-depts-${id}" value="${depts}" />
+      </div>`);
+  }
 </script>
 <script type="module" src="js/admin.js"></script>
 </body>
