@@ -203,12 +203,9 @@ document.getElementById('form-signup')?.addEventListener('submit', async (e) => 
       postsCount: 0
     });
 
-    await sendEmailVerification(user);
-    await firebaseSignOut(auth);
-
     setLoading('btn-signup', false, 'Continue →');
-    document.getElementById('verify-email-addr').textContent = email;
-    window.switchTab('verify');
+    // Show university step BEFORE sending verification (user still signed in)
+    window.switchTab('university');
   } catch (err) {
     const msgs = {
       'auth/email-already-in-use': 'An account with this email already exists.',
@@ -249,11 +246,23 @@ window.completeUniversityInfo = async () => {
     }, { merge: true });
   }
 
+  // Send verification then sign out
+  const user = auth.currentUser;
+  if (user) {
+    await sendEmailVerification(user);
+    await firebaseSignOut(auth);
+  }
   document.getElementById('verify-email-addr').textContent = pendingUserEmail || '';
   window.switchTab('verify');
 };
 
-window.skipUniversityInfo = () => {
+window.skipUniversityInfo = async () => {
+  // Still send verification before signing out
+  const user = auth.currentUser;
+  if (user) {
+    await sendEmailVerification(user);
+    await firebaseSignOut(auth);
+  }
   document.getElementById('verify-email-addr').textContent = pendingUserEmail || '';
   window.switchTab('verify');
 };
