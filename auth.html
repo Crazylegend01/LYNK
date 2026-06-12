@@ -86,6 +86,11 @@
           </div>
         </div>
         <button type="submit" id="btn-login" class="lynk-btn lynk-btn-primary w-full py-3 rounded-xl text-base mt-2">Sign In</button>
+        <!-- Shown only when email is unverified -->
+        <div id="login-resend-wrap" class="hidden text-center">
+          <p class="text-xs mb-2" style="color:var(--text-muted)">Didn't get the email? Check spam or resend it.</p>
+          <button type="button" onclick="resendFromLogin()" class="lynk-btn lynk-btn-secondary w-full py-2.5 rounded-xl text-sm">📧 Resend Verification Email</button>
+        </div>
         <div class="relative flex items-center gap-3 my-1">
           <div class="flex-1 h-px" style="background:var(--border)"></div>
           <span class="text-xs" style="color:var(--text-muted)">or</span>
