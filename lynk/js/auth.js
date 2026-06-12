@@ -275,8 +275,13 @@ document.getElementById('form-login')?.addEventListener('submit', async (e) => {
   setLoading('btn-login', true, 'Sign In');
   try {
     const { user } = await signInWithEmailAndPassword(auth, email, password);
-    if (!user.emailVerified) {
-      showAlert('Please verify your email before signing in. Check your inbox.');
+    // Force a fresh check from Firebase servers — fixes stale emailVerified cache
+    await user.reload();
+    const freshUser = auth.currentUser;
+    if (!freshUser.emailVerified) {
+      showAlert('Please verify your email first. Check your inbox (and spam folder). Click "Resend Email" below if needed.');
+      // Show the resend button right on the login form
+      document.getElementById('login-resend-wrap')?.classList.remove('hidden');
       await firebaseSignOut(auth);
       setLoading('btn-login', false, 'Sign In');
       return;
@@ -361,6 +366,25 @@ window.resendVerification = async () => {
   if (user) {
     await sendEmailVerification(user);
     showAlert('Verification email resent!', 'success');
+  }
+};
+
+// Called from the login form when emailVerified = false
+window.resendFromLogin = async () => {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) {
+    showAlert('Fill in your email and password above so we can resend the link.');
+    return;
+  }
+  try {
+    const { user } = await signInWithEmailAndPassword(auth, email, password);
+    await sendEmailVerification(user);
+    await firebaseSignOut(auth);
+    showAlert('✅ Verification email sent! Check your inbox and spam folder.', 'success');
+    document.getElementById('login-resend-wrap')?.classList.add('hidden');
+  } catch (err) {
+    showAlert('Could not resend — check your email and password are correct.');
   }
 };
 
