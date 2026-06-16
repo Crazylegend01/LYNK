@@ -35,6 +35,7 @@
     <a href="#" class="lynk-sidebar-link">📚 <span id="dept-link">My Department</span></a>
     <div class="px-4 mt-4 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Settings</div>
     <a href="#" onclick="signOut()" class="lynk-sidebar-link" style="color:#ef4444">🚪 <span>Sign Out</span></a>
+    <a href="#" id="btn-delete-account" onclick="openDeleteModal()" class="lynk-sidebar-link hidden" style="color:#ef4444;opacity:0.7">🗑️ <span>Delete Account</span></a>
   </nav>
 </aside>
 
@@ -247,6 +248,28 @@
   function openEditModal() { document.getElementById('edit-modal').classList.remove('hidden'); }
   function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); }
 </script>
+<!-- DELETE ACCOUNT MODAL -->
+<div id="delete-modal" class="lynk-modal-overlay hidden">
+  <div class="lynk-card p-6 w-full max-w-sm mx-4">
+    <div class="text-center mb-5">
+      <div class="text-4xl mb-3">⚠️</div>
+      <h3 class="font-bold text-lg mb-1" style="color:#ef4444">Delete Account</h3>
+      <p class="text-sm" style="color:var(--text-secondary)">This will permanently delete your account, all your posts, and friend connections. <strong>This cannot be undone.</strong></p>
+    </div>
+    <div class="flex flex-col gap-3">
+      <div>
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Enter your password to confirm</label>
+        <input id="delete-password" type="password" class="lynk-input" placeholder="Your password" />
+      </div>
+      <p id="delete-error" class="hidden text-xs p-2 rounded-lg" style="background:rgba(239,68,68,0.1);color:#f87171;border:1px solid #ef4444"></p>
+      <button id="btn-confirm-delete" onclick="confirmDeleteAccount()" class="lynk-btn w-full py-3 rounded-xl font-semibold" style="background:#ef4444;color:white">
+        🗑️ Yes, Delete My Account
+      </button>
+      <button onclick="closeDeleteModal()" class="lynk-btn lynk-btn-secondary w-full py-3 rounded-xl">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script type="module" src="js/profile.js"></script>
 </body>
 </html>
