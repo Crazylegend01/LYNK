@@ -6,11 +6,14 @@ import { auth, db, storage } from './firebase-config.js';
 import { ThemeManager } from './theme.js';
 import { initNotifications, sendNotification, showToast } from './notifications.js';
 import {
-  doc, getDoc, getDocs, setDoc, updateDoc, collection, query,
+  doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, collection, query,
   where, orderBy, limit, serverTimestamp, increment
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  onAuthStateChanged, signOut as firebaseSignOut,
+  deleteUser, reauthenticateWithCredential, EmailAuthProvider
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 ThemeManager.init();
 
@@ -154,6 +157,9 @@ async function loadProfile() {
     // COVER EDIT
     const coverEdit = document.getElementById('cover-edit');
     if (coverEdit) coverEdit.style.display = 'flex';
+
+    // Show delete account button in sidebar
+    document.getElementById('btn-delete-account')?.classList.remove('hidden');
 
     // Show incomplete banner if missing university
     if (!d.university || !d.faculty) {
@@ -417,3 +423,72 @@ window.signOut = async () => {
 
 window.closeEditModal = () => document.getElementById('edit-modal')?.classList.add('hidden');
 window.openEditModal = () => document.getElementById('edit-modal')?.classList.remove('hidden');
+
+// ===== DELETE ACCOUNT =====
+window.openDeleteModal = () => {
+  document.getElementById('delete-password').value = '';
+  document.getElementById('delete-error').classList.add('hidden');
+  document.getElementById('delete-modal')?.classList.remove('hidden');
+};
+window.closeDeleteModal = () => document.getElementById('delete-modal')?.classList.add('hidden');
+
+window.confirmDeleteAccount = async () => {
+  const password = document.getElementById('delete-password').value;
+  const errEl    = document.getElementById('delete-error');
+  const btn      = document.getElementById('btn-confirm-delete');
+
+  if (!password) {
+    errEl.textContent = 'Please enter your password to confirm.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Deleting...';
+  errEl.classList.add('hidden');
+
+  try {
+    // Re-authenticate — Firebase requires recent sign-in before account deletion
+    const credential = EmailAuthProvider.credential(currentUser.email, password);
+    await reauthenticateWithCredential(currentUser, credential);
+
+    const uid = currentUser.uid;
+
+    // Delete user's posts
+    const postsSnap = await getDocs(query(collection(db, 'posts'), where('authorId', '==', uid)));
+    await Promise.all(postsSnap.docs.map(d => d.ref.delete()));
+
+    // Delete friend connections (both directions)
+    const [fromSnap, toSnap] = await Promise.all([
+      getDocs(query(collection(db, 'friends'), where('from', '==', uid))),
+      getDocs(query(collection(db, 'friends'), where('to', '==', uid)))
+    ]);
+    await Promise.all([
+      ...fromSnap.docs.map(d => d.ref.delete()),
+      ...toSnap.docs.map(d => d.ref.delete())
+    ]);
+
+    // Delete notifications sent to this user
+    const notifSnap = await getDocs(query(collection(db, 'notifications'), where('toUid', '==', uid)));
+    await Promise.all(notifSnap.docs.map(d => d.ref.delete()));
+
+    // Delete the user's Firestore profile document
+    await deleteDoc(doc(db, 'users', uid));
+
+    // Delete Firebase Auth account (must be last)
+    await deleteUser(currentUser);
+
+    window.location.href = 'auth.html';
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = '🗑️ Yes, Delete My Account';
+    if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+      errEl.textContent = 'Incorrect password. Please try again.';
+    } else if (err.code === 'auth/too-many-requests') {
+      errEl.textContent = 'Too many attempts. Wait a few minutes and try again.';
+    } else {
+      errEl.textContent = `Error: ${err.message}`;
+    }
+    errEl.classList.remove('hidden');
+  }
+};
