@@ -68,13 +68,17 @@ window.checkUsername = (value) => {
   status.textContent = 'Checking...';
   status.style.color = 'var(--text-muted)';
   usernameTimer = setTimeout(async () => {
-    const snap = await getDocs(query(collection(db, 'users'), where('username', '==', clean), limit(1)));
-    if (snap.empty) {
-      status.textContent = `✓ @${clean} is available`;
-      status.style.color = '#4ade80';
-    } else {
-      status.textContent = `✗ @${clean} is taken`;
-      status.style.color = '#f87171';
+    try {
+      const snap = await getDocs(query(collection(db, 'users'), where('username', '==', clean), limit(1)));
+      if (snap.empty) {
+        status.textContent = `✓ @${clean} is available`;
+        status.style.color = '#4ade80';
+      } else {
+        status.textContent = `✗ @${clean} is taken`;
+        status.style.color = '#f87171';
+      }
+    } catch {
+      status.textContent = '';
     }
   }, 600);
 };
@@ -85,19 +89,23 @@ let schoolsData = {};
 async function loadSchools() {
   const select = document.getElementById('uni-select');
   if (!select) return;
-  const snap = await getDocs(collection(db, 'schools'));
-  if (snap.empty) {
+  try {
+    const snap = await getDocs(collection(db, 'schools'));
+    if (snap.empty) {
+      document.getElementById('no-schools-note')?.classList.remove('hidden');
+      return;
+    }
+    snap.docs.forEach(d => {
+      const s = d.data();
+      schoolsData[d.id] = s;
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = s.name;
+      select.appendChild(opt);
+    });
+  } catch {
     document.getElementById('no-schools-note')?.classList.remove('hidden');
-    return;
   }
-  snap.docs.forEach(d => {
-    const s = d.data();
-    schoolsData[d.id] = s;
-    const opt = document.createElement('option');
-    opt.value = d.id;
-    opt.textContent = s.name;
-    select.appendChild(opt);
-  });
 }
 
 window.loadFaculties = (schoolId) => {
@@ -142,6 +150,7 @@ loadSchools();
 // ===== SIGNUP STEP 1 =====
 let pendingUserUid = null;
 let pendingUserEmail = null;
+let pendingUserPassword = null; // kept in memory so resendVerification can re-auth
 
 document.getElementById('form-signup')?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -168,14 +177,22 @@ document.getElementById('form-signup')?.addEventListener('submit', async (e) => 
   }
 
   // Check username uniqueness
-  const uSnap = await getDocs(query(collection(db, 'users'), where('username', '==', username), limit(1)));
-  if (!uSnap.empty) { showAlert('That username is already taken. Please choose another.'); return; }
-
   setLoading('btn-signup', true, 'Continue →');
+  try {
+    const uSnap = await getDocs(query(collection(db, 'users'), where('username', '==', username), limit(1)));
+    if (!uSnap.empty) {
+      showAlert('That username is already taken. Please choose another.');
+      setLoading('btn-signup', false, 'Continue →');
+      return;
+    }
+  } catch {
+    // If we can't verify uniqueness, proceed — Firebase Auth creation will still work
+  }
   try {
     const { user } = await createUserWithEmailAndPassword(auth, email, password);
     pendingUserUid = user.uid;
     pendingUserEmail = email;
+    pendingUserPassword = password;
 
     // Create user profile
     await setDoc(doc(db, 'users', user.uid), {
@@ -249,7 +266,13 @@ window.completeUniversityInfo = async () => {
   // Send verification then sign out
   const user = auth.currentUser;
   if (user) {
-    await sendEmailVerification(user);
+    try {
+      await sendEmailVerification(user);
+    } catch (err) {
+      // auth/too-many-requests is the most common — still show the verify screen
+      // so the user can use the Resend button
+      console.warn('sendEmailVerification error:', err.code);
+    }
     await firebaseSignOut(auth);
   }
   document.getElementById('verify-email-addr').textContent = pendingUserEmail || '';
@@ -257,10 +280,13 @@ window.completeUniversityInfo = async () => {
 };
 
 window.skipUniversityInfo = async () => {
-  // Still send verification before signing out
   const user = auth.currentUser;
   if (user) {
-    await sendEmailVerification(user);
+    try {
+      await sendEmailVerification(user);
+    } catch (err) {
+      console.warn('sendEmailVerification error:', err.code);
+    }
     await firebaseSignOut(auth);
   }
   document.getElementById('verify-email-addr').textContent = pendingUserEmail || '';
@@ -361,11 +387,25 @@ window.sendReset = async () => {
 };
 
 // ===== RESEND VERIFICATION =====
+// After sign-up the user is signed out, so auth.currentUser is null.
+// We re-authenticate with the stored password, send the email, then sign out again.
 window.resendVerification = async () => {
-  const user = auth.currentUser;
-  if (user) {
+  if (!pendingUserEmail || !pendingUserPassword) {
+    // Page was refreshed and the in-memory credentials are gone — send them to login
+    showAlert('Go back to Sign In, enter your credentials, and click "Resend Verification Email".');
+    return;
+  }
+  try {
+    const { user } = await signInWithEmailAndPassword(auth, pendingUserEmail, pendingUserPassword);
     await sendEmailVerification(user);
-    showAlert('Verification email resent!', 'success');
+    await firebaseSignOut(auth);
+    showAlert('✅ Verification email sent! Check your inbox and spam folder.', 'success');
+  } catch (err) {
+    if (err.code === 'auth/too-many-requests') {
+      showAlert('Too many attempts — wait a few minutes before requesting another email.');
+    } else {
+      showAlert('Could not resend. Go back to Sign In and use the "Resend Verification Email" button.');
+    }
   }
 };
 
