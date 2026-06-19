@@ -1,8 +1,6 @@
 // ============================================================
 // LYNK By Legends — Notification System
-// Uses Firestore real-time listeners for in-app notifications
-// Uses FCM for background push (when tab is closed)
-// 100% Firebase — no third-party services required
+// Real-time in-app badge + dropdown + FCM background push
 // ============================================================
 
 import { auth, db } from './firebase-config.js';
@@ -13,40 +11,38 @@ import {
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
 import app from './firebase-config.js';
 
-// ===== VAPID KEY =====
-// Get this from Firebase Console → Project Settings → Cloud Messaging → Web Push Certificates
-// Click "Generate key pair" and paste it here
 const VAPID_KEY = 'BKbN3IxNBozzZdG1P2vJVyb-LJzyaHMRoapJ2wDapc7aFNHm2Uylb3Vs4S3Jh5WfAWrOIIViUHGznyNCBdyBysQ';
 
 let messaging = null;
 let currentUid = null;
 let unsubNotifications = null;
+let _baseTitleSet = false;
 
-// ===== INIT — call this on every page after auth =====
+// ===== INIT — call on every page after auth =====
 export async function initNotifications(uid) {
   currentUid = uid;
   renderNotificationBell();
+  injectSidebarBadges();
   listenForNotifications(uid);
   await setupFCM(uid);
 }
 
-// ===== RENDER NOTIFICATION BELL IN NAVBAR =====
+// ===== NAVBAR BELL (dropdown) =====
 function renderNotificationBell() {
   const nav = document.querySelector('nav');
   if (!nav || document.getElementById('notif-bell')) return;
 
-  // Find the theme toggle button to insert before it
   const themeBtn = document.getElementById('theme-toggle');
   const bellWrapper = document.createElement('div');
   bellWrapper.className = 'relative';
+  bellWrapper.id = 'notif-bell-wrapper';
   bellWrapper.innerHTML = `
     <button id="notif-bell" onclick="toggleNotifDropdown()"
             class="lynk-btn lynk-btn-ghost p-2 rounded-full relative" aria-label="Notifications">
       🔔
-      <span id="notif-badge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full
+      <span id="notif-bell-badge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full
             text-white text-[10px] font-bold flex items-center justify-center lynk-gradient px-1">0</span>
     </button>
-    <!-- Dropdown -->
     <div id="notif-dropdown"
          class="hidden absolute right-0 top-12 w-80 lynk-card shadow-2xl z-50 overflow-hidden"
          style="max-height:420px">
@@ -68,23 +64,36 @@ function renderNotificationBell() {
     nav.appendChild(bellWrapper);
   }
 
-  // Close dropdown when clicking outside
   document.addEventListener('click', (e) => {
-    const dropdown = document.getElementById('notif-dropdown');
+    const dd   = document.getElementById('notif-dropdown');
     const bell = document.getElementById('notif-bell');
-    if (dropdown && !dropdown.contains(e.target) && !bell?.contains(e.target)) {
-      dropdown.classList.add('hidden');
+    if (dd && !dd.contains(e.target) && !bell?.contains(e.target)) {
+      dd.classList.add('hidden');
     }
+  });
+}
+
+// ===== SIDEBAR BADGES — auto-inject into every notification link =====
+function injectSidebarBadges() {
+  // Find every sidebar link that goes to notifications (sidebar links have class lynk-sidebar-link)
+  document.querySelectorAll('a.lynk-sidebar-link[href*="notifications"]').forEach(link => {
+    if (link.querySelector('.lynk-sidebar-notif-badge')) return; // already injected
+    link.style.display = 'flex';
+    link.style.alignItems = 'center';
+    const badge = document.createElement('span');
+    badge.className = 'lynk-sidebar-notif-badge hidden ml-auto min-w-[18px] h-[18px] rounded-full text-white text-[10px] font-bold flex items-center justify-center lynk-gradient px-1';
+    badge.style.cssText = 'display:none;margin-left:auto;min-width:18px;height:18px;border-radius:9999px;color:white;font-size:10px;font-weight:700;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--grad-1),var(--grad-3));padding:0 4px;';
+    badge.textContent = '0';
+    link.appendChild(badge);
   });
 }
 
 // ===== TOGGLE DROPDOWN =====
 window.toggleNotifDropdown = () => {
-  const dd = document.getElementById('notif-dropdown');
-  dd?.classList.toggle('hidden');
+  document.getElementById('notif-dropdown')?.classList.toggle('hidden');
 };
 
-// ===== REAL-TIME LISTENER =====
+// ===== REAL-TIME LISTENER (onSnapshot — works on GitHub Pages) =====
 function listenForNotifications(uid) {
   if (unsubNotifications) unsubNotifications();
   const q = query(
@@ -94,24 +103,51 @@ function listenForNotifications(uid) {
     limit(20)
   );
   unsubNotifications = onSnapshot(q, (snap) => {
-    const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const unread = all.filter(n => !n.read);
-    updateBadge(unread.length);
+    const all    = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const unread = all.filter(n => !n.read).length;
+    updateAllBadges(unread);
     renderNotifList(all);
   });
 }
 
-function updateBadge(count) {
-  const badge = document.getElementById('notif-badge');
-  if (!badge) return;
-  if (count > 0) {
-    badge.textContent = count > 99 ? '99+' : count;
-    badge.classList.remove('hidden');
-  } else {
-    badge.classList.add('hidden');
+// ===== UPDATE ALL BADGES ON THE PAGE =====
+function updateAllBadges(count) {
+  const show = count > 0;
+  const label = count > 99 ? '99+' : String(count);
+
+  // 1. Navbar dropdown bell badge
+  const bellBadge = document.getElementById('notif-bell-badge');
+  if (bellBadge) {
+    bellBadge.textContent = label;
+    bellBadge.style.display = show ? 'flex' : 'none';
+    show ? bellBadge.classList.remove('hidden') : bellBadge.classList.add('hidden');
   }
+
+  // 2. Static navbar bell badge (feed.html hardcoded bell with id="notif-bell")
+  //    Its inner badge has id="notif-badge"
+  const staticBadge = document.getElementById('notif-badge');
+  if (staticBadge) {
+    staticBadge.textContent = show ? label : '!';
+    show ? staticBadge.classList.remove('hidden') : staticBadge.classList.add('hidden');
+  }
+
+  // 3. All sidebar notification link badges (injected by injectSidebarBadges)
+  document.querySelectorAll('.lynk-sidebar-notif-badge').forEach(el => {
+    el.textContent = label;
+    el.style.display = show ? 'flex' : 'none';
+  });
+
+  // 4. Document title — shows "(3) Feed — LYNK By Legends"
+  if (!_baseTitleSet) {
+    document._lynkBaseTitle = document.title.replace(/^\(\d+\+?\)\s/, '');
+    _baseTitleSet = true;
+  }
+  document.title = show
+    ? `(${label}) ${document._lynkBaseTitle || document.title}`
+    : (document._lynkBaseTitle || document.title);
 }
 
+// ===== RENDER NOTIFICATION LIST (dropdown) =====
 function renderNotifList(notifications) {
   const list = document.getElementById('notif-list');
   if (!list) return;
@@ -128,20 +164,18 @@ function renderNotifList(notifications) {
 function buildNotifItem(n) {
   const icons = {
     like: '❤️', comment: '💬', friend_request: '🤝',
-    friend_accepted: '✅', message: '💌', mention: '📣', poll: '📊'
+    friend_accepted: '✅', message: '💌', mention: '📣', poll: '📊',
+    announcement: '📢'
   };
   const links = {
-    like: `feed.html`,
-    comment: `feed.html`,
+    like: 'feed.html', comment: 'feed.html', poll: 'feed.html', mention: 'feed.html',
     friend_request: `profile.html?uid=${n.fromUid}`,
     friend_accepted: `profile.html?uid=${n.fromUid}`,
     message: `chat.html?uid=${n.fromUid}`,
-    mention: `feed.html`,
-    poll: `feed.html`
+    announcement: 'announcements.html'
   };
-  const ts = n.createdAt?.toDate?.()?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '';
-  const fromDate = n.createdAt?.toDate?.();
-  const timeAgo = fromDate ? getTimeAgo(fromDate) : '';
+  const ts  = n.createdAt?.toDate?.()?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '';
+  const ago = n.createdAt?.toDate ? getTimeAgo(n.createdAt.toDate()) : '';
   const ava = n.fromPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(n.fromName||'U')}&background=a855f7&color=fff&size=40`;
 
   return `
@@ -155,13 +189,13 @@ function buildNotifItem(n) {
       </div>
       <div class="flex-1 min-w-0">
         <p class="text-sm leading-snug">
-          <strong>${escHtml(n.fromName || 'Someone')}</strong>
+          <strong>${escHtml(n.fromName || 'LYNK')}</strong>
           <span style="color:var(--text-secondary)"> ${n.message || 'interacted with you'}</span>
         </p>
         ${n.preview ? `<p class="text-xs mt-0.5 truncate" style="color:var(--text-muted)">"${escHtml(n.preview)}"</p>` : ''}
-        <p class="text-xs mt-1" style="color:var(--text-muted)">${timeAgo || ts}</p>
+        <p class="text-xs mt-1" style="color:var(--text-muted)">${ago || ts}</p>
       </div>
-      ${!n.read ? `<span class="w-2 h-2 rounded-full flex-shrink-0 mt-1" style="background:var(--grad-2)"></span>` : ''}
+      ${!n.read ? `<span class="w-2 h-2 rounded-full flex-shrink-0 mt-1.5" style="background:var(--grad-2)"></span>` : ''}
     </a>`;
 }
 
@@ -172,89 +206,66 @@ window.markRead = async (notifId) => {
 
 window.markAllRead = async () => {
   if (!currentUid) return;
-  const q = query(collection(db, 'notifications'), where('toUid', '==', currentUid), where('read', '==', false));
-  const snap = await getDocs(q);
+  const q = query(
+    collection(db, 'notifications'),
+    where('toUid', '==', currentUid),
+    where('read', '==', false)
+  );
+  const snap  = await getDocs(q);
   const batch = writeBatch(db);
   snap.docs.forEach(d => batch.update(d.ref, { read: true }));
   await batch.commit();
 };
 
-// ===== SEND NOTIFICATION (write to Firestore) =====
+// ===== SEND NOTIFICATION =====
 export async function sendNotification({ toUid, fromUid, fromName, fromPhoto, type, message, preview = '' }) {
-  if (!toUid || toUid === fromUid) return; // Don't notify yourself
+  if (!toUid || toUid === fromUid) return;
   await addDoc(collection(db, 'notifications'), {
-    toUid,
-    fromUid,
-    fromName,
-    fromPhoto: fromPhoto || '',
-    type,   // 'like' | 'comment' | 'friend_request' | 'friend_accepted' | 'message' | 'mention'
-    message,
-    preview,
+    toUid, fromUid,
+    fromName, fromPhoto: fromPhoto || '',
+    type, message, preview,
     read: false,
     createdAt: serverTimestamp()
   });
 }
 
-// ===== FCM SETUP (background push) =====
+// ===== FCM SETUP (background push — works on GitHub Pages via service worker) =====
 async function setupFCM(uid) {
   if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
-  if (VAPID_KEY === 'YOUR_VAPID_KEY_HERE') return; // Skip if not configured
-
   try {
     messaging = getMessaging(app);
-
-    // Register service worker
     const swReg = await navigator.serviceWorker.register('/LYNK/firebase-messaging-sw.js');
-
-    // Get FCM token (only if permission already granted — don't auto-prompt)
     if (Notification.permission === 'granted') {
       const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
       if (token) await saveFCMToken(uid, token);
     }
-
-    // Handle foreground messages (app is open)
     onMessage(messaging, (payload) => {
       showToast(
         payload.notification?.title || 'LYNK',
-        payload.notification?.body || '',
-        payload.notification?.icon || ''
+        payload.notification?.body  || '',
+        payload.notification?.icon  || ''
       );
     });
   } catch (e) {
-    console.warn('FCM setup skipped:', e.message);
+    // FCM not critical — in-app onSnapshot badge works without it
   }
 }
 
-// ===== REQUEST PUSH PERMISSION =====
 export async function requestPushPermission(uid) {
-  if (!('Notification' in window)) {
-    alert('Your browser does not support push notifications.');
-    return false;
-  }
-  if (VAPID_KEY === 'YOUR_VAPID_KEY_HERE') {
-    alert('Push notifications need a VAPID key configured in js/notifications.js (see setup guide).');
-    return false;
-  }
+  if (!('Notification' in window)) { alert('Your browser does not support push notifications.'); return false; }
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') return false;
-
   try {
     messaging = messaging || getMessaging(app);
     const swReg = await navigator.serviceWorker.register('/LYNK/firebase-messaging-sw.js');
     const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
     if (token) await saveFCMToken(uid, token);
     return true;
-  } catch (e) {
-    console.error('FCM token error:', e);
-    return false;
-  }
+  } catch (e) { console.error('FCM token error:', e); return false; }
 }
 
 async function saveFCMToken(uid, token) {
-  await updateDoc(doc(db, 'users', uid), {
-    fcmTokens: { [token]: true },
-    pushEnabled: true
-  });
+  await updateDoc(doc(db, 'users', uid), { fcmTokens: { [token]: true }, pushEnabled: true });
 }
 
 // ===== FOREGROUND TOAST =====
@@ -277,7 +288,6 @@ export function showToast(title, body, icon = '', duration = 5000) {
       <p style="color:var(--text-secondary);font-size:0.8rem;line-height:1.3">${escHtml(body)}</p>
     </div>
     <button onclick="this.parentElement.remove()" style="color:var(--text-muted);background:none;border:none;cursor:pointer;font-size:1rem;flex-shrink:0;padding:0">✕</button>`;
-
   toast.addEventListener('click', (e) => { if (e.target.tagName !== 'BUTTON') toast.remove(); });
   container.appendChild(toast);
   setTimeout(() => toast.remove(), duration);
@@ -286,9 +296,9 @@ export function showToast(title, body, icon = '', duration = 5000) {
 // ===== HELPERS =====
 function getTimeAgo(date) {
   const diff = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (diff < 60) return 'just now';
-  if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+  if (diff < 60)     return 'just now';
+  if (diff < 3600)   return `${Math.floor(diff/60)}m ago`;
+  if (diff < 86400)  return `${Math.floor(diff/3600)}h ago`;
   if (diff < 604800) return `${Math.floor(diff/86400)}d ago`;
   return date.toLocaleDateString();
 }
