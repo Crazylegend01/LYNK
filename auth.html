@@ -28,7 +28,7 @@
     <div class="flex flex-col gap-3">
       <div class="flex items-center gap-3 text-sm" style="color:var(--text-secondary)">
         <span class="w-8 h-8 rounded-full lynk-gradient flex items-center justify-center text-white font-bold flex-shrink-0">✓</span>
-        Free for all university students & staff
+        Free for all university students, staff & alumni
       </div>
       <div class="flex items-center gap-3 text-sm" style="color:var(--text-secondary)">
         <span class="w-8 h-8 rounded-full lynk-gradient flex items-center justify-center text-white font-bold flex-shrink-0">✓</span>
@@ -86,7 +86,6 @@
           </div>
         </div>
         <button type="submit" id="btn-login" class="lynk-btn lynk-btn-primary w-full py-3 rounded-xl text-base mt-2">Sign In</button>
-        <!-- Shown only when email is unverified -->
         <div id="login-resend-wrap" class="hidden text-center">
           <p class="text-xs mb-2" style="color:var(--text-muted)">Didn't get the email? Check spam or resend it.</p>
           <button type="button" onclick="resendFromLogin()" class="lynk-btn lynk-btn-secondary w-full py-2.5 rounded-xl text-sm">📧 Resend Verification Email</button>
@@ -143,14 +142,14 @@
           <input id="signup-email" type="email" class="lynk-input" placeholder="your@university.edu" required />
         </div>
 
-        <!-- User Type Toggle -->
+        <!-- User Type Selection -->
         <div>
           <label class="block text-sm font-medium mb-2" style="color:var(--text-secondary)">I am a *</label>
           <div class="flex gap-2">
             <label class="flex-1 cursor-pointer">
               <input type="radio" name="user-type" value="student" id="type-student" class="hidden" checked onchange="toggleUserType('student')" />
               <div id="label-student" class="text-center py-2.5 rounded-xl border-2 text-sm font-medium transition-all"
-                   style="border-color:var(--grad-1);background:linear-gradient(135deg,var(--grad-1)20,var(--grad-3)10);color:var(--text-primary)">
+                   style="border-color:var(--grad-1);background:rgba(168,85,247,0.1);color:var(--text-primary)">
                 🎓 Student
               </div>
             </label>
@@ -161,14 +160,36 @@
                 👨‍🏫 Staff
               </div>
             </label>
+            <label class="flex-1 cursor-pointer">
+              <input type="radio" name="user-type" value="alumni" id="type-alumni" class="hidden" onchange="toggleUserType('alumni')" />
+              <div id="label-alumni" class="text-center py-2.5 rounded-xl border-2 text-sm font-medium transition-all"
+                   style="border-color:var(--border);color:var(--text-muted)">
+                🏆 Alumni
+              </div>
+            </label>
           </div>
         </div>
 
         <!-- Staff Position (shown only for staff) -->
-        <div id="staff-fields" class="hidden">
+        <div id="position-wrapper" style="display:none">
           <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Position / Rank *</label>
           <input id="signup-position" type="text" class="lynk-input" placeholder="e.g. Sub-dean, Lecturer I, Professor" />
           <p class="text-xs mt-1" style="color:var(--text-muted)">Your official university title or role</p>
+        </div>
+
+        <!-- Academic Level (for student/alumni) -->
+        <div id="level-wrapper">
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Academic Level <span class="font-normal text-xs" style="color:var(--text-muted)">(optional)</span></label>
+          <select id="signup-level" class="lynk-input">
+            <option value="">Not specified</option>
+            <option value="100L">100 Level</option>
+            <option value="200L">200 Level</option>
+            <option value="300L">300 Level</option>
+            <option value="400L">400 Level</option>
+            <option value="500L">500 Level</option>
+            <option value="Postgrad">Postgraduate</option>
+            <option value="PhD">PhD Candidate</option>
+          </select>
         </div>
 
         <div>
@@ -287,23 +308,41 @@
   function hideResetModal() { document.getElementById('reset-modal').classList.add('hidden'); }
 
   function toggleUserType(type) {
-    const staffFields = document.getElementById('staff-fields');
-    const labelStudent = document.getElementById('label-student');
-    const labelStaff = document.getElementById('label-staff');
-    if (type === 'staff') {
-      staffFields.classList.remove('hidden');
-      labelStaff.style.cssText = 'border-color:var(--grad-1);background:linear-gradient(135deg,var(--grad-1)20,var(--grad-3)10);color:var(--text-primary);text-align:center;padding:10px 0;border-radius:12px;border-width:2px;font-size:0.875rem;font-weight:500;transition:all 0.2s';
-      labelStudent.style.cssText = 'border-color:var(--border);color:var(--text-muted);text-align:center;padding:10px 0;border-radius:12px;border-width:2px;font-size:0.875rem;font-weight:500;transition:all 0.2s';
-    } else {
-      staffFields.classList.add('hidden');
-      labelStudent.style.cssText = 'border-color:var(--grad-1);background:linear-gradient(135deg,var(--grad-1)20,var(--grad-3)10);color:var(--text-primary);text-align:center;padding:10px 0;border-radius:12px;border-width:2px;font-size:0.875rem;font-weight:500;transition:all 0.2s';
-      labelStaff.style.cssText = 'border-color:var(--border);color:var(--text-muted);text-align:center;padding:10px 0;border-radius:12px;border-width:2px;font-size:0.875rem;font-weight:500;transition:all 0.2s';
-    }
+    const allTypes = ['student','staff','alumni'];
+    const posWrapper = document.getElementById('position-wrapper');
+    const levelWrapper = document.getElementById('level-wrapper');
+
+    allTypes.forEach(t => {
+      const lbl = document.getElementById(`label-${t}`);
+      if (lbl) {
+        if (t === type) {
+          lbl.style.borderColor = 'var(--grad-1)';
+          lbl.style.background = 'rgba(168,85,247,0.1)';
+          lbl.style.color = 'var(--text-primary)';
+        } else {
+          lbl.style.borderColor = 'var(--border)';
+          lbl.style.background = 'transparent';
+          lbl.style.color = 'var(--text-muted)';
+        }
+      }
+    });
+
+    if (posWrapper) posWrapper.style.display = type === 'staff' ? 'block' : 'none';
+    if (levelWrapper) levelWrapper.style.display = (type === 'student' || type === 'alumni') ? 'block' : 'none';
   }
 
   // Check URL param
   const params = new URLSearchParams(window.location.search);
   if (params.get('mode') === 'signup') switchTab('signup');
+
+  // Theme toggle
+  document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('lynk-theme', next);
+    document.getElementById('theme-icon').textContent = next === 'dark' ? '☀️' : '🌙';
+  });
 
   // Password strength
   document.getElementById('signup-password')?.addEventListener('input', function() {
