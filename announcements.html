@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Announcements — LYNK By Legends</title>
+  <link rel="icon" href="assets/logo.jpg" type="image/jpeg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/custom.css" />
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="lynk-nav h-16 flex items-center px-6 justify-between">
+  <a href="feed.html" class="flex flex-col leading-none">
+    <span class="logo-text">LYNK</span>
+    <span class="logo-sub">By Legends</span>
+  </a>
+  <div class="flex-1 max-w-sm mx-6">
+    <input type="text" class="lynk-input text-sm py-2" placeholder="🔍 Search LYNK..."
+           onfocus="window.location.href='search.html'" />
+  </div>
+  <div class="flex items-center gap-3">
+    <button id="theme-toggle" class="lynk-btn lynk-btn-ghost p-2 rounded-full"><span id="theme-icon">☀️</span></button>
+    <a href="profile.html" id="nav-avatar-wrap" class="relative">
+      <img id="nav-avatar" src="https://ui-avatars.com/api/?name=User&background=a855f7&color=fff" class="lynk-avatar w-9 h-9 cursor-pointer" alt="Profile" />
+    </a>
+  </div>
+</nav>
+
+<!-- SIDEBAR -->
+<aside class="lynk-sidebar pt-4 pb-20">
+  <div class="px-4 mb-4">
+    <div class="flex items-center gap-3 p-3 rounded-xl mb-1" style="background:var(--bg-card-hover)">
+      <img id="sidebar-avatar" src="https://ui-avatars.com/api/?name=User&background=a855f7&color=fff" class="lynk-avatar w-10 h-10" />
+      <div class="overflow-hidden">
+        <p class="font-semibold text-sm truncate" id="sidebar-name">Loading...</p>
+        <p class="text-xs truncate" style="color:var(--text-muted)" id="sidebar-dept"></p>
+      </div>
+    </div>
+  </div>
+  <nav class="flex flex-col gap-0.5">
+    <a href="feed.html" class="lynk-sidebar-link">🏠 <span>Home Feed</span></a>
+    <a href="search.html" class="lynk-sidebar-link">🔍 <span>Search</span></a>
+    <a href="announcements.html" class="lynk-sidebar-link active">📢 <span>Announcements</span></a>
+    <a href="profile.html" class="lynk-sidebar-link">👤 <span>My Profile</span></a>
+    <a href="chat.html" class="lynk-sidebar-link">💬 <span>Messages</span></a>
+    <div class="px-4 mt-4 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Settings</div>
+    <a href="settings.html" class="lynk-sidebar-link">⚙️ <span>Settings</span></a>
+    <a href="admin.html" id="admin-link" class="lynk-sidebar-link hidden">🛡️ <span>Admin Panel</span></a>
+    <a href="#" onclick="signOut()" class="lynk-sidebar-link" style="color:#ef4444">🚪 <span>Sign Out</span></a>
+  </nav>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+  <div class="max-w-2xl mx-auto px-4 py-6">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold mb-1">📢 Announcements</h1>
+        <p style="color:var(--text-secondary);font-size:0.875rem">Official platform-wide notices from LYNK admins</p>
+      </div>
+      <select id="filter-audience" class="lynk-input text-sm py-2 w-auto" onchange="filterAnnouncements()">
+        <option value="all">All</option>
+        <option value="students">Students</option>
+        <option value="staff">Staff</option>
+        <option value="alumni">Alumni</option>
+      </select>
+    </div>
+
+    <!-- Admin compose section (visible to admins only) -->
+    <div id="compose-section" class="lynk-card p-5 mb-6 hidden" style="border-left:3px solid var(--grad-1)">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="text-xl">📝</span>
+        <h3 class="font-bold">Post Announcement</h3>
+        <span class="lynk-badge lynk-gradient text-white text-xs ml-auto">Admin</span>
+      </div>
+      <div class="flex flex-col gap-3">
+        <input id="ann-title" type="text" class="lynk-input" placeholder="Announcement title *" maxlength="120" />
+        <textarea id="ann-body" class="lynk-input resize-none" rows="4" placeholder="Message body *" maxlength="2000"></textarea>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-medium mb-1 block" style="color:var(--text-muted)">Priority</label>
+            <select id="ann-priority" class="lynk-input text-sm py-2">
+              <option value="low">🟢 Info</option>
+              <option value="medium">🟡 Important</option>
+              <option value="high">🔴 Urgent</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-medium mb-1 block" style="color:var(--text-muted)">Audience</label>
+            <select id="ann-audience" class="lynk-input text-sm py-2">
+              <option value="all">🌍 Everyone</option>
+              <option value="students">🎓 Students only</option>
+              <option value="staff">👨‍🏫 Staff only</option>
+              <option value="alumni">🏆 Alumni only</option>
+            </select>
+          </div>
+        </div>
+        <input id="ann-category" type="text" class="lynk-input text-sm" placeholder="Category (e.g. Events, Exams, General)" maxlength="40" />
+        <div class="grid grid-cols-2 gap-3">
+          <input id="ann-link" type="url" class="lynk-input text-sm" placeholder="Link URL (optional)" />
+          <input id="ann-link-label" type="text" class="lynk-input text-sm" placeholder="Link label (e.g. Learn more)" maxlength="40" />
+        </div>
+        <div class="flex gap-2 mt-1">
+          <button id="btn-post-ann" onclick="postAnnouncement()" class="lynk-btn lynk-btn-primary flex-1 py-2.5 rounded-xl">Post Announcement</button>
+          <button onclick="cancelEdit()" class="lynk-btn lynk-btn-secondary px-4 py-2.5 rounded-xl text-sm">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Announcements list -->
+    <div id="announcements-list" class="flex flex-col gap-4">
+      <div class="lynk-card p-5 animate-pulse">
+        <div class="h-4 rounded w-1/3 mb-3" style="background:var(--border)"></div>
+        <div class="h-3 rounded w-full mb-2" style="background:var(--border)"></div>
+        <div class="h-3 rounded w-2/3" style="background:var(--border)"></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script type="module" src="js/announcements.js"></script>
+<script>
+  document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('lynk-theme', next);
+    document.getElementById('theme-icon').textContent = next === 'dark' ? '☀️' : '🌙';
+  });
+</script>
+</body>
+</html>
