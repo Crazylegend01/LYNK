@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search — LYNK By Legends</title>
+  <link rel="icon" href="assets/logo.jpg" type="image/jpeg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/custom.css" />
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="lynk-nav h-16 flex items-center px-6 justify-between">
+  <a href="feed.html" class="flex flex-col leading-none">
+    <span class="logo-text">LYNK</span>
+    <span class="logo-sub">By Legends</span>
+  </a>
+  <div class="flex-1 max-w-sm mx-6">
+    <input type="text" id="search-input" class="lynk-input text-sm py-2" placeholder="🔍 Search people, posts..."
+           oninput="onSearchInput(this.value)" autofocus />
+  </div>
+  <div class="flex items-center gap-3">
+    <button id="theme-toggle" class="lynk-btn lynk-btn-ghost p-2 rounded-full"><span id="theme-icon">☀️</span></button>
+    <a href="profile.html" id="nav-avatar-wrap" class="relative">
+      <img id="nav-avatar" src="https://ui-avatars.com/api/?name=User&background=a855f7&color=fff" class="lynk-avatar w-9 h-9 cursor-pointer" alt="Profile" />
+    </a>
+  </div>
+</nav>
+
+<!-- SIDEBAR -->
+<aside class="lynk-sidebar pt-4 pb-20">
+  <div class="px-4 mb-4">
+    <div class="flex items-center gap-3 p-3 rounded-xl mb-1" style="background:var(--bg-card-hover)">
+      <img id="sidebar-avatar" src="https://ui-avatars.com/api/?name=User&background=a855f7&color=fff" class="lynk-avatar w-10 h-10" />
+      <div class="overflow-hidden">
+        <p class="font-semibold text-sm truncate" id="sidebar-name">Loading...</p>
+        <p class="text-xs truncate" style="color:var(--text-muted)" id="sidebar-dept"></p>
+      </div>
+    </div>
+  </div>
+  <nav class="flex flex-col gap-0.5">
+    <a href="feed.html" class="lynk-sidebar-link">🏠 <span>Home Feed</span></a>
+    <a href="search.html" class="lynk-sidebar-link active">🔍 <span>Search</span></a>
+    <a href="announcements.html" class="lynk-sidebar-link">📢 <span>Announcements</span></a>
+    <a href="profile.html" class="lynk-sidebar-link">👤 <span>My Profile</span></a>
+    <a href="chat.html" class="lynk-sidebar-link">💬 <span>Messages</span></a>
+    <div class="px-4 mt-4 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Settings</div>
+    <a href="settings.html" class="lynk-sidebar-link">⚙️ <span>Settings</span></a>
+    <a href="admin.html" id="admin-link" class="lynk-sidebar-link hidden">🛡️ <span>Admin Panel</span></a>
+    <a href="#" onclick="signOut()" class="lynk-sidebar-link" style="color:#ef4444">🚪 <span>Sign Out</span></a>
+  </nav>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+  <div class="max-w-2xl mx-auto px-4 py-6">
+
+    <!-- Header -->
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold mb-1">Search LYNK</h1>
+      <p style="color:var(--text-secondary);font-size:0.875rem">Find people, posts, and communities on your campus</p>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="flex gap-1 mb-5 p-1 rounded-xl" style="background:var(--bg-card)">
+      <button class="lynk-tab search-filter-btn active flex-1 text-sm" data-filter="people" onclick="setSearchFilter('people', this)">👥 People</button>
+      <button class="lynk-tab search-filter-btn flex-1 text-sm" data-filter="posts" onclick="setSearchFilter('posts', this)">📝 Posts</button>
+    </div>
+
+    <!-- Results count -->
+    <p id="results-count" class="text-sm mb-4" style="color:var(--text-muted)"></p>
+
+    <!-- Results -->
+    <div id="results-container" class="flex flex-col gap-3">
+      <div class="text-center py-16" style="color:var(--text-muted)">
+        <div class="text-5xl mb-3">🔍</div>
+        <p class="font-medium mb-1">Search LYNK</p>
+        <p class="text-sm">Type a name, username, or university to find people</p>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script type="module" src="js/search.js"></script>
+<script>
+  document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('lynk-theme', next);
+    document.getElementById('theme-icon').textContent = next === 'dark' ? '☀️' : '🌙';
+  });
+</script>
+</body>
+</html>
