@@ -27,6 +27,8 @@
 <aside class="lynk-sidebar pt-4 pb-20">
   <nav class="flex flex-col gap-0.5">
     <a href="feed.html" class="lynk-sidebar-link">🏠 <span>Home Feed</span></a>
+    <a href="search.html" class="lynk-sidebar-link">🔍 <span>Search</span></a>
+    <a href="announcements.html" class="lynk-sidebar-link">📢 <span>Announcements</span></a>
     <a href="profile.html" class="lynk-sidebar-link active">👤 <span>My Profile</span></a>
     <a href="chat.html" class="lynk-sidebar-link">💬 <span>Messages</span></a>
     <a href="notifications.html" class="lynk-sidebar-link">🔔 <span>Notifications</span></a>
@@ -34,6 +36,7 @@
     <a href="#" class="lynk-sidebar-link">🏛️ <span id="faculty-link">My Faculty</span></a>
     <a href="#" class="lynk-sidebar-link">📚 <span id="dept-link">My Department</span></a>
     <div class="px-4 mt-4 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Settings</div>
+    <a href="settings.html" class="lynk-sidebar-link">⚙️ <span>Settings</span></a>
     <a href="#" onclick="signOut()" class="lynk-sidebar-link" style="color:#ef4444">🚪 <span>Sign Out</span></a>
     <a href="#" id="btn-delete-account" onclick="openDeleteModal()" class="lynk-sidebar-link hidden" style="color:#ef4444;opacity:0.7">🗑️ <span>Delete Account</span></a>
   </nav>
@@ -60,7 +63,6 @@
       <!-- Cover -->
       <div class="h-36 relative lynk-gradient" id="cover-container">
         <div class="absolute inset-0 opacity-30" style="background:repeating-linear-gradient(45deg,transparent,transparent 20px,rgba(255,255,255,0.05) 20px,rgba(255,255,255,0.05) 40px)"></div>
-        <!-- Cover edit — hidden by default, shown via JS for own profile -->
         <label id="cover-edit" style="display:none;position:absolute;top:12px;right:12px;cursor:pointer"
                class="lynk-btn lynk-btn-secondary text-xs py-1 px-3">
           📷 Edit Cover
@@ -76,7 +78,6 @@
                  src="https://ui-avatars.com/api/?name=User&background=a855f7&color=fff&size=96"
                  class="lynk-avatar w-24 h-24 ring-4 flex-shrink-0"
                  style="--tw-ring-color:var(--bg-card)" alt="Avatar" />
-            <!-- Avatar edit overlay — hidden by default, shown via JS for own profile -->
             <label id="avatar-edit"
                    style="display:none;position:absolute;inset:0;border-radius:9999px;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;color:white;font-size:1.2rem;cursor:pointer">
               📷
@@ -88,16 +89,35 @@
             <button id="btn-edit-profile" onclick="openEditModal()" class="lynk-btn lynk-btn-secondary text-sm py-2 px-4 rounded-xl hidden">✏️ Edit Profile</button>
             <button id="btn-friend-action" onclick="handleFriendAction()" class="lynk-btn lynk-btn-primary text-sm py-2 px-4 rounded-xl hidden">+ Add Friend</button>
             <a id="btn-message" href="chat.html" class="lynk-btn lynk-btn-secondary text-sm py-2 px-4 rounded-xl hidden">💬 Message</a>
+            <button id="btn-block-user" onclick="toggleBlockUser()" class="lynk-btn lynk-btn-ghost text-sm py-2 px-3 rounded-xl hidden" style="color:#ef4444">🚫</button>
           </div>
         </div>
 
         <div class="flex items-center gap-2 flex-wrap mb-0.5">
           <h1 id="profile-name" class="text-2xl font-bold">Loading...</h1>
           <span id="staff-badge" class="hidden lynk-badge text-xs" style="background:#0ea5e920;color:#38bdf8">👨‍🏫 Staff</span>
+          <span id="alumni-badge" class="hidden lynk-badge text-xs" style="background:#f59e0b20;color:#f59e0b">🏆 Alumni</span>
         </div>
         <p id="profile-handle" class="text-sm mb-1" style="color:var(--text-muted)">@handle</p>
-        <p id="profile-position" class="hidden text-sm mb-2 font-medium" style="color:var(--grad-2)"></p>
-        <p id="profile-bio" class="text-sm mb-4 max-w-lg" style="color:var(--text-secondary)"></p>
+        <p id="profile-position" class="hidden text-sm mb-1 font-medium" style="color:var(--grad-2)"></p>
+        <p id="profile-level" class="hidden text-xs mb-2 lynk-badge" style="background:rgba(168,85,247,0.1);color:var(--grad-1);display:inline-block"></p>
+        <p id="profile-bio" class="text-sm mb-3 max-w-lg" style="color:var(--text-secondary)"></p>
+
+        <!-- Skills & Interests -->
+        <div id="profile-skills-wrap" class="hidden mb-3">
+          <div class="flex flex-wrap gap-1.5" id="profile-skills-list"></div>
+        </div>
+        <div id="profile-interests-wrap" class="hidden mb-3">
+          <p class="text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--text-muted)">Interests</p>
+          <div class="flex flex-wrap gap-1.5" id="profile-interests-list"></div>
+        </div>
+
+        <!-- Social Links -->
+        <div id="profile-links" class="hidden flex gap-3 mb-3 text-sm flex-wrap">
+          <a id="profile-website" href="#" target="_blank" class="lynk-gradient-text hover:opacity-80 hidden">🌐 Website</a>
+          <a id="profile-linkedin" href="#" target="_blank" class="lynk-gradient-text hover:opacity-80 hidden">💼 LinkedIn</a>
+          <a id="profile-twitter" href="#" target="_blank" class="lynk-gradient-text hover:opacity-80 hidden">🐦 Twitter</a>
+        </div>
 
         <div class="flex flex-wrap gap-3 text-sm mb-4" style="color:var(--text-secondary)">
           <span id="profile-university">🎓 University</span>
@@ -163,9 +183,12 @@
           <div class="flex justify-between items-center py-3"><span style="color:var(--text-muted)">Username</span><span id="about-username" class="font-medium lynk-gradient-text">—</span></div>
           <div class="flex justify-between items-center py-3"><span style="color:var(--text-muted)">Account Type</span><span id="about-type" class="font-medium">—</span></div>
           <div id="about-position-row" class="hidden flex justify-between items-center py-3"><span style="color:var(--text-muted)">Position / Rank</span><span id="about-position" class="font-medium">—</span></div>
+          <div id="about-level-row" class="hidden flex justify-between items-center py-3"><span style="color:var(--text-muted)">Academic Level</span><span id="about-level" class="font-medium">—</span></div>
           <div class="flex justify-between items-center py-3"><span style="color:var(--text-muted)">University</span><span id="about-university" class="font-medium">—</span></div>
           <div class="flex justify-between items-center py-3"><span style="color:var(--text-muted)">Faculty</span><span id="about-faculty" class="font-medium">—</span></div>
           <div class="flex justify-between items-center py-3"><span style="color:var(--text-muted)">Department</span><span id="about-dept" class="font-medium">—</span></div>
+          <div id="about-skills-row" class="hidden py-3"><span style="color:var(--text-muted)">Skills</span><div id="about-skills" class="flex flex-wrap gap-1.5 mt-2"></div></div>
+          <div id="about-interests-row" class="hidden py-3"><span style="color:var(--text-muted)">Interests</span><div id="about-interests" class="flex flex-wrap gap-1.5 mt-2"></div></div>
           <div class="flex justify-between items-center py-3"><span style="color:var(--text-muted)">Member Since</span><span id="about-joined" class="font-medium">—</span></div>
         </div>
       </div>
@@ -198,11 +221,32 @@
       </div>
       <div>
         <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Bio</label>
-        <textarea id="edit-bio" class="lynk-input resize-none" rows="3" placeholder="Tell your campus about yourself..."></textarea>
+        <textarea id="edit-bio" class="lynk-input resize-none" rows="3" placeholder="Tell your campus about yourself..." maxlength="300"></textarea>
       </div>
       <div id="edit-position-wrapper">
         <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Position / Rank <span class="font-normal text-xs" style="color:var(--text-muted)">(staff only)</span></label>
         <input id="edit-position" type="text" class="lynk-input" placeholder="e.g. Sub-dean, Lecturer I, Professor" />
+      </div>
+      <div id="edit-level-wrapper">
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Academic Level</label>
+        <select id="edit-level" class="lynk-input">
+          <option value="">Not specified</option>
+          <option value="100L">100 Level</option>
+          <option value="200L">200 Level</option>
+          <option value="300L">300 Level</option>
+          <option value="400L">400 Level</option>
+          <option value="500L">500 Level</option>
+          <option value="Postgrad">Postgraduate</option>
+          <option value="PhD">PhD Candidate</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Skills <span class="font-normal text-xs" style="color:var(--text-muted)">(comma-separated)</span></label>
+        <input id="edit-skills" type="text" class="lynk-input" placeholder="e.g. Python, Design, Public Speaking" />
+      </div>
+      <div>
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Interests <span class="font-normal text-xs" style="color:var(--text-muted)">(comma-separated)</span></label>
+        <input id="edit-interests" type="text" class="lynk-input" placeholder="e.g. AI, Basketball, Music" />
       </div>
       <div>
         <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">University</label>
@@ -235,19 +279,6 @@
   </div>
 </div>
 
-<script>
-  function setProfileTab(tab, btn) {
-    ['posts','friends','about'].forEach(t => {
-      document.getElementById(`tab-${t}`)?.classList.add('hidden');
-      document.getElementById(`tab-btn-${t}`)?.classList.remove('active');
-    });
-    document.getElementById(`tab-${tab}`)?.classList.remove('hidden');
-    if (btn) btn.classList.add('active');
-    else document.getElementById(`tab-btn-${tab}`)?.classList.add('active');
-  }
-  function openEditModal() { document.getElementById('edit-modal').classList.remove('hidden'); }
-  function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); }
-</script>
 <!-- DELETE ACCOUNT MODAL -->
 <div id="delete-modal" class="lynk-modal-overlay hidden">
   <div class="lynk-card p-6 w-full max-w-sm mx-4">
@@ -270,6 +301,26 @@
   </div>
 </div>
 
+<script>
+  function setProfileTab(tab, btn) {
+    ['posts','friends','about'].forEach(t => {
+      document.getElementById(`tab-${t}`)?.classList.add('hidden');
+      document.getElementById(`tab-btn-${t}`)?.classList.remove('active');
+    });
+    document.getElementById(`tab-${tab}`)?.classList.remove('hidden');
+    if (btn) btn.classList.add('active');
+    else document.getElementById(`tab-btn-${tab}`)?.classList.add('active');
+  }
+  function openEditModal() { document.getElementById('edit-modal').classList.remove('hidden'); }
+  function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); }
+  document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('lynk-theme', next);
+    document.getElementById('theme-icon').textContent = next === 'dark' ? '☀️' : '🌙';
+  });
+</script>
 <script type="module" src="js/profile.js"></script>
 </body>
 </html>
