@@ -131,23 +131,28 @@ function buildPostCard(postId, data) {
   }
 
   let pollHtml = '';
-  if (d.poll?.options) {
-    const total = d.poll.votes ? Object.values(d.poll.votes).reduce((a,b) => a + (b?.length||0), 0) : 0;
+  if (d.poll?.options?.length) {
+    const votes = d.poll.votes || {};
+    const total = Object.values(votes).reduce((a, b) => a + (Array.isArray(b) ? b.length : 0), 0);
+    const userVoted = Object.values(votes).some(arr => Array.isArray(arr) && arr.includes(currentUser?.uid));
     pollHtml = `<div class="mt-3 flex flex-col gap-2">
       ${d.poll.options.map((opt, i) => {
-        const votes = d.poll.votes?.[i]?.length || 0;
-        const pct = total > 0 ? Math.round((votes/total)*100) : 0;
-        return `<div class="poll-option" onclick="votePoll('${postId}', ${i}, '${d.authorId}', '${escHtml(opt)}')">
+        const voteCount = Array.isArray(votes[i]) ? votes[i].length : 0;
+        const pct = total > 0 ? Math.round((voteCount / total) * 100) : 0;
+        const isMine = Array.isArray(votes[i]) && votes[i].includes(currentUser?.uid);
+        return `<div class="poll-option${isMine ? ' voted' : ''}" onclick="${userVoted ? '' : `votePoll('${postId}', ${i}, '${d.authorId}', '${escHtml(opt)}')`}" style="${userVoted ? 'cursor:default' : 'cursor:pointer'}">
           <div class="poll-fill" style="width:${pct}%"></div>
-          <div class="flex items-center justify-between">
-            <span class="text-sm font-medium">${opt}</span>
-            <span class="text-xs" style="color:var(--text-muted)">${pct}%</span>
+          <div class="flex items-center justify-between" style="position:relative;z-index:1">
+            <span class="text-sm font-medium">${escHtml(opt)}${isMine ? ' ✓' : ''}</span>
+            <span class="text-xs" style="color:var(--text-muted)">${pct}%${total > 0 ? ` · ${voteCount}` : ''}</span>
           </div>
         </div>`;
       }).join('')}
-      <p class="text-xs" style="color:var(--text-muted)">${total} vote${total!==1?'s':''}</p>
+      <p class="text-xs" style="color:var(--text-muted)">${total} vote${total !== 1 ? 's' : ''}${userVoted ? ' · You voted' : ' · Click to vote'}</p>
     </div>`;
   }
+
+  const roleLabel = d.authorType === 'staff' ? '👨‍🏫 Staff' : d.authorType === 'alumni' ? '🏆 Alumni' : '';
 
   return `
     <div class="lynk-card p-5 fade-in" id="post-${postId}">
@@ -158,8 +163,9 @@ function buildPostCard(postId, data) {
         <div class="flex-1 min-w-0">
           <div class="flex items-start justify-between gap-2">
             <div>
-              <a href="profile.html?uid=${d.authorId}" class="font-semibold text-sm hover:underline">${d.authorName || 'LYNK User'}</a>
-              <span class="text-xs ml-2 lynk-badge" style="background:var(--bg-card-hover);color:var(--text-muted)">${d.faculty || d.university || ''}</span>
+              <a href="profile.html?uid=${d.authorId}" class="font-semibold text-sm hover:underline">${escHtml(d.authorName || 'LYNK User')}</a>
+              ${roleLabel ? `<span class="text-xs ml-1 lynk-badge" style="background:rgba(168,85,247,0.1);color:var(--grad-1)">${roleLabel}</span>` : ''}
+              <span class="text-xs ml-1 lynk-badge" style="background:var(--bg-card-hover);color:var(--text-muted)">${escHtml(d.faculty || d.university || '')}</span>
               <p class="text-xs mt-0.5" style="color:var(--text-muted)">${ts} · ${d.visibility === 'public' ? '🌍' : d.visibility === 'faculty' ? '🏛️' : '👥'}</p>
             </div>
             ${isOwn
@@ -170,11 +176,11 @@ function buildPostCard(postId, data) {
           ${mediaHtml}
           ${pollHtml}
           <div class="flex items-center gap-2 mt-4 pt-3 border-t" style="border-color:var(--border)">
-            <button class="reaction-btn ${liked?'active':''}" onclick="toggleLike('${postId}', '${d.authorId}', ${JSON.stringify(d.authorName||'')})">
-              ❤️ <span id="likes-${postId}">${d.likesCount||0}</span>
+            <button class="reaction-btn ${liked ? 'active' : ''}" onclick="toggleLike('${postId}', '${d.authorId}', ${JSON.stringify(d.authorName || '')})">
+              ❤️ <span id="likes-${postId}">${d.likesCount || 0}</span>
             </button>
             <button class="reaction-btn" onclick="openPostModal('${postId}')">
-              💬 <span>${d.commentsCount||0}</span>
+              💬 <span>${d.commentsCount || 0}</span>
             </button>
             <button class="reaction-btn" onclick="sharePost('${postId}')">
               ↗️ Share
@@ -194,6 +200,7 @@ window.submitPost = async () => {
   let poll = null;
   if (!document.getElementById('poll-builder').classList.contains('hidden')) {
     const opts = Array.from(document.getElementById('poll-options').children)
+      .filter(el => el.tagName === 'INPUT')
       .map(el => el.value.trim()).filter(Boolean);
     if (opts.length >= 2) poll = { options: opts, votes: {} };
   }
@@ -218,6 +225,7 @@ window.submitPost = async () => {
     content, authorId: currentUser.uid,
     authorName: currentUserData.displayName || 'LYNK User',
     authorPhoto: currentUserData.photoURL || '',
+    authorType: currentUserData.userType || 'student',
     university: currentUserData.university || '',
     faculty: currentUserData.faculty || '',
     department: currentUserData.department || '',
@@ -244,23 +252,32 @@ window.submitPost = async () => {
 // ===== LIKE — fires notification =====
 window.toggleLike = async (postId, authorId, authorName) => {
   if (!currentUser) return;
+
+  // Optimistic update
+  const el = document.getElementById(`likes-${postId}`);
+  const btn = el?.closest('.reaction-btn');
+  const currentlyLiked = btn?.classList.contains('active');
+  const currentCount = parseInt(el?.textContent || '0');
+  if (el) el.textContent = currentlyLiked ? currentCount - 1 : currentCount + 1;
+  if (btn) btn.classList.toggle('active', !currentlyLiked);
+
   const postRef = doc(db, 'posts', postId);
   const snap = await getDoc(postRef);
+  if (!snap.exists()) return;
   const data = snap.data();
   const liked = data.likes?.includes(currentUser.uid);
 
   await updateDoc(postRef, {
     likes: liked ? arrayRemove(currentUser.uid) : arrayUnion(currentUser.uid),
-    likesCount: liked ? Math.max((data.likesCount||1)-1, 0) : (data.likesCount||0)+1
+    likesCount: liked ? Math.max((data.likesCount || 1) - 1, 0) : (data.likesCount || 0) + 1
   });
 
-  const newCount = liked ? Math.max((data.likesCount||1)-1, 0) : (data.likesCount||0)+1;
-  const el = document.getElementById(`likes-${postId}`);
+  // Sync with actual server value
+  const newCount = liked ? Math.max((data.likesCount || 1) - 1, 0) : (data.likesCount || 0) + 1;
   if (el) el.textContent = newCount;
-  const btn = el?.closest('.reaction-btn');
   if (btn) btn.classList.toggle('active', !liked);
 
-  // Send notification if newly liked (not un-liking)
+  // Send notification if newly liked
   if (!liked) {
     await sendNotification({
       toUid: authorId,
@@ -277,9 +294,20 @@ window.toggleLike = async (postId, authorId, authorName) => {
 // ===== POLL VOTE =====
 window.votePoll = async (postId, optIndex, authorId, optLabel) => {
   if (!currentUser) return;
+
   await updateDoc(doc(db, 'posts', postId), {
     [`poll.votes.${optIndex}`]: arrayUnion(currentUser.uid)
   });
+
+  // Re-render the post card with updated poll data
+  const postSnap = await getDoc(doc(db, 'posts', postId));
+  if (postSnap.exists()) {
+    const postEl = document.getElementById(`post-${postId}`);
+    if (postEl) {
+      postEl.outerHTML = buildPostCard(postId, postSnap.data());
+    }
+  }
+
   await sendNotification({
     toUid: authorId,
     fromUid: currentUser.uid,
@@ -321,7 +349,8 @@ window.openPostModal = async (postId) => {
   if (!snap.exists()) return;
   document.getElementById('post-modal-content').innerHTML = buildPostCard(postId, snap.data());
   document.getElementById('post-modal').classList.remove('hidden');
-  document.getElementById('comment-avatar').src = currentUserData.photoURL || `https://ui-avatars.com/api/?name=U&background=a855f7&color=fff`;
+  const commentAvatar = document.getElementById('comment-avatar');
+  if (commentAvatar) commentAvatar.src = currentUserData.photoURL || `https://ui-avatars.com/api/?name=U&background=a855f7&color=fff`;
   loadComments(postId);
 };
 
@@ -349,7 +378,7 @@ async function loadComments(postId) {
       <div class="flex gap-2 items-start">
         <img src="${ava}" class="lynk-avatar w-7 h-7 flex-shrink-0" />
         <div style="background:var(--bg-card-hover);padding:8px 12px;border-radius:12px;flex:1">
-          <p class="text-xs font-semibold mb-0.5">${c.authorName}</p>
+          <p class="text-xs font-semibold mb-0.5">${escHtml(c.authorName)}</p>
           <p class="text-xs">${escHtml(c.content)}</p>
         </div>
       </div>`);
@@ -374,8 +403,7 @@ window.submitComment = async () => {
   const postData = postSnap.data();
   await updateDoc(doc(db, 'posts', activePostId), { commentsCount: increment(1) });
 
-  // Notify post author
-  if (postData?.authorId) {
+  if (postData?.authorId && postData.authorId !== currentUser.uid) {
     await sendNotification({
       toUid: postData.authorId,
       fromUid: currentUser.uid,
@@ -420,7 +448,6 @@ async function loadSuggestions() {
 
   const d = currentUserData;
 
-  // If user has no campus info yet, show a prompt
   if (!d.university && !d.faculty && !d.department) {
     const msg = `<div class="text-xs text-center py-2" style="color:var(--text-muted)">
       <p class="mb-2">Complete your profile to see classmates!</p>
@@ -432,24 +459,20 @@ async function loadSuggestions() {
     return;
   }
 
-  // Collect existing friend UIDs to exclude
   const [fromSnap, toSnap] = await Promise.all([
     getDocs(query(collection(db, 'friends'), where('from', '==', currentUser.uid))),
-    getDocs(query(collection(db, 'friends'), where('to',   '==', currentUser.uid)))
+    getDocs(query(collection(db, 'friends'), where('to', '==', currentUser.uid)))
   ]);
   const excludeUids = new Set([currentUser.uid]);
   fromSnap.docs.forEach(doc => excludeUids.add(doc.data().to));
   toSnap.docs.forEach(doc => excludeUids.add(doc.data().from));
 
-  // Run parallel queries — dept (score 3) > faculty (score 2) > university (score 1)
   const queryDefs = [];
   if (d.department) queryDefs.push({ q: query(collection(db, 'users'), where('department', '==', d.department), limit(12)), score: 3, label: '📚 Same department' });
   if (d.faculty)    queryDefs.push({ q: query(collection(db, 'users'), where('faculty', '==', d.faculty), limit(12)), score: 2, label: '🏛️ Same faculty' });
   if (d.university) queryDefs.push({ q: query(collection(db, 'users'), where('university', '==', d.university), limit(12)), score: 1, label: '🎓 Same university' });
 
   const snaps = await Promise.all(queryDefs.map(def => getDocs(def.q)));
-
-  // Score & deduplicate
   const scored = new Map();
   snaps.forEach((snap, i) => {
     const { score, label } = queryDefs[i];
@@ -463,7 +486,6 @@ async function loadSuggestions() {
   });
 
   const sorted = [...scored.values()].sort((a, b) => b.score - a.score).slice(0, 6);
-
   const emptyMsg = `<div class="text-xs" style="color:var(--text-muted)">No suggestions yet — invite your classmates to join LYNK!</div>`;
 
   if (sorted.length === 0) {
@@ -472,7 +494,6 @@ async function loadSuggestions() {
     return;
   }
 
-  // Build desktop sidebar cards
   if (list) {
     list.innerHTML = '';
     sorted.forEach(({ uid, data: u, label }) => {
@@ -488,7 +509,7 @@ async function loadSuggestions() {
           <div class="flex-1 min-w-0">
             <p class="text-xs font-semibold truncate">
               ${escHtml(u.displayName||'User')}
-              ${u.userType === 'staff' ? '<span style="color:#38bdf8;font-size:10px"> Staff</span>' : ''}
+              ${u.userType === 'staff' ? '<span style="color:#38bdf8;font-size:10px"> Staff</span>' : u.userType === 'alumni' ? '<span style="color:#f59e0b;font-size:10px"> Alumni</span>' : ''}
             </p>
             <p class="text-xs truncate lynk-gradient-text font-medium">${label}</p>
           </div>
@@ -499,7 +520,6 @@ async function loadSuggestions() {
     });
   }
 
-  // Build mobile horizontal scroll row
   if (mobileList) {
     mobileList.innerHTML = '';
     sorted.forEach(({ uid, data: u, label }) => {
@@ -520,9 +540,7 @@ async function loadSuggestions() {
   }
 }
 
-// Inline add — button changes state without page reload
 window.quickAddFriend = async (toUid, toName, toPhoto) => {
-  // Update all buttons for this person (desktop + mobile)
   [`sugg-btn-${toUid}`, `mob-sugg-btn-${toUid}`].forEach(id => {
     const btn = document.getElementById(id);
     if (btn) {
@@ -561,22 +579,17 @@ async function loadTrendingCommunities() {
   if (snap.empty) list.innerHTML = '<div class="text-xs" style="color:var(--text-muted)">No communities yet.</div>';
 }
 
-// ===== FRIEND REQUEST — fires notification =====
+// ===== FRIEND REQUEST =====
 window.sendFriendRequest = async (toUid, toName) => {
   if (!currentUser) return;
   await setDoc(doc(db, 'friends', `${currentUser.uid}_${toUid}`), {
-    from: currentUser.uid,
-    to: toUid,
-    status: 'pending',
-    createdAt: serverTimestamp()
+    from: currentUser.uid, to: toUid, status: 'pending', createdAt: serverTimestamp()
   });
   await sendNotification({
-    toUid,
-    fromUid: currentUser.uid,
+    toUid, fromUid: currentUser.uid,
     fromName: currentUserData.displayName || 'Someone',
     fromPhoto: currentUserData.photoURL || '',
-    type: 'friend_request',
-    message: 'sent you a friend request',
+    type: 'friend_request', message: 'sent you a friend request',
     preview: `${currentUserData.faculty || ''} · ${currentUserData.university || ''}`
   });
   showToast('Request Sent!', `Friend request sent to ${toName || 'them'}.`, currentUserData.photoURL || '');
@@ -602,28 +615,24 @@ let _onboardSchools = {};
 
 async function checkOnboarding() {
   if (!currentUser || !currentUserData) return;
-  // Only show if university is missing AND user hasn't dismissed before
   const alreadyDone = localStorage.getItem(`lynk_onboarded_${currentUser.uid}`);
   if (alreadyDone) return;
   if (currentUserData.university && currentUserData.faculty) return;
 
-  // Populate step 1 with user info
   const ava = currentUserData.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUserData.displayName||'U')}&background=a855f7&color=fff&size=96`;
   document.getElementById('onboard-avatar').src = ava;
   document.getElementById('onboard-name').textContent = currentUserData.displayName || 'LYNK User';
   document.getElementById('onboard-handle').textContent = `@${currentUserData.username || ''}`;
-  document.getElementById('onboard-type').textContent = currentUserData.userType === 'staff' ? '👨‍🏫 Staff Member' : '🎓 Student';
 
-  // Show position field for staff
+  const typeLabels = { staff: '👨‍🏫 Staff Member', alumni: '🏆 Alumni', student: '🎓 Student' };
+  document.getElementById('onboard-type').textContent = typeLabels[currentUserData.userType] || '🎓 Student';
+
   if (currentUserData.userType === 'staff') {
     document.getElementById('onboard-position-wrap')?.classList.remove('hidden');
     document.getElementById('onboard-position').value = currentUserData.position || '';
   }
 
-  // Load schools for dropdown
   await _loadOnboardSchools();
-
-  // Show the modal
   document.getElementById('onboarding-modal').classList.remove('hidden');
 }
 
@@ -681,13 +690,10 @@ window.onboardLoadDepts = (faculty) => {
 };
 
 window.onboardNext = (step) => {
-  // Hide all steps
   [1,2,3].forEach(n => document.getElementById(`onboard-step-${n}`)?.classList.add('hidden'));
   document.getElementById(`onboard-step-${step}`)?.classList.remove('hidden');
-  // Update progress bar
   const prog = { 1: '33%', 2: '66%', 3: '100%' };
   document.getElementById('onboard-progress').style.width = prog[step] || '33%';
-
   if (step === 3) _buildOnboardSummary();
 };
 
@@ -723,9 +729,7 @@ window.finishOnboarding = async () => {
   const schoolName = schoolId ? (_onboardSchools[schoolId]?.name || '') : '';
 
   const updates = {
-    university: schoolName,
-    faculty: faculty || '',
-    department: dept || '',
+    university: schoolName, faculty: faculty || '', department: dept || '',
     profileComplete: !!(schoolName && faculty && dept)
   };
   if (currentUserData.userType === 'staff' && position) updates.position = position;
@@ -733,11 +737,16 @@ window.finishOnboarding = async () => {
   await setDoc(doc(db, 'users', currentUser.uid), updates, { merge: true });
   currentUserData = { ...currentUserData, ...updates };
 
-  // Auto-join communities
   if (schoolName && faculty) {
     await setDoc(doc(db, 'communities', `${schoolName}-${faculty}`.replace(/\s+/g,'-').toLowerCase()), {
       name: `${faculty} — ${schoolName}`, type: 'faculty',
       university: schoolName, faculty, memberCount: 1, createdAt: serverTimestamp()
+    }, { merge: true });
+  }
+  if (schoolName && dept) {
+    await setDoc(doc(db, 'communities', `${schoolName}-${dept}`.replace(/\s+/g,'-').toLowerCase()), {
+      name: `${dept} — ${schoolName}`, type: 'department',
+      university: schoolName, faculty: faculty || '', department: dept, memberCount: 1, createdAt: serverTimestamp()
     }, { merge: true });
   }
 
