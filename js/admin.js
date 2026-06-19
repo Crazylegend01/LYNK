@@ -1,5 +1,5 @@
 // ============================================================
-// LYNK By Legends — Admin Panel Module (with Schools Management)
+// LYNK By Legends — Admin Panel Module (with Announcements)
 // ============================================================
 
 import { auth, db } from './firebase-config.js';
@@ -34,16 +34,6 @@ onAuthStateChanged(auth, async (user) => {
   const roleBadge = document.getElementById('admin-role-badge');
   if (roleBadge) roleBadge.textContent = roles[currentUserData.adminRole] || '🌟 Super Admin';
 
-  const role = currentUserData.adminRole;
-  if (role === 'analytics') {
-    document.getElementById('section-users')?.remove();
-    document.getElementById('section-security')?.remove();
-    document.getElementById('section-admins')?.remove();
-  } else if (role === 'content') {
-    document.getElementById('section-admins')?.remove();
-    document.getElementById('section-security')?.remove();
-  }
-
   await initDashboard();
 });
 
@@ -57,7 +47,16 @@ async function initDashboard() {
   loadCommunities();
   loadAdminsList();
   loadSchools();
+  loadAnnouncementsAdmin();
 }
+
+// ===== SECTION SWITCHER =====
+window.showSection = (id, el) => {
+  document.querySelectorAll('main section').forEach(s => s.classList.add('hidden'));
+  document.querySelectorAll('.lynk-sidebar-link').forEach(a => a.classList.remove('active'));
+  document.getElementById(`section-${id}`)?.classList.remove('hidden');
+  el?.classList.add('active');
+};
 
 // ===== STATS =====
 async function loadStats() {
@@ -65,7 +64,7 @@ async function loadStats() {
     const [usersSnap, postsSnap, reportsSnap] = await Promise.all([
       getCountFromServer(collection(db, 'users')),
       getCountFromServer(collection(db, 'posts')),
-      getCountFromServer(query(collection(db, 'reports'), where('status', '==', 'open')))
+      getCountFromServer(query(collection(db, 'reports'), where('status','==','open')))
     ]);
     document.getElementById('stat-users').textContent = usersSnap.data().count.toLocaleString();
     document.getElementById('stat-posts').textContent = postsSnap.data().count.toLocaleString();
@@ -95,355 +94,156 @@ function initCharts() {
   const growthCtx = document.getElementById('chart-growth');
   if (growthCtx) {
     if (chartInstances['growth']) chartInstances['growth'].destroy();
-    chartInstances['growth'] = new Chart(growthCtx, { type: 'line', data: { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], datasets: [{ label:'New Users', data: Array.from({length:7},()=>Math.floor(Math.random()*50+10)), borderColor:g1, backgroundColor:g1+'22', tension:0.4, fill:true, pointBackgroundColor:g1 }] }, options: chartDefaults });
+    chartInstances['growth'] = new Chart(growthCtx, { type:'line', data:{ labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], datasets:[{ label:'New Users', data:Array.from({length:7},()=>Math.floor(Math.random()*50+10)), borderColor:g1, backgroundColor:g1+'22', tension:0.4, fill:true, pointBackgroundColor:g1 }] }, options:chartDefaults });
   }
   const actCtx = document.getElementById('chart-activity');
   if (actCtx) {
     if (chartInstances['activity']) chartInstances['activity'].destroy();
-    chartInstances['activity'] = new Chart(actCtx, { type: 'doughnut', data: { labels:['Posts','Comments','Messages','Reactions','Friends'], datasets:[{ data:[35,20,25,15,5], backgroundColor:[g1,g2,g3,'#f59e0b','#ec4899'], borderWidth:0, hoverOffset:8 }] }, options: { responsive:true, maintainAspectRatio:true, plugins:{legend:{labels:{color:textColor,font:{family:'Inter',size:11}}}} } });
+    chartInstances['activity'] = new Chart(actCtx, { type:'doughnut', data:{ labels:['Posts','Comments','Likes','Messages'], datasets:[{ data:[35,25,30,10], backgroundColor:[g1,g2,g3,'#f59e0b'], borderWidth:0 }] }, options:{ responsive:true, plugins:{ legend:{ labels:{ color:textColor, font:{ family:'Inter' } } } } } });
   }
   const facCtx = document.getElementById('chart-faculty');
   if (facCtx) {
     if (chartInstances['faculty']) chartInstances['faculty'].destroy();
-    chartInstances['faculty'] = new Chart(facCtx, { type:'bar', data:{ labels:['Science','Arts','Engineering','Medicine','Law','Business'], datasets:[{ label:'Posts', data:[65,42,88,31,45,72], backgroundColor:[g1,g2,g3,'#f59e0b','#ec4899','#22c55e'], borderRadius:8, borderSkipped:false }] }, options:{...chartDefaults,plugins:{legend:{display:false}}} });
-  }
-  const trendCtx = document.getElementById('chart-30day');
-  if (trendCtx) {
-    if (chartInstances['30day']) chartInstances['30day'].destroy();
-    const labels = Array.from({length:30},(_,i)=>i+1);
-    chartInstances['30day'] = new Chart(trendCtx, { type:'line', data:{ labels, datasets:[{ label:'Users', data:labels.map(()=>Math.floor(Math.random()*200+100)), borderColor:g1, backgroundColor:g1+'15', tension:0.4, fill:true },{ label:'Posts', data:labels.map(()=>Math.floor(Math.random()*300+50)), borderColor:g2, backgroundColor:g2+'15', tension:0.4, fill:true }] }, options:chartDefaults });
-  }
-  const ctCtx = document.getElementById('chart-content-types');
-  if (ctCtx) {
-    if (chartInstances['ctypes']) chartInstances['ctypes'].destroy();
-    chartInstances['ctypes'] = new Chart(ctCtx, { type:'pie', data:{ labels:['Text','Image','Video','Polls'], datasets:[{ data:[55,25,12,8], backgroundColor:[g1,g2,g3,'#f59e0b'], borderWidth:0 }] }, options:{ responsive:true, maintainAspectRatio:true, plugins:{legend:{labels:{color:textColor,font:{family:'Inter',size:11}}}} } });
+    chartInstances['faculty'] = new Chart(facCtx, { type:'bar', data:{ labels:['Science','Engineering','Arts','Medicine','Law'], datasets:[{ label:'Posts', data:[42,87,31,54,23], backgroundColor:g1+'88', borderColor:g1, borderWidth:1 }] }, options:chartDefaults });
   }
 }
+
+window.refreshDashboard = () => { loadStats(); initCharts(); };
 
 // ===== USERS TABLE =====
-async function loadUsersTable(filter = 'all', search = '') {
-  const tbody = document.getElementById('users-table-body');
+async function loadUsersTable() {
+  const tbody = document.getElementById('users-tbody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center" style="color:var(--text-muted)">Loading...</td></tr>';
-
-  let q = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(50));
-  if (filter === 'suspended') q = query(collection(db, 'users'), where('suspended', '==', true), limit(50));
-  if (filter === 'staff') q = query(collection(db, 'users'), where('userType', '==', 'staff'), limit(50));
-  if (filter === 'active') q = query(collection(db, 'users'), where('isOnline', '==', true), limit(50));
-
-  const snap = await getDocs(q);
-  let rows = snap.docs;
-  if (search) rows = rows.filter(d => (d.data().displayName||'').toLowerCase().includes(search.toLowerCase()) || (d.data().email||'').toLowerCase().includes(search.toLowerCase()) || (d.data().username||'').toLowerCase().includes(search.toLowerCase()));
-
-  tbody.innerHTML = '';
-  if (rows.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-sm" style="color:var(--text-muted)">No users found.</td></tr>'; return;
-  }
-
-  rows.forEach(d => {
-    const u = d.data();
-    const joined = u.createdAt?.toDate?.()?.toLocaleDateString() || '—';
-    const isSuspended = u.suspended || false;
-    const ava = u.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.displayName||'U')}&background=a855f7&color=fff&size=40`;
-    const isStaff = u.userType === 'staff';
-
-    tbody.insertAdjacentHTML('beforeend', `
-      <tr class="border-b hover:bg-opacity-50 transition-colors" style="border-color:var(--border)">
-        <td class="p-4">
-          <div class="flex items-center gap-3">
-            <img src="${ava}" class="lynk-avatar w-9 h-9" />
-            <div>
-              <p class="text-sm font-semibold">${u.displayName || '—'} ${isStaff ? '<span class="lynk-badge text-xs" style="background:#0ea5e920;color:#38bdf8">Staff</span>' : ''}</p>
-              <p class="text-xs" style="color:var(--text-muted)">@${u.username || '—'} · ${u.email || '—'}</p>
-              ${u.position ? `<p class="text-xs" style="color:var(--text-muted)">${u.position}</p>` : ''}
+  tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center" style="color:var(--text-muted)">Loading users...</td></tr>';
+  try {
+    const snap = await getDocs(query(collection(db, 'users'), orderBy('createdAt','desc'), limit(50)));
+    tbody.innerHTML = '';
+    snap.docs.forEach(d => {
+      const u = d.data();
+      const joined = u.createdAt?.toDate?.()?.toLocaleDateString() || '—';
+      const roleLabel = u.userType === 'staff' ? '👨‍🏫 Staff' : u.userType === 'alumni' ? '🏆 Alumni' : '🎓 Student';
+      tbody.insertAdjacentHTML('beforeend', `
+        <tr class="border-b" style="border-color:var(--border)">
+          <td class="p-3">
+            <div class="flex items-center gap-2">
+              <img src="${u.photoURL||`https://ui-avatars.com/api/?name=${encodeURIComponent(u.displayName||'U')}&background=a855f7&color=fff&size=32`}" class="lynk-avatar w-8 h-8 flex-shrink-0" />
+              <div>
+                <p class="text-sm font-medium">${escHtml(u.displayName||'Unknown')}</p>
+                <p class="text-xs" style="color:var(--text-muted)">@${u.username||''}</p>
+              </div>
             </div>
-          </div>
-        </td>
-        <td class="p-4 text-sm">
-          <span style="color:var(--text-secondary)">${u.university || '—'}</span>
-          ${u.faculty ? `<p class="text-xs" style="color:var(--text-muted)">${u.faculty}${u.department ? ' · ' + u.department : ''}</p>` : ''}
-        </td>
-        <td class="p-4 text-xs" style="color:var(--text-muted)">${joined}</td>
-        <td class="p-4">
-          <span class="lynk-badge ${isSuspended ? 'bg-red-500' : u.isOnline ? 'bg-green-500' : ''} text-white"
-                style="${!isSuspended && !u.isOnline ? 'background:var(--bg-card-hover);color:var(--text-muted)' : ''}">
-            ${isSuspended ? '🚫 Suspended' : u.isOnline ? '● Online' : '○ Offline'}
-          </span>
-          ${u.adminRole ? `<span class="lynk-badge lynk-gradient text-white ml-1">${u.adminRole}</span>` : ''}
-          ${!u.profileComplete && !u.university ? '<span class="lynk-badge text-xs ml-1" style="background:#f59e0b20;color:#f59e0b">Profile incomplete</span>' : ''}
-        </td>
-        <td class="p-4">
-          <div class="flex gap-1">
-            <button onclick="viewUserAdmin('${d.id}')" class="lynk-btn lynk-btn-ghost py-1 px-2 rounded-lg text-xs">👁 View</button>
-            ${!isSuspended
-              ? `<button onclick="suspendUser('${d.id}', '${(u.displayName||'').replace(/'/g,"\\'")}', true)" class="lynk-btn lynk-btn-ghost py-1 px-2 rounded-lg text-xs" style="color:#ef4444">🚫 Suspend</button>`
-              : `<button onclick="suspendUser('${d.id}', '${(u.displayName||'').replace(/'/g,"\\'")}', false)" class="lynk-btn lynk-btn-ghost py-1 px-2 rounded-lg text-xs" style="color:#22c55e">✅ Restore</button>`
-            }
-          </div>
-        </td>
-      </tr>`);
-  });
+          </td>
+          <td class="p-3 text-sm" style="color:var(--text-secondary)">${escHtml(u.email||'—')}</td>
+          <td class="p-3"><span class="lynk-badge text-xs">${roleLabel}</span></td>
+          <td class="p-3 text-sm" style="color:var(--text-secondary)">${escHtml(u.university||'—')}</td>
+          <td class="p-3 text-sm" style="color:var(--text-muted)">${joined}</td>
+          <td class="p-3">
+            <div class="flex gap-1">
+              ${u.suspended
+                ? `<button onclick="unsuspendUser('${d.id}')" class="lynk-btn lynk-btn-secondary text-xs py-1 px-2 rounded-lg">Restore</button>`
+                : `<button onclick="suspendUser('${d.id}')" class="lynk-btn text-xs py-1 px-2 rounded-lg" style="background:rgba(245,158,11,0.1);color:#f59e0b">Suspend</button>`}
+              <a href="profile.html?uid=${d.id}" target="_blank" class="lynk-btn lynk-btn-ghost text-xs py-1 px-2 rounded-lg">View</a>
+            </div>
+          </td>
+        </tr>`);
+    });
+    if (snap.empty) tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center" style="color:var(--text-muted)">No users yet.</td></tr>';
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center" style="color:var(--text-muted)">Error loading users.</td></tr>`;
+  }
 }
 
-window.searchUsers = (val) => loadUsersTable('all', val);
-window.filterUsers = (filter, btn) => {
-  document.querySelectorAll('#section-users .lynk-tab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  loadUsersTable(filter);
-};
-window.viewUserAdmin = (uid) => window.open(`profile.html?uid=${uid}`, '_blank');
-window.suspendUser = async (uid, name, suspend) => {
-  pendingUserAction = { uid, suspend };
-  document.getElementById('user-action-title').textContent = suspend ? 'Suspend User' : 'Restore User';
-  document.getElementById('user-action-desc').textContent = `${suspend ? 'Suspend' : 'Restore'} account for ${name}? They will ${suspend ? 'not' : 'now'} be able to use LYNK.`;
-  document.getElementById('user-action-modal').classList.remove('hidden');
-};
-window.confirmUserAction = async () => {
-  if (!pendingUserAction) return;
-  await updateDoc(doc(db, 'users', pendingUserAction.uid), { suspended: pendingUserAction.suspend });
-  document.getElementById('user-action-modal').classList.add('hidden');
+window.filterUsers = (q) => loadUsersTable(q);
+
+window.suspendUser = async (uid) => {
+  if (!confirm('Suspend this user?')) return;
+  await updateDoc(doc(db, 'users', uid), { suspended: true });
   loadUsersTable();
-  pendingUserAction = null;
 };
-
-// ===== SCHOOLS MANAGEMENT =====
-async function loadSchools() {
-  const list = document.getElementById('schools-list');
-  if (!list) return;
-  list.innerHTML = '<div class="lynk-card p-5 animate-pulse"><div class="h-4 rounded w-1/2 mb-2" style="background:var(--border)"></div></div>';
-  const snap = await getDocs(query(collection(db, 'schools'), orderBy('name', 'asc')));
-
-  if (snap.empty) {
-    list.innerHTML = `
-      <div class="lynk-card p-10 text-center">
-        <div class="text-5xl mb-3">🏫</div>
-        <h3 class="font-semibold mb-2">No schools added yet</h3>
-        <p class="text-sm mb-4" style="color:var(--text-secondary)">Add universities so students and staff can select them during sign-up.</p>
-        <button onclick="showAddSchoolModal()" class="lynk-btn lynk-btn-primary px-6 py-3 rounded-xl">+ Add First University</button>
-      </div>`;
-    return;
-  }
-
-  list.innerHTML = '';
-  snap.docs.forEach(d => {
-    const s = d.data();
-    const faculties = Object.keys(s.faculties || {});
-    const totalDepts = faculties.reduce((acc, f) => acc + (s.faculties[f]?.length || 0), 0);
-    list.insertAdjacentHTML('beforeend', `
-      <div class="lynk-card p-5">
-        <div class="flex items-start justify-between gap-4 mb-4">
-          <div class="flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl lynk-gradient flex items-center justify-center text-white text-xl flex-shrink-0">🎓</div>
-            <div>
-              <h3 class="font-bold">${s.name}</h3>
-              <p class="text-sm" style="color:var(--text-muted)">${s.shortName || ''} ${s.location ? '· ' + s.location : ''}</p>
-            </div>
-          </div>
-          <div class="flex gap-2 flex-shrink-0">
-            <button onclick="manageSchool('${d.id}')" class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-lg">✏️ Manage</button>
-            <button onclick="deleteSchool('${d.id}', '${s.name?.replace(/'/g,"\\'")}' )" class="lynk-btn lynk-btn-ghost text-xs py-1.5 px-3 rounded-lg" style="color:#ef4444">🗑</button>
-          </div>
-        </div>
-        <div class="flex gap-4 text-sm mb-3" style="color:var(--text-secondary)">
-          <span>🏛️ ${faculties.length} faculties</span>
-          <span>📚 ${totalDepts} departments</span>
-        </div>
-        <div class="flex flex-wrap gap-2">
-          ${faculties.slice(0, 6).map(f => `<span class="lynk-badge text-xs" style="background:var(--bg-card-hover);color:var(--text-secondary)">${f}</span>`).join('')}
-          ${faculties.length > 6 ? `<span class="lynk-badge text-xs" style="background:var(--bg-card-hover);color:var(--text-muted)">+${faculties.length-6} more</span>` : ''}
-        </div>
-      </div>`);
-  });
-}
-
-// Save new school
-window.saveSchool = async () => {
-  const name = document.getElementById('school-name').value.trim();
-  const shortName = document.getElementById('school-short').value.trim();
-  const location = document.getElementById('school-location').value.trim();
-  if (!name) { alert('University name is required.'); return; }
-
-  const faculties = {};
-  const rows = document.getElementById('faculties-builder').querySelectorAll('[id^="faculty-row-"]');
-  rows.forEach(row => {
-    const id = row.id.replace('faculty-row-', '');
-    const facName = document.getElementById(`fac-name-${id}`)?.value.trim();
-    const deptsRaw = document.getElementById(`fac-depts-${id}`)?.value.trim();
-    if (facName) {
-      faculties[facName] = deptsRaw ? deptsRaw.split(',').map(d => d.trim()).filter(Boolean) : [];
-    }
-  });
-
-  await addDoc(collection(db, 'schools'), {
-    name, shortName, location,
-    faculties,
-    createdAt: serverTimestamp(),
-    createdBy: currentUser.uid
-  });
-
-  window.hideAddSchoolModal();
-  loadSchools();
-};
-
-// Manage school (edit faculties/departments)
-window.manageSchool = async (schoolId) => {
-  const snap = await getDoc(doc(db, 'schools', schoolId));
-  const s = snap.data();
-  const modal = document.getElementById('manage-school-modal');
-  const title = document.getElementById('manage-school-title');
-  const content = document.getElementById('manage-school-content');
-  title.textContent = `Manage — ${s.name}`;
-  const faculties = s.faculties || {};
-
-  content.innerHTML = `
-    <div class="text-sm mb-2 font-medium" style="color:var(--text-secondary)">Edit university details</div>
-    <input id="edit-school-name" type="text" class="lynk-input mb-2" value="${s.name || ''}" placeholder="University name" />
-    <div class="grid grid-cols-2 gap-2 mb-4">
-      <input id="edit-school-short" type="text" class="lynk-input" value="${s.shortName || ''}" placeholder="Short name" />
-      <input id="edit-school-location" type="text" class="lynk-input" value="${s.location || ''}" placeholder="Location" />
-    </div>
-
-    <div class="flex items-center justify-between mb-3">
-      <div class="text-sm font-medium" style="color:var(--text-secondary)">Faculties & Departments</div>
-      <button onclick="addEditFacultyRow('${schoolId}')" class="lynk-btn lynk-btn-secondary text-xs py-1 px-3 rounded-lg">+ Add Faculty</button>
-    </div>
-    <div id="edit-faculties-${schoolId}" class="flex flex-col gap-3 mb-4">
-      ${Object.entries(faculties).map(([fac, depts]) => `
-        <div class="lynk-card p-3" id="efrow-${schoolId}-${fac.replace(/\s/g,'_')}">
-          <div class="flex gap-2 mb-2">
-            <input type="text" class="lynk-input text-sm py-2 flex-1" value="${fac}" id="efname-${schoolId}-${fac.replace(/\s/g,'_')}" />
-            <button onclick="removeEditFaculty('${schoolId}','${fac.replace(/\s/g,'_')}')" class="lynk-btn lynk-btn-ghost text-xs px-2 rounded-lg" style="color:#ef4444">✕</button>
-          </div>
-          <input type="text" class="lynk-input text-sm py-2 w-full" value="${depts.join(', ')}" id="efdepts-${schoolId}-${fac.replace(/\s/g,'_')}" placeholder="Departments (comma-separated)" />
-        </div>`).join('')}
-    </div>
-    <button onclick="updateSchool('${schoolId}')" class="lynk-btn lynk-btn-primary w-full py-3 rounded-xl">Save Changes</button>`;
-
-  modal.classList.remove('hidden');
-};
-
-let editFacultyCounter = 0;
-window.addEditFacultyRow = (schoolId) => {
-  const id = `new_${editFacultyCounter++}`;
-  const container = document.getElementById(`edit-faculties-${schoolId}`);
-  container.insertAdjacentHTML('beforeend', `
-    <div class="lynk-card p-3" id="efrow-${schoolId}-${id}">
-      <div class="flex gap-2 mb-2">
-        <input type="text" class="lynk-input text-sm py-2 flex-1" placeholder="Faculty name" id="efname-${schoolId}-${id}" />
-        <button onclick="removeEditFaculty('${schoolId}','${id}')" class="lynk-btn lynk-btn-ghost text-xs px-2 rounded-lg" style="color:#ef4444">✕</button>
-      </div>
-      <input type="text" class="lynk-input text-sm py-2 w-full" placeholder="Departments (comma-separated)" id="efdepts-${schoolId}-${id}" />
-    </div>`);
-};
-
-window.removeEditFaculty = (schoolId, facId) => {
-  document.getElementById(`efrow-${schoolId}-${facId}`)?.remove();
-};
-
-window.updateSchool = async (schoolId) => {
-  const name = document.getElementById('edit-school-name').value.trim();
-  const shortName = document.getElementById('edit-school-short').value.trim();
-  const location = document.getElementById('edit-school-location').value.trim();
-  const faculties = {};
-  const container = document.getElementById(`edit-faculties-${schoolId}`);
-  container.querySelectorAll('[id^="efrow-"]').forEach(row => {
-    const rowId = row.id.replace(`efrow-${schoolId}-`, '');
-    const facName = document.getElementById(`efname-${schoolId}-${rowId}`)?.value.trim();
-    const deptsRaw = document.getElementById(`efdepts-${schoolId}-${rowId}`)?.value.trim();
-    if (facName) faculties[facName] = deptsRaw ? deptsRaw.split(',').map(d => d.trim()).filter(Boolean) : [];
-  });
-  await updateDoc(doc(db, 'schools', schoolId), { name, shortName, location, faculties });
-  window.hideManageSchoolModal();
-  loadSchools();
-};
-
-window.deleteSchool = async (schoolId, name) => {
-  if (!confirm(`Delete "${name}" and all its faculties/departments? Students who selected this school will keep their existing data.`)) return;
-  await deleteDoc(doc(db, 'schools', schoolId));
-  loadSchools();
+window.unsuspendUser = async (uid) => {
+  await updateDoc(doc(db, 'users', uid), { suspended: false });
+  loadUsersTable();
 };
 
 // ===== CONTENT =====
-async function loadContentList(filter = 'all') {
+async function loadContentList() {
   const list = document.getElementById('content-list');
   if (!list) return;
-  let q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(20));
-  const snap = await getDocs(q);
+  list.innerHTML = '<div class="text-sm" style="color:var(--text-muted)">Loading posts...</div>';
+  const snap = await getDocs(query(collection(db, 'posts'), orderBy('createdAt','desc'), limit(25)));
   list.innerHTML = '';
-  if (snap.empty) { list.innerHTML = '<div class="lynk-card p-6 text-center text-sm" style="color:var(--text-muted)">No content to moderate.</div>'; return; }
   snap.docs.forEach(d => {
     const p = d.data();
-    const ts = p.createdAt?.toDate?.()?.toLocaleString() || '';
+    const ts = p.createdAt?.toDate?.()?.toLocaleDateString() || '';
     list.insertAdjacentHTML('beforeend', `
-      <div class="lynk-card p-5">
-        <div class="flex items-start justify-between gap-4">
-          <div class="flex-1">
-            <div class="flex items-center gap-2 mb-1">
-              <span class="font-semibold text-sm">${p.authorName || 'Unknown'}</span>
-              <span class="text-xs" style="color:var(--text-muted)">${ts}</span>
-            </div>
-            <p class="text-sm" style="color:var(--text-secondary)">${(p.content||'').slice(0,200)}${p.content?.length>200?'…':''}</p>
-          </div>
-          <button onclick="removePost('${d.id}')" class="lynk-btn lynk-btn-ghost text-xs py-1 px-3 rounded-lg flex-shrink-0" style="color:#ef4444">🗑 Remove</button>
+      <div class="flex items-start gap-3 py-3 border-b" style="border-color:var(--border)">
+        <div class="flex-1">
+          <p class="text-xs mb-0.5" style="color:var(--text-muted)">${escHtml(p.authorName||'Unknown')} · ${ts} · ${p.visibility||'public'}</p>
+          <p class="text-sm">${escHtml((p.content||'').slice(0,120))}${p.content?.length>120?'...':''}</p>
         </div>
+        <button onclick="deletePost('${d.id}')" class="lynk-btn text-xs py-1 px-2 rounded-lg flex-shrink-0" style="background:rgba(239,68,68,0.1);color:#ef4444">Delete</button>
       </div>`);
   });
+  if (snap.empty) list.innerHTML = '<div class="text-sm" style="color:var(--text-muted)">No posts yet.</div>';
 }
-window.filterContent = (filter, btn) => {
-  document.querySelectorAll('#section-content .lynk-tab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  loadContentList(filter);
-};
-window.removePost = async (postId) => {
-  if (!confirm('Remove this post?')) return;
+
+window.deletePost = async (postId) => {
+  if (!confirm('Delete this post?')) return;
   await deleteDoc(doc(db, 'posts', postId));
   loadContentList();
 };
 
 // ===== SECURITY LOGS =====
 async function loadSecurityLogs() {
-  const container = document.getElementById('security-logs');
-  if (!container) return;
-  const q = query(collection(db, 'securityLogs'), orderBy('createdAt', 'desc'), limit(50));
-  const snap = await getDocs(q);
-  document.getElementById('security-count').textContent = `${snap.size} events`;
-  if (snap.empty) {
-    const usersSnap = await getDocs(query(collection(db, 'users'), orderBy('lastSeen', 'desc'), limit(10)));
-    container.innerHTML = '';
-    usersSnap.docs.forEach(d => {
-      const u = d.data();
-      const ts = u.lastSeen?.toDate?.()?.toLocaleString() || 'Recently';
-      container.insertAdjacentHTML('beforeend', `<div class="flex items-center justify-between p-4 text-sm"><div class="flex items-center gap-3"><span class="text-green-400">●</span><span class="font-medium">${u.displayName||'User'}</span><span style="color:var(--text-muted)"> signed in</span></div><span class="text-xs" style="color:var(--text-muted)">${ts}</span></div>`);
-    });
-    return;
-  }
-  container.innerHTML = '';
+  const list = document.getElementById('security-list');
+  if (!list) return;
+  list.innerHTML = '<div class="text-sm" style="color:var(--text-muted)">Loading...</div>';
+  const snap = await getDocs(query(collection(db, 'securityLogs'), orderBy('createdAt','desc'), limit(30)));
+  list.innerHTML = '';
   snap.docs.forEach(d => {
     const l = d.data();
     const ts = l.createdAt?.toDate?.()?.toLocaleString() || '';
-    const colors = { signin:'#22c55e', signout:'#94a3b8', failed:'#ef4444', suspended:'#f97316' };
-    container.insertAdjacentHTML('beforeend', `<div class="flex items-center justify-between p-4 text-sm border-b" style="border-color:var(--border)"><div class="flex items-center gap-3"><span style="color:${colors[l.type]||'#94a3b8'}">●</span><span>${l.message||l.type}</span></div><span class="text-xs" style="color:var(--text-muted)">${ts}</span></div>`);
+    list.insertAdjacentHTML('beforeend', `
+      <div class="flex items-start gap-3 py-2 border-b" style="border-color:var(--border)">
+        <div class="flex-1">
+          <p class="text-xs font-medium">${escHtml(l.action||'Unknown action')}</p>
+          <p class="text-xs" style="color:var(--text-muted)">${escHtml(l.userId||'')} · ${ts}</p>
+        </div>
+      </div>`);
   });
+  if (snap.empty) list.innerHTML = '<div class="text-sm" style="color:var(--text-muted)">No logs yet.</div>';
 }
 
 // ===== REPORTS =====
 async function loadReports() {
   const list = document.getElementById('reports-list');
   if (!list) return;
-  const snap = await getDocs(query(collection(db, 'reports'), where('status','==','open'), orderBy('createdAt','desc'), limit(20)));
-  if (snap.empty) { list.innerHTML = '<div class="lynk-card p-6 text-center text-sm" style="color:var(--text-muted)">✅ No open reports. All clear!</div>'; return; }
+  list.innerHTML = '<div class="text-sm" style="color:var(--text-muted)">Loading reports...</div>';
+  const snap = await getDocs(query(collection(db, 'reports'), where('status','==','open'), orderBy('createdAt','desc'), limit(25)));
   list.innerHTML = '';
   snap.docs.forEach(d => {
     const r = d.data();
-    const ts = r.createdAt?.toDate?.()?.toLocaleString() || '';
+    const ts = r.createdAt?.toDate?.()?.toLocaleDateString() || '';
     list.insertAdjacentHTML('beforeend', `
-      <div class="lynk-card p-5"><div class="flex items-center justify-between"><div><p class="font-semibold text-sm mb-1">🚨 ${r.reason||'User Report'}</p><p class="text-xs" style="color:var(--text-muted)">Post ID: ${r.postId||'—'} · ${ts}</p></div><div class="flex gap-2"><button onclick="resolveReport('${d.id}','dismissed')" class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-lg">Dismiss</button><button onclick="resolveReport('${d.id}','actioned')" class="lynk-btn text-xs py-1.5 px-3 rounded-lg" style="background:#ef444422;color:#ef4444">Remove Post</button></div></div></div>`);
+      <div class="lynk-card p-4 mb-2">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="text-sm font-medium">${escHtml(r.reason||'Reported content')}</p>
+            <p class="text-xs mt-0.5" style="color:var(--text-muted)">Post: ${r.postId||'—'} · Reported ${ts}</p>
+          </div>
+          <div class="flex gap-1">
+            <button onclick="resolveReport('${d.id}')" class="lynk-btn lynk-btn-primary text-xs py-1 px-2 rounded-lg">Resolve</button>
+            ${r.postId ? `<button onclick="deleteReportedPost('${r.postId}','${d.id}')" class="lynk-btn text-xs py-1 px-2 rounded-lg" style="background:rgba(239,68,68,0.1);color:#ef4444">Delete Post</button>` : ''}
+          </div>
+        </div>
+      </div>`);
   });
+  if (snap.empty) list.innerHTML = '<div class="lynk-card p-6 text-center text-sm" style="color:var(--text-secondary)">✅ No open reports. All clear!</div>';
 }
-window.resolveReport = async (reportId, action) => {
-  const snap = await getDoc(doc(db, 'reports', reportId));
-  if (action === 'actioned' && snap.data()?.postId) await deleteDoc(doc(db, 'posts', snap.data().postId)).catch(()=>{});
-  await updateDoc(doc(db, 'reports', reportId), { status: action, resolvedAt: serverTimestamp() });
+
+window.resolveReport = async (id) => { await updateDoc(doc(db, 'reports', id), { status:'resolved' }); loadReports(); };
+window.deleteReportedPost = async (postId, reportId) => {
+  await Promise.all([ deleteDoc(doc(db, 'posts', postId)), updateDoc(doc(db, 'reports', reportId), { status:'resolved' }) ]);
   loadReports();
 };
 
@@ -451,52 +251,173 @@ window.resolveReport = async (reportId, action) => {
 async function loadCommunities() {
   const list = document.getElementById('communities-list');
   if (!list) return;
-  const snap = await getDocs(query(collection(db, 'communities'), orderBy('memberCount','desc'), limit(20)));
+  list.innerHTML = '<div class="text-sm" style="color:var(--text-muted)">Loading...</div>';
+  const snap = await getDocs(query(collection(db, 'communities'), orderBy('memberCount','desc'), limit(30)));
   list.innerHTML = '';
-  if (snap.empty) { list.innerHTML = '<div class="lynk-card p-6 col-span-full text-center text-sm" style="color:var(--text-muted)">No communities yet.</div>'; return; }
   snap.docs.forEach(d => {
     const c = d.data();
-    list.insertAdjacentHTML('beforeend', `<div class="lynk-card p-5"><div class="flex items-center gap-3 mb-3"><span class="text-2xl">${c.type==='faculty'?'🏛️':'📚'}</span><div><p class="font-semibold text-sm">${c.name}</p><p class="text-xs" style="color:var(--text-muted)">${c.type} · ${c.university||''}</p></div></div><div class="flex items-center justify-between text-sm"><span style="color:var(--text-secondary)">👥 ${c.memberCount||0} members</span><span class="lynk-badge" style="background:var(--bg-card-hover);color:var(--text-muted)">${c.type}</span></div></div>`);
+    list.insertAdjacentHTML('beforeend', `
+      <div class="flex items-center justify-between py-3 border-b" style="border-color:var(--border)">
+        <div>
+          <p class="text-sm font-medium">${escHtml(c.name)}</p>
+          <p class="text-xs" style="color:var(--text-muted)">${c.type} · ${c.memberCount||0} members</p>
+        </div>
+        <button onclick="deleteCommunity('${d.id}')" class="lynk-btn text-xs py-1 px-2 rounded-lg" style="background:rgba(239,68,68,0.1);color:#ef4444">Delete</button>
+      </div>`);
   });
+  if (snap.empty) list.innerHTML = '<div class="text-sm" style="color:var(--text-muted)">No communities yet.</div>';
 }
+window.deleteCommunity = async (id) => { if (!confirm('Delete this community?')) return; await deleteDoc(doc(db, 'communities', id)); loadCommunities(); };
 
 // ===== ADMINS =====
 async function loadAdminsList() {
   const list = document.getElementById('admins-list');
   if (!list) return;
-  const snap = await getDocs(query(collection(db, 'users'), where('adminRole', '!=', null), limit(20)));
-  if (snap.empty) { list.innerHTML = '<p class="text-sm" style="color:var(--text-muted)">No sub-admins assigned yet.</p>'; return; }
+  list.innerHTML = '';
+  const snap = await getDocs(query(collection(db, 'users'), where('role','==','admin')));
+  const snap2 = await getDocs(query(collection(db, 'users'), where('adminRole','!=',null)));
+  const seen = new Set();
+  [...snap.docs, ...snap2.docs].forEach(d => {
+    if (seen.has(d.id)) return; seen.add(d.id);
+    const u = d.data();
+    const roles = { super:'🌟 Super Admin', security:'🔐 Security', analytics:'📊 Analytics', support:'🎯 Support', content:'📝 Content' };
+    list.insertAdjacentHTML('beforeend', `
+      <div class="lynk-card p-4 flex items-center gap-3">
+        <img src="${u.photoURL||`https://ui-avatars.com/api/?name=${encodeURIComponent(u.displayName||'A')}&background=a855f7&color=fff&size=48`}" class="lynk-avatar w-12 h-12 flex-shrink-0" />
+        <div class="flex-1">
+          <p class="font-semibold text-sm">${escHtml(u.displayName||'Admin')}</p>
+          <p class="text-xs" style="color:var(--text-muted)">${escHtml(u.email||'')} · ${roles[u.adminRole]||'Admin'}</p>
+        </div>
+        ${d.id !== currentUser.uid ? `<button onclick="removeAdmin('${d.id}')" class="lynk-btn text-xs py-1 px-2 rounded-lg" style="background:rgba(239,68,68,0.1);color:#ef4444">Remove</button>` : '<span class="lynk-badge text-xs" style="color:var(--grad-1)">You</span>'}
+      </div>`);
+  });
+  if (seen.size === 0) list.innerHTML = '<div class="text-sm" style="color:var(--text-muted)">No admins found.</div>';
+}
+
+window.addAdmin = async () => {
+  const email = document.getElementById('new-admin-email').value.trim();
+  const role  = document.getElementById('new-admin-role').value;
+  if (!email) return;
+  const snap = await getDocs(query(collection(db, 'users'), where('email','==',email), limit(1)));
+  if (snap.empty) { alert('No LYNK user found with that email.'); return; }
+  await updateDoc(snap.docs[0].ref, { adminRole: role, role:'admin' });
+  document.getElementById('new-admin-email').value = '';
+  loadAdminsList();
+};
+
+window.removeAdmin = async (uid) => {
+  if (!confirm('Remove admin access?')) return;
+  await updateDoc(doc(db, 'users', uid), { adminRole: null, role:'user' });
+  loadAdminsList();
+};
+
+// ===== SCHOOLS =====
+async function loadSchools() {
+  const list = document.getElementById('schools-list');
+  if (!list) return;
+  list.innerHTML = '<div class="text-sm" style="color:var(--text-muted)">Loading...</div>';
+  const snap = await getDocs(collection(db, 'schools'));
+  if (snap.empty) { list.innerHTML = '<div class="text-sm" style="color:var(--text-muted)">No schools added yet.</div>'; return; }
   list.innerHTML = '';
   snap.docs.forEach(d => {
-    const u = d.data();
-    const ava = u.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.displayName||'U')}&background=a855f7&color=fff&size=40`;
-    list.insertAdjacentHTML('beforeend', `<div class="flex items-center gap-2"><img src="${ava}" class="lynk-avatar w-8 h-8" /><div class="flex-1 min-w-0"><p class="text-xs font-semibold truncate">${u.displayName}</p><p class="text-xs truncate" style="color:var(--text-muted)">${u.adminRole}</p></div>${currentUserData.adminRole==='super'?`<button onclick="revokeAdmin('${d.id}')" class="text-xs" style="color:#ef4444">Revoke</button>`:''}</div>`);
+    const s = d.data();
+    const facCount = Object.keys(s.faculties || {}).length;
+    list.insertAdjacentHTML('beforeend', `
+      <div class="lynk-card p-4 mb-2 flex items-start justify-between gap-3">
+        <div>
+          <p class="font-semibold text-sm">${escHtml(s.name)}</p>
+          <p class="text-xs" style="color:var(--text-muted)">${facCount} faculties</p>
+        </div>
+        <button onclick="deleteSchool('${d.id}')" class="lynk-btn text-xs py-1 px-2 rounded-lg flex-shrink-0" style="background:rgba(239,68,68,0.1);color:#ef4444">Delete</button>
+      </div>`);
   });
 }
 
-window.grantAdminRole = async () => {
-  const email = document.getElementById('grant-admin-email').value.trim();
-  const role  = document.getElementById('grant-admin-role').value;
-  if (!email) return;
-  const snap = await getDocs(query(collection(db, 'users'), where('email','==',email), limit(1)));
-  if (snap.empty) { alert('User not found with that email.'); return; }
-  await updateDoc(snap.docs[0].ref, { adminRole: role });
-  hideGrantAdminModal();
-  loadAdminsList();
-  alert(`Admin role "${role}" granted to ${email}`);
-};
-window.revokeAdmin = async (uid) => {
-  if (!confirm('Revoke admin role?')) return;
-  await updateDoc(doc(db, 'users', uid), { adminRole: null });
-  loadAdminsList();
+window.deleteSchool = async (id) => { if (!confirm('Delete this school?')) return; await deleteDoc(doc(db, 'schools', id)); loadSchools(); };
+
+window.saveNewSchool = async () => {
+  const name = document.getElementById('new-school-name').value.trim();
+  const rawFacDepts = document.getElementById('new-school-faculties').value.trim();
+  if (!name || !rawFacDepts) { alert('Fill in name and faculties.'); return; }
+  const faculties = {};
+  rawFacDepts.split('\n').forEach(line => {
+    const parts = line.split(':');
+    if (parts.length >= 2) {
+      const facName = parts[0].trim();
+      const depts = parts[1].split(',').map(d => d.trim()).filter(Boolean);
+      if (facName && depts.length) faculties[facName] = depts;
+    }
+  });
+  if (!Object.keys(faculties).length) { alert('Invalid format. Use: Faculty Name: Dept1, Dept2'); return; }
+  await addDoc(collection(db, 'schools'), { name, faculties, createdAt: serverTimestamp() });
+  document.getElementById('new-school-name').value = '';
+  document.getElementById('new-school-faculties').value = '';
+  loadSchools();
 };
 
-window.refreshDashboard = async () => { await loadStats(); initCharts(); };
+// ===== ANNOUNCEMENTS (Admin section) =====
+async function loadAnnouncementsAdmin() {
+  const list = document.getElementById('admin-ann-list');
+  if (!list) return;
+  list.innerHTML = '<div class="text-sm" style="color:var(--text-muted)">Loading...</div>';
+  const snap = await getDocs(query(collection(db, 'announcements'), orderBy('createdAt','desc'), limit(30)));
+  list.innerHTML = '';
+  snap.docs.forEach(d => {
+    const a = d.data();
+    const ts = a.createdAt?.toDate?.()?.toLocaleDateString() || '';
+    const priorityColors = { high:'#ef4444', medium:'#f59e0b', low:'#22c55e' };
+    list.insertAdjacentHTML('beforeend', `
+      <div class="lynk-card p-4 mb-2 flex items-start gap-3" style="border-left:3px solid ${priorityColors[a.priority||'low']}">
+        <div class="flex-1">
+          <p class="text-sm font-semibold">${escHtml(a.title||'')}</p>
+          <p class="text-xs mt-1 mb-1" style="color:var(--text-secondary)">${escHtml((a.body||'').slice(0,100))}${(a.body||'').length>100?'...':''}</p>
+          <p class="text-xs" style="color:var(--text-muted)">📢 ${a.audience||'all'} · ${ts} · by ${escHtml(a.authorName||'Admin')}</p>
+        </div>
+        <button onclick="deleteAdminAnnouncement('${d.id}')" class="lynk-btn text-xs py-1 px-2 rounded-lg flex-shrink-0" style="background:rgba(239,68,68,0.1);color:#ef4444">Delete</button>
+      </div>`);
+  });
+  if (snap.empty) list.innerHTML = '<div class="text-sm" style="color:var(--text-muted)">No announcements yet.</div>';
+}
+
+window.deleteAdminAnnouncement = async (id) => {
+  if (!confirm('Delete this announcement?')) return;
+  await deleteDoc(doc(db, 'announcements', id));
+  loadAnnouncementsAdmin();
+};
+
+window.postAdminAnnouncement = async () => {
+  const title    = document.getElementById('admin-ann-title').value.trim();
+  const body     = document.getElementById('admin-ann-body').value.trim();
+  const priority = document.getElementById('admin-ann-priority').value;
+  const audience = document.getElementById('admin-ann-audience').value;
+  const category = document.getElementById('admin-ann-category').value.trim();
+  const link     = document.getElementById('admin-ann-link').value.trim();
+  const linkLabel= document.getElementById('admin-ann-link-label').value.trim();
+
+  if (!title || !body) { alert('Title and body are required.'); return; }
+
+  const btn = document.getElementById('btn-post-admin-ann');
+  btn.disabled = true; btn.textContent = 'Posting...';
+
+  await addDoc(collection(db, 'announcements'), {
+    title, body, priority, audience, category, link, linkLabel,
+    authorId: currentUser.uid,
+    authorName: currentUserData.displayName || 'Admin',
+    createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+  });
+
+  ['admin-ann-title','admin-ann-body','admin-ann-category','admin-ann-link','admin-ann-link-label'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  btn.disabled = false; btn.textContent = 'Post Announcement';
+  loadAnnouncementsAdmin();
+};
+
 window.signOut = async () => {
-  if (currentUser) await updateDoc(doc(db, 'users', currentUser.uid), { isOnline: false, lastSeen: serverTimestamp() }).catch(()=>{});
   await firebaseSignOut(auth);
   window.location.href = 'auth.html';
 };
-window.hideGrantAdminModal = () => document.getElementById('grant-admin-modal')?.classList.add('hidden');
-window.hideAddSchoolModal = () => document.getElementById('add-school-modal')?.classList.add('hidden');
-window.hideManageSchoolModal = () => document.getElementById('manage-school-modal')?.classList.add('hidden');
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
