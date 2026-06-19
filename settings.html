@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings — LYNK By Legends</title>
+  <link rel="icon" href="assets/logo.jpg" type="image/jpeg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/custom.css" />
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="lynk-nav h-16 flex items-center px-6 justify-between">
+  <a href="feed.html" class="flex flex-col leading-none">
+    <span class="logo-text">LYNK</span>
+    <span class="logo-sub">By Legends</span>
+  </a>
+  <div class="flex-1 max-w-sm mx-6">
+    <input type="text" class="lynk-input text-sm py-2" placeholder="🔍 Search LYNK..."
+           onfocus="window.location.href='search.html'" />
+  </div>
+  <div class="flex items-center gap-3">
+    <button id="theme-toggle" class="lynk-btn lynk-btn-ghost p-2 rounded-full"><span id="theme-icon">☀️</span></button>
+    <a href="profile.html" class="relative">
+      <img id="nav-avatar" src="https://ui-avatars.com/api/?name=User&background=a855f7&color=fff" class="lynk-avatar w-9 h-9 cursor-pointer" alt="Profile" />
+    </a>
+  </div>
+</nav>
+
+<!-- SIDEBAR -->
+<aside class="lynk-sidebar pt-4 pb-20">
+  <div class="px-4 mb-4">
+    <div class="flex items-center gap-3 p-3 rounded-xl mb-1" style="background:var(--bg-card-hover)">
+      <img id="sidebar-avatar" src="https://ui-avatars.com/api/?name=User&background=a855f7&color=fff" class="lynk-avatar w-10 h-10" />
+      <div class="overflow-hidden">
+        <p class="font-semibold text-sm truncate" id="sidebar-name">Loading...</p>
+        <p class="text-xs truncate" style="color:var(--text-muted)" id="sidebar-dept"></p>
+      </div>
+    </div>
+  </div>
+  <nav class="flex flex-col gap-0.5">
+    <a href="feed.html" class="lynk-sidebar-link">🏠 <span>Home Feed</span></a>
+    <a href="search.html" class="lynk-sidebar-link">🔍 <span>Search</span></a>
+    <a href="announcements.html" class="lynk-sidebar-link">📢 <span>Announcements</span></a>
+    <a href="profile.html" class="lynk-sidebar-link">👤 <span>My Profile</span></a>
+    <a href="chat.html" class="lynk-sidebar-link">💬 <span>Messages</span></a>
+    <div class="px-4 mt-4 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Settings</div>
+    <a href="settings.html" class="lynk-sidebar-link active">⚙️ <span>Settings</span></a>
+    <a href="admin.html" id="admin-link" class="lynk-sidebar-link hidden">🛡️ <span>Admin Panel</span></a>
+    <a href="#" onclick="signOut()" class="lynk-sidebar-link" style="color:#ef4444">🚪 <span>Sign Out</span></a>
+  </nav>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+  <div class="max-w-2xl mx-auto px-4 py-6">
+
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold mb-1">⚙️ Settings</h1>
+      <p style="color:var(--text-secondary);font-size:0.875rem">Manage your account, privacy and notification preferences</p>
+    </div>
+
+    <!-- Settings Navigation -->
+    <div class="flex gap-1 mb-6 p-1 rounded-xl overflow-x-auto" style="background:var(--bg-card)">
+      <button class="lynk-tab settings-nav-btn active text-sm whitespace-nowrap" onclick="showSection('profile', this)">👤 Profile</button>
+      <button class="lynk-tab settings-nav-btn text-sm whitespace-nowrap" onclick="showSection('notifications', this)">🔔 Notifications</button>
+      <button class="lynk-tab settings-nav-btn text-sm whitespace-nowrap" onclick="showSection('privacy', this)">🔒 Privacy</button>
+      <button class="lynk-tab settings-nav-btn text-sm whitespace-nowrap" onclick="showSection('security', this)">🔐 Security</button>
+    </div>
+
+    <!-- Profile Settings -->
+    <section id="section-profile" class="settings-section fade-in">
+      <div class="lynk-card p-5 mb-4">
+        <h3 class="font-bold mb-4">Profile Information</h3>
+        <div class="flex flex-col gap-4">
+          <div>
+            <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Display Name</label>
+            <input id="set-displayname" type="text" class="lynk-input" placeholder="Your full name" />
+          </div>
+          <div>
+            <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Bio</label>
+            <textarea id="set-bio" class="lynk-input resize-none" rows="3" placeholder="Tell your campus about yourself..." maxlength="300"></textarea>
+          </div>
+          <div>
+            <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Academic Level</label>
+            <select id="set-level" class="lynk-input">
+              <option value="">Not specified</option>
+              <option value="100L">100 Level</option>
+              <option value="200L">200 Level</option>
+              <option value="300L">300 Level</option>
+              <option value="400L">400 Level</option>
+              <option value="500L">500 Level</option>
+              <option value="Postgrad">Postgraduate</option>
+              <option value="PhD">PhD Candidate</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Skills <span style="color:var(--text-muted);font-weight:400">(comma-separated, max 15)</span></label>
+            <input id="set-skills" type="text" class="lynk-input" placeholder="e.g. Python, Public Speaking, Design, Research" />
+          </div>
+          <div>
+            <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Interests <span style="color:var(--text-muted);font-weight:400">(comma-separated, max 15)</span></label>
+            <input id="set-interests" type="text" class="lynk-input" placeholder="e.g. AI, Basketball, Music, Entrepreneurship" />
+          </div>
+        </div>
+      </div>
+
+      <div class="lynk-card p-5 mb-4">
+        <h3 class="font-bold mb-4">Social Links</h3>
+        <div class="flex flex-col gap-3">
+          <div>
+            <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">🌐 Website</label>
+            <input id="set-website" type="url" class="lynk-input" placeholder="https://yourwebsite.com" />
+          </div>
+          <div>
+            <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">💼 LinkedIn</label>
+            <input id="set-linkedin" type="text" class="lynk-input" placeholder="linkedin.com/in/yourname" />
+          </div>
+          <div>
+            <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">🐦 Twitter / X</label>
+            <input id="set-twitter" type="text" class="lynk-input" placeholder="@yourhandle" />
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-save-profile" onclick="saveProfileSettings()" class="lynk-btn lynk-btn-primary w-full py-3 rounded-xl text-base">Save Changes</button>
+    </section>
+
+    <!-- Notifications Settings -->
+    <section id="section-notifications" class="settings-section hidden fade-in">
+      <div class="lynk-card p-5 mb-4">
+        <h3 class="font-bold mb-4">Notification Preferences</h3>
+        <p class="text-sm mb-4" style="color:var(--text-secondary)">Choose what you want to be notified about.</p>
+        <div class="flex flex-col gap-4">
+          <label class="flex items-center justify-between cursor-pointer">
+            <div>
+              <p class="text-sm font-medium">❤️ Likes</p>
+              <p class="text-xs" style="color:var(--text-muted)">When someone likes your post</p>
+            </div>
+            <div class="relative">
+              <input type="checkbox" id="notif-likes" class="sr-only peer" />
+              <div class="w-11 h-6 rounded-full peer-checked:bg-purple-600 peer-focus:ring-2 peer-focus:ring-purple-300 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" style="background:var(--border)"></div>
+            </div>
+          </label>
+          <div class="h-px" style="background:var(--border)"></div>
+          <label class="flex items-center justify-between cursor-pointer">
+            <div>
+              <p class="text-sm font-medium">💬 Comments</p>
+              <p class="text-xs" style="color:var(--text-muted)">When someone comments on your post</p>
+            </div>
+            <div class="relative">
+              <input type="checkbox" id="notif-comments" class="sr-only peer" />
+              <div class="w-11 h-6 rounded-full peer-checked:bg-purple-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" style="background:var(--border)"></div>
+            </div>
+          </label>
+          <div class="h-px" style="background:var(--border)"></div>
+          <label class="flex items-center justify-between cursor-pointer">
+            <div>
+              <p class="text-sm font-medium">🤝 Friend Requests</p>
+              <p class="text-xs" style="color:var(--text-muted)">New friend requests and acceptances</p>
+            </div>
+            <div class="relative">
+              <input type="checkbox" id="notif-friends" class="sr-only peer" />
+              <div class="w-11 h-6 rounded-full peer-checked:bg-purple-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" style="background:var(--border)"></div>
+            </div>
+          </label>
+          <div class="h-px" style="background:var(--border)"></div>
+          <label class="flex items-center justify-between cursor-pointer">
+            <div>
+              <p class="text-sm font-medium">📢 Announcements</p>
+              <p class="text-xs" style="color:var(--text-muted)">Platform-wide announcements from admins</p>
+            </div>
+            <div class="relative">
+              <input type="checkbox" id="notif-announcements" class="sr-only peer" />
+              <div class="w-11 h-6 rounded-full peer-checked:bg-purple-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" style="background:var(--border)"></div>
+            </div>
+          </label>
+          <div class="h-px" style="background:var(--border)"></div>
+          <label class="flex items-center justify-between cursor-pointer">
+            <div>
+              <p class="text-sm font-medium">💌 Messages</p>
+              <p class="text-xs" style="color:var(--text-muted)">New direct messages from connections</p>
+            </div>
+            <div class="relative">
+              <input type="checkbox" id="notif-messages" class="sr-only peer" />
+              <div class="w-11 h-6 rounded-full peer-checked:bg-purple-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" style="background:var(--border)"></div>
+            </div>
+          </label>
+        </div>
+      </div>
+      <button id="btn-save-notif" onclick="saveNotificationSettings()" class="lynk-btn lynk-btn-primary w-full py-3 rounded-xl text-base">Save Preferences</button>
+    </section>
+
+    <!-- Privacy Settings -->
+    <section id="section-privacy" class="settings-section hidden fade-in">
+      <div class="lynk-card p-5 mb-4">
+        <h3 class="font-bold mb-4">Privacy Settings</h3>
+        <div class="flex flex-col gap-5">
+          <div>
+            <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Profile Visibility</label>
+            <select id="privacy-profile" class="lynk-input">
+              <option value="public">🌍 Public — Anyone on LYNK</option>
+              <option value="university">🎓 University — Same university only</option>
+              <option value="friends">👥 Friends — Friends only</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Friends List Visibility</label>
+            <select id="privacy-friends-list" class="lynk-input">
+              <option value="public">🌍 Everyone</option>
+              <option value="friends">👥 Friends only</option>
+              <option value="private">🔒 Only me</option>
+            </select>
+          </div>
+          <label class="flex items-center justify-between cursor-pointer">
+            <div>
+              <p class="text-sm font-medium">🔍 Appear in Search</p>
+              <p class="text-xs" style="color:var(--text-muted)">Allow others to find you via search</p>
+            </div>
+            <input type="checkbox" id="privacy-search" class="w-5 h-5 accent-purple-500 rounded cursor-pointer" />
+          </label>
+          <div class="h-px" style="background:var(--border)"></div>
+          <label class="flex items-center justify-between cursor-pointer">
+            <div>
+              <p class="text-sm font-medium">👥 Show in People Suggestions</p>
+              <p class="text-xs" style="color:var(--text-muted)">Appear in "People You May Know"</p>
+            </div>
+            <input type="checkbox" id="privacy-suggestions" class="w-5 h-5 accent-purple-500 rounded cursor-pointer" />
+          </label>
+        </div>
+      </div>
+      <button id="btn-save-privacy" onclick="savePrivacySettings()" class="lynk-btn lynk-btn-primary w-full py-3 rounded-xl text-base">Save Privacy Settings</button>
+    </section>
+
+    <!-- Security Settings -->
+    <section id="section-security" class="settings-section hidden fade-in">
+      <div class="lynk-card p-5 mb-4">
+        <h3 class="font-bold mb-1">Email Address</h3>
+        <p class="text-sm mb-4" style="color:var(--text-secondary)">Your login email</p>
+        <div class="flex items-center gap-3 p-3 rounded-xl" style="background:var(--bg-card-hover)">
+          <span class="text-xl">📧</span>
+          <div>
+            <p id="current-email" class="font-medium text-sm">loading...</p>
+            <p id="email-verified" class="text-xs">checking...</p>
+          </div>
+          <button onclick="resendVerificationEmail()" class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-lg ml-auto">Verify</button>
+        </div>
+      </div>
+
+      <div class="lynk-card p-5 mb-4">
+        <h3 class="font-bold mb-1">Change Password</h3>
+        <p class="text-sm mb-4" style="color:var(--text-secondary)">Use a strong password you don't use elsewhere</p>
+        <div class="flex flex-col gap-3">
+          <div id="pw-error" class="hidden text-sm p-3 rounded-xl" style="background:rgba(239,68,68,0.1);border:1px solid #ef4444;color:#f87171"></div>
+          <div>
+            <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Current Password</label>
+            <input id="pw-current" type="password" class="lynk-input" placeholder="Enter current password" />
+          </div>
+          <div>
+            <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">New Password</label>
+            <input id="pw-new" type="password" class="lynk-input" placeholder="At least 8 characters" />
+          </div>
+          <div>
+            <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Confirm New Password</label>
+            <input id="pw-confirm" type="password" class="lynk-input" placeholder="Repeat new password" />
+          </div>
+          <button id="btn-change-pw" onclick="changePassword()" class="lynk-btn lynk-btn-primary w-full py-3 rounded-xl">Update Password</button>
+        </div>
+      </div>
+
+      <div class="lynk-card p-5" style="border:1px solid rgba(239,68,68,0.3)">
+        <h3 class="font-bold mb-1" style="color:#f87171">Danger Zone</h3>
+        <p class="text-sm mb-4" style="color:var(--text-secondary)">These actions cannot be undone</p>
+        <a href="profile.html" class="lynk-btn w-full py-3 rounded-xl text-sm" style="background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.3);display:flex;align-items:center;justify-content:center;gap:8px">
+          🗑️ Delete Account (go to Profile)
+        </a>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script type="module" src="js/settings.js"></script>
+<script>
+  document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('lynk-theme', next);
+    document.getElementById('theme-icon').textContent = next === 'dark' ? '☀️' : '🌙';
+  });
+</script>
+</body>
+</html>
