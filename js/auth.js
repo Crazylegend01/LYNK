@@ -43,10 +43,12 @@ const setLoading = (btnId, loading, label = '') => {
 // ===== REDIRECT IF ALREADY SIGNED IN & VERIFIED =====
 onAuthStateChanged(auth, async (user) => {
   if (user && user.emailVerified) {
-    const snap = await getDoc(doc(db, 'users', user.uid));
-    if (snap.exists()) {
-      window.location.href = 'feed.html';
-    }
+    try {
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      if (snap.exists()) {
+        window.location.href = 'feed.html';
+      }
+    } catch { /* ignore */ }
   }
 });
 
@@ -81,6 +83,14 @@ window.checkUsername = (value) => {
       status.textContent = '';
     }
   }, 600);
+};
+
+// Show/hide position field based on user type
+window.onUserTypeChange = (value) => {
+  const posWrapper = document.getElementById('position-wrapper');
+  const levelWrapper = document.getElementById('level-wrapper');
+  if (posWrapper) posWrapper.style.display = value === 'staff' ? 'block' : 'none';
+  if (levelWrapper) levelWrapper.style.display = (value === 'student' || value === 'alumni') ? 'block' : 'none';
 };
 
 // ===== SCHOOL DROPDOWN LOGIC =====
@@ -144,13 +154,12 @@ window.loadDepartments = (faculty) => {
   deptWrapper?.classList.remove('hidden');
 };
 
-// Load schools when page loads
 loadSchools();
 
 // ===== SIGNUP STEP 1 =====
 let pendingUserUid = null;
 let pendingUserEmail = null;
-let pendingUserPassword = null; // kept in memory so resendVerification can re-auth
+let pendingUserPassword = null;
 
 document.getElementById('form-signup')?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -161,8 +170,8 @@ document.getElementById('form-signup')?.addEventListener('submit', async (e) => 
   const password = document.getElementById('signup-password').value;
   const userType = document.querySelector('input[name="user-type"]:checked')?.value || 'student';
   const position = document.getElementById('signup-position')?.value.trim() || '';
+  const academicLevel = document.getElementById('signup-level')?.value || '';
 
-  // Validations
   if (!username || username.length < 3) {
     showAlert('Username must be at least 3 characters.'); return;
   }
@@ -176,7 +185,6 @@ document.getElementById('form-signup')?.addEventListener('submit', async (e) => 
     showAlert('Please accept the Terms of Service to continue.'); return;
   }
 
-  // Check username uniqueness
   setLoading('btn-signup', true, 'Continue →');
   try {
     const uSnap = await getDocs(query(collection(db, 'users'), where('username', '==', username), limit(1)));
@@ -185,16 +193,14 @@ document.getElementById('form-signup')?.addEventListener('submit', async (e) => 
       setLoading('btn-signup', false, 'Continue →');
       return;
     }
-  } catch {
-    // If we can't verify uniqueness, proceed — Firebase Auth creation will still work
-  }
+  } catch { /* proceed */ }
+
   try {
     const { user } = await createUserWithEmailAndPassword(auth, email, password);
     pendingUserUid = user.uid;
     pendingUserEmail = email;
     pendingUserPassword = password;
 
-    // Create user profile
     await setDoc(doc(db, 'users', user.uid), {
       uid: user.uid,
       email,
@@ -202,8 +208,9 @@ document.getElementById('form-signup')?.addEventListener('submit', async (e) => 
       firstName: fname,
       lastName: lname,
       username,
-      userType,       // 'student' | 'staff'
+      userType,
       position: userType === 'staff' ? position : '',
+      academicLevel: (userType === 'student' || userType === 'alumni') ? academicLevel : '',
       university: '',
       faculty: '',
       department: '',
@@ -214,6 +221,8 @@ document.getElementById('form-signup')?.addEventListener('submit', async (e) => 
       adminRole: null,
       isOnline: false,
       profileComplete: false,
+      skills: [],
+      interests: [],
       createdAt: serverTimestamp(),
       lastSeen: serverTimestamp(),
       friendsCount: 0,
@@ -221,7 +230,6 @@ document.getElementById('form-signup')?.addEventListener('submit', async (e) => 
     });
 
     setLoading('btn-signup', false, 'Continue →');
-    // Show university step BEFORE sending verification (user still signed in)
     window.switchTab('university');
   } catch (err) {
     const msgs = {
@@ -263,14 +271,11 @@ window.completeUniversityInfo = async () => {
     }, { merge: true });
   }
 
-  // Send verification then sign out
   const user = auth.currentUser;
   if (user) {
     try {
       await sendEmailVerification(user);
     } catch (err) {
-      // auth/too-many-requests is the most common — still show the verify screen
-      // so the user can use the Resend button
       console.warn('sendEmailVerification error:', err.code);
     }
     await firebaseSignOut(auth);
@@ -301,12 +306,10 @@ document.getElementById('form-login')?.addEventListener('submit', async (e) => {
   setLoading('btn-login', true, 'Sign In');
   try {
     const { user } = await signInWithEmailAndPassword(auth, email, password);
-    // Force a fresh check from Firebase servers — fixes stale emailVerified cache
     await user.reload();
     const freshUser = auth.currentUser;
     if (!freshUser.emailVerified) {
       showAlert('Please verify your email first. Check your inbox (and spam folder). Click "Resend Email" below if needed.');
-      // Show the resend button right on the login form
       document.getElementById('login-resend-wrap')?.classList.remove('hidden');
       await firebaseSignOut(auth);
       setLoading('btn-login', false, 'Sign In');
@@ -352,11 +355,13 @@ window.signInWithGoogle = async () => {
         username,
         userType: 'student',
         position: '',
+        academicLevel: '',
         university: '', faculty: '', department: '',
         bio: '',
         photoURL: user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName||'User')}&background=a855f7&color=fff`,
         coverURL: '', role: 'user', adminRole: null,
         isOnline: true, profileComplete: false,
+        skills: [], interests: [],
         createdAt: serverTimestamp(), lastSeen: serverTimestamp(),
         friendsCount: 0, postsCount: 0
       });
@@ -387,11 +392,8 @@ window.sendReset = async () => {
 };
 
 // ===== RESEND VERIFICATION =====
-// After sign-up the user is signed out, so auth.currentUser is null.
-// We re-authenticate with the stored password, send the email, then sign out again.
 window.resendVerification = async () => {
   if (!pendingUserEmail || !pendingUserPassword) {
-    // Page was refreshed and the in-memory credentials are gone — send them to login
     showAlert('Go back to Sign In, enter your credentials, and click "Resend Verification Email".');
     return;
   }
@@ -409,7 +411,6 @@ window.resendVerification = async () => {
   }
 };
 
-// Called from the login form when emailVerified = false
 window.resendFromLogin = async () => {
   const email    = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
