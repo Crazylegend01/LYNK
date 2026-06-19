@@ -8,93 +8,106 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/custom.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
 <!-- NAVBAR -->
 <nav class="lynk-nav h-16 flex items-center px-6 justify-between">
-  <a href="index.html" class="flex flex-col leading-none">
+  <a href="feed.html" class="flex flex-col leading-none">
     <span class="logo-text">LYNK</span>
     <span class="logo-sub">By Legends</span>
   </a>
-  <div class="flex items-center gap-4">
-    <span class="lynk-badge lynk-gradient text-white px-3 py-1">🛡️ Admin</span>
+  <div class="flex items-center gap-3">
+    <span id="admin-role-badge" class="lynk-badge lynk-gradient text-white text-xs">🌟 Admin</span>
     <button id="theme-toggle" class="lynk-btn lynk-btn-ghost p-2 rounded-full"><span id="theme-icon">☀️</span></button>
-    <a href="feed.html" class="lynk-btn lynk-btn-secondary text-sm">← Back to LYNK</a>
+    <a href="feed.html" class="lynk-btn lynk-btn-secondary text-sm">← Feed</a>
   </div>
 </nav>
 
-<!-- ADMIN SIDEBAR -->
+<!-- SIDEBAR -->
 <aside class="lynk-sidebar pt-4 pb-20">
-  <div class="px-4 mb-5">
-    <p class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:var(--text-muted)">Admin Role</p>
-    <div class="lynk-card px-3 py-2">
-      <span id="admin-role-badge" class="lynk-badge lynk-gradient text-white text-xs">Super Admin</span>
-    </div>
+  <div class="px-4 mb-4">
+    <p class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:var(--text-muted)">Admin Panel</p>
   </div>
   <nav class="flex flex-col gap-0.5">
-    <div class="px-4 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Overview</div>
-    <a href="#" class="lynk-sidebar-link active" onclick="showSection('overview', this)">📊 <span>Dashboard</span></a>
-    <div class="px-4 mt-3 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Management</div>
-    <a href="#" class="lynk-sidebar-link" onclick="showSection('users', this)">👥 <span>Users</span></a>
-    <a href="#" class="lynk-sidebar-link" onclick="showSection('content', this)">📝 <span>Content</span></a>
-    <a href="#" class="lynk-sidebar-link" onclick="showSection('communities', this)">🏛️ <span>Communities</span></a>
-    <a href="#" class="lynk-sidebar-link" onclick="showSection('schools', this)">🎓 <span>Schools</span></a>
-    <div class="px-4 mt-3 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Security</div>
-    <a href="#" class="lynk-sidebar-link" onclick="showSection('security', this)">🔐 <span>Security Logs</span></a>
-    <a href="#" class="lynk-sidebar-link" onclick="showSection('reports', this)">🚨 <span>Reports</span></a>
-    <div class="px-4 mt-3 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Analytics</div>
-    <a href="#" class="lynk-sidebar-link" onclick="showSection('analytics', this)">📈 <span>Analytics</span></a>
-    <div class="px-4 mt-3 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Admin</div>
-    <a href="#" class="lynk-sidebar-link" onclick="showSection('admins', this)">🛡️ <span>Manage Admins</span></a>
-    <a href="#" onclick="signOut()" class="lynk-sidebar-link mt-4" style="color:#ef4444">🚪 <span>Sign Out</span></a>
+    <a href="#" onclick="showSection('dashboard',this)" class="lynk-sidebar-link active">📊 <span>Dashboard</span></a>
+    <a href="#" onclick="showSection('users',this)" class="lynk-sidebar-link">👥 <span>Users</span></a>
+    <a href="#" onclick="showSection('content',this)" class="lynk-sidebar-link">📝 <span>Content</span></a>
+    <a href="#" onclick="showSection('announcements',this)" class="lynk-sidebar-link">📢 <span>Announcements</span></a>
+    <a href="#" onclick="showSection('communities',this)" class="lynk-sidebar-link">🏛️ <span>Communities</span></a>
+    <a href="#" onclick="showSection('schools',this)" class="lynk-sidebar-link">🎓 <span>Schools</span></a>
+    <a href="#" onclick="showSection('reports',this)" class="lynk-sidebar-link">🚩 <span>Reports</span></a>
+    <a href="#" onclick="showSection('security',this)" class="lynk-sidebar-link">🔐 <span>Security Logs</span></a>
+    <a href="#" onclick="showSection('analytics',this)" class="lynk-sidebar-link">📈 <span>Analytics</span></a>
+    <a href="#" onclick="showSection('admins',this)" class="lynk-sidebar-link">🛡️ <span>Admins</span></a>
+    <div class="px-4 mt-4 mb-1"></div>
+    <a href="#" onclick="signOut()" class="lynk-sidebar-link" style="color:#ef4444">🚪 <span>Sign Out</span></a>
   </nav>
 </aside>
 
-<!-- MAIN -->
-<main class="main-content px-6 py-6">
-
-  <!-- Access Denied -->
-  <div id="access-denied" class="hidden text-center py-20">
+<!-- ACCESS DENIED -->
+<div id="access-denied" class="main-content hidden">
+  <div class="max-w-md mx-auto px-4 py-20 text-center">
     <div class="text-6xl mb-4">🚫</div>
     <h2 class="text-2xl font-bold mb-2">Access Denied</h2>
-    <p style="color:var(--text-secondary)" class="mb-6">You don't have permission to access the Admin Panel.</p>
+    <p class="mb-6" style="color:var(--text-secondary)">You don't have admin access to LYNK.</p>
     <a href="feed.html" class="lynk-btn lynk-btn-primary px-6 py-3 rounded-xl">Back to Feed</a>
   </div>
+</div>
 
-  <div id="admin-content">
+<!-- MAIN ADMIN CONTENT -->
+<main class="main-content" id="admin-content">
+  <div class="max-w-5xl mx-auto px-4 py-6">
 
-    <!-- ===== OVERVIEW ===== -->
-    <section id="section-overview" class="fade-in">
+    <!-- ===== DASHBOARD ===== -->
+    <section id="section-dashboard" class="fade-in">
       <div class="flex items-center justify-between mb-6">
         <div>
           <h1 class="text-2xl font-bold">Dashboard Overview</h1>
-          <p class="text-sm" style="color:var(--text-secondary)">Platform health at a glance · Updated live</p>
+          <p class="text-sm" style="color:var(--text-secondary)">Platform health at a glance</p>
         </div>
         <button onclick="refreshDashboard()" class="lynk-btn lynk-btn-secondary text-sm py-2 px-4 rounded-xl">🔄 Refresh</button>
       </div>
+
+      <!-- Stats Grid -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div class="stat-card"><div class="text-3xl font-black lynk-gradient-text mb-1" id="stat-users">—</div><div class="text-sm font-medium mb-1">Total Users</div><div class="text-xs" style="color:var(--text-muted)" id="stat-users-growth">+0 this week</div></div>
-        <div class="stat-card"><div class="text-3xl font-black lynk-gradient-text mb-1" id="stat-posts">—</div><div class="text-sm font-medium mb-1">Total Posts</div><div class="text-xs" style="color:var(--text-muted)" id="stat-posts-growth">+0 today</div></div>
-        <div class="stat-card"><div class="text-3xl font-black lynk-gradient-text mb-1" id="stat-active">—</div><div class="text-sm font-medium mb-1">Active Now</div><div class="text-xs" style="color:#22c55e">● Live</div></div>
-        <div class="stat-card"><div class="text-3xl font-black lynk-gradient-text mb-1" id="stat-reports">—</div><div class="text-sm font-medium mb-1">Open Reports</div><div class="text-xs" style="color:var(--text-muted)">Needs review</div></div>
-      </div>
-      <div class="grid lg:grid-cols-2 gap-5 mb-6">
-        <div class="lynk-card p-5"><h3 class="font-semibold mb-4 text-sm">User Growth (7 days)</h3><canvas id="chart-growth" height="200"></canvas></div>
-        <div class="lynk-card p-5"><h3 class="font-semibold mb-4 text-sm">Activity Distribution</h3><canvas id="chart-activity" height="200"></canvas></div>
-      </div>
-      <div class="grid lg:grid-cols-2 gap-5">
-        <div class="lynk-card p-5"><h3 class="font-semibold mb-4 text-sm">Posts by Faculty</h3><canvas id="chart-faculty" height="200"></canvas></div>
-        <div class="lynk-card p-5">
-          <h3 class="font-semibold mb-4 text-sm">Platform Health</h3>
-          <div class="flex flex-col gap-3">
-            <div><div class="flex justify-between text-xs mb-1"><span>Firestore</span><span style="color:#22c55e">Healthy</span></div><div class="h-2 rounded-full" style="background:var(--border)"><div class="h-full w-[98%] rounded-full" style="background:#22c55e"></div></div></div>
-            <div><div class="flex justify-between text-xs mb-1"><span>Firebase Auth</span><span style="color:#22c55e">Healthy</span></div><div class="h-2 rounded-full" style="background:var(--border)"><div class="h-full w-[100%] rounded-full" style="background:#22c55e"></div></div></div>
-            <div><div class="flex justify-between text-xs mb-1"><span>Storage</span><span style="color:#22c55e">Healthy</span></div><div class="h-2 rounded-full" style="background:var(--border)"><div class="h-full w-[95%] rounded-full" style="background:#22c55e"></div></div></div>
-            <div><div class="flex justify-between text-xs mb-1"><span>Uptime</span><span style="color:#22c55e">99.9%</span></div><div class="h-2 rounded-full" style="background:var(--border)"><div class="h-full lynk-gradient w-[99.9%] rounded-full"></div></div></div>
-          </div>
+        <div class="stat-card">
+          <div class="text-2xl font-black lynk-gradient-text" id="stat-users">—</div>
+          <div class="text-sm mt-1" style="color:var(--text-secondary)">Total Users</div>
+          <div class="text-xs mt-0.5" id="stat-users-growth" style="color:#22c55e">Loading...</div>
         </div>
+        <div class="stat-card">
+          <div class="text-2xl font-black lynk-gradient-text" id="stat-posts">—</div>
+          <div class="text-sm mt-1" style="color:var(--text-secondary)">Total Posts</div>
+          <div class="text-xs mt-0.5" id="stat-posts-growth" style="color:#22c55e">Loading...</div>
+        </div>
+        <div class="stat-card">
+          <div class="text-2xl font-black" id="stat-reports" style="color:#f87171">—</div>
+          <div class="text-sm mt-1" style="color:var(--text-secondary)">Open Reports</div>
+          <div class="text-xs mt-0.5" style="color:var(--text-muted)">Needs review</div>
+        </div>
+        <div class="stat-card">
+          <div class="text-2xl font-black" id="stat-active" style="color:#4ade80">—</div>
+          <div class="text-sm mt-1" style="color:var(--text-secondary)">Online Now</div>
+          <div class="text-xs mt-0.5" style="color:var(--text-muted)">Live users</div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="grid lg:grid-cols-2 gap-5 mb-6">
+        <div class="lynk-card p-5">
+          <h3 class="font-semibold text-sm mb-4">📈 User Growth (7 days)</h3>
+          <canvas id="chart-growth" height="180"></canvas>
+        </div>
+        <div class="lynk-card p-5">
+          <h3 class="font-semibold text-sm mb-4">🔥 Activity Breakdown</h3>
+          <canvas id="chart-activity" height="180"></canvas>
+        </div>
+      </div>
+      <div class="lynk-card p-5">
+        <h3 class="font-semibold text-sm mb-4">🏛️ Posts by Faculty</h3>
+        <canvas id="chart-faculty" height="120"></canvas>
       </div>
     </section>
 
@@ -102,13 +115,7 @@
     <section id="section-users" class="hidden fade-in">
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold">User Management</h1>
-        <input type="text" id="user-search" class="lynk-input text-sm py-2 w-64" placeholder="🔍 Search users..." oninput="searchUsers(this.value)" />
-      </div>
-      <div class="flex gap-1 mb-5 p-1 rounded-xl w-fit" style="background:var(--bg-card)">
-        <button class="lynk-tab active text-sm" onclick="filterUsers('all', this)">All</button>
-        <button class="lynk-tab text-sm" onclick="filterUsers('staff', this)">Staff</button>
-        <button class="lynk-tab text-sm" onclick="filterUsers('active', this)">Online</button>
-        <button class="lynk-tab text-sm" onclick="filterUsers('suspended', this)">Suspended</button>
+        <input type="text" class="lynk-input text-sm py-2 w-64" placeholder="🔍 Search users..." oninput="filterUsers(this.value)" />
       </div>
       <div class="lynk-card overflow-hidden">
         <div class="overflow-x-auto">
@@ -116,14 +123,15 @@
             <thead>
               <tr style="border-bottom:1px solid var(--border)">
                 <th class="text-left p-4 font-medium" style="color:var(--text-muted)">User</th>
-                <th class="text-left p-4 font-medium" style="color:var(--text-muted)">University / Role</th>
+                <th class="text-left p-4 font-medium" style="color:var(--text-muted)">Email</th>
+                <th class="text-left p-4 font-medium" style="color:var(--text-muted)">Type</th>
+                <th class="text-left p-4 font-medium" style="color:var(--text-muted)">University</th>
                 <th class="text-left p-4 font-medium" style="color:var(--text-muted)">Joined</th>
-                <th class="text-left p-4 font-medium" style="color:var(--text-muted)">Status</th>
                 <th class="text-left p-4 font-medium" style="color:var(--text-muted)">Actions</th>
               </tr>
             </thead>
-            <tbody id="users-table-body">
-              <tr><td colspan="5" class="p-8 text-center" style="color:var(--text-muted)">Loading users...</td></tr>
+            <tbody id="users-tbody">
+              <tr><td colspan="6" class="p-8 text-center" style="color:var(--text-muted)">Loading users...</td></tr>
             </tbody>
           </table>
         </div>
@@ -133,19 +141,70 @@
     <!-- ===== CONTENT ===== -->
     <section id="section-content" class="hidden fade-in">
       <h1 class="text-2xl font-bold mb-6">Content Moderation</h1>
-      <div class="flex gap-1 mb-5 p-1 rounded-xl w-fit" style="background:var(--bg-card)">
-        <button class="lynk-tab active text-sm" onclick="filterContent('all', this)">All Posts</button>
-        <button class="lynk-tab text-sm" onclick="filterContent('reported', this)">Reported</button>
+      <div id="content-list" class="lynk-card p-5">
+        <div class="text-sm" style="color:var(--text-muted)">Loading posts...</div>
       </div>
-      <div id="content-list" class="flex flex-col gap-4">
-        <div class="lynk-card p-5 animate-pulse"><div class="h-4 rounded w-3/4 mb-2" style="background:var(--border)"></div><div class="h-4 rounded w-1/2" style="background:var(--border)"></div></div>
+    </section>
+
+    <!-- ===== ANNOUNCEMENTS ===== -->
+    <section id="section-announcements" class="hidden fade-in">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-2xl font-bold">📢 Announcements</h1>
+          <p class="text-sm" style="color:var(--text-secondary)">Post platform-wide announcements to all or specific users</p>
+        </div>
+      </div>
+
+      <!-- Compose Form -->
+      <div class="lynk-card p-6 mb-6" style="border-left:3px solid var(--grad-1)">
+        <h3 class="font-bold mb-4">New Announcement</h3>
+        <div class="flex flex-col gap-3">
+          <input id="admin-ann-title" type="text" class="lynk-input" placeholder="Announcement title *" maxlength="120" />
+          <textarea id="admin-ann-body" class="lynk-input resize-none" rows="4" placeholder="Announcement body *" maxlength="2000"></textarea>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs font-medium mb-1 block" style="color:var(--text-muted)">Priority</label>
+              <select id="admin-ann-priority" class="lynk-input text-sm py-2">
+                <option value="low">🟢 Info</option>
+                <option value="medium">🟡 Important</option>
+                <option value="high">🔴 Urgent</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs font-medium mb-1 block" style="color:var(--text-muted)">Audience</label>
+              <select id="admin-ann-audience" class="lynk-input text-sm py-2">
+                <option value="all">🌍 Everyone</option>
+                <option value="students">🎓 Students only</option>
+                <option value="staff">👨‍🏫 Staff only</option>
+                <option value="alumni">🏆 Alumni only</option>
+              </select>
+            </div>
+          </div>
+          <input id="admin-ann-category" type="text" class="lynk-input text-sm" placeholder="Category (e.g. Events, Exams, General)" maxlength="40" />
+          <div class="grid grid-cols-2 gap-3">
+            <input id="admin-ann-link" type="url" class="lynk-input text-sm" placeholder="Link URL (optional)" />
+            <input id="admin-ann-link-label" type="text" class="lynk-input text-sm" placeholder="Link label" maxlength="40" />
+          </div>
+          <button id="btn-post-admin-ann" onclick="postAdminAnnouncement()" class="lynk-btn lynk-btn-primary py-3 rounded-xl text-base">
+            📢 Post Announcement
+          </button>
+        </div>
+      </div>
+
+      <!-- Existing Announcements -->
+      <h3 class="font-semibold mb-4">Existing Announcements</h3>
+      <div id="admin-ann-list">
+        <div class="lynk-card p-5 animate-pulse">
+          <div class="h-4 rounded w-1/2 mb-2" style="background:var(--border)"></div>
+          <div class="h-3 rounded w-3/4" style="background:var(--border)"></div>
+        </div>
       </div>
     </section>
 
     <!-- ===== COMMUNITIES ===== -->
     <section id="section-communities" class="hidden fade-in">
       <h1 class="text-2xl font-bold mb-6">Communities</h1>
-      <div id="communities-list" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div id="communities-list" class="flex flex-col gap-3">
         <div class="lynk-card p-5 animate-pulse"><div class="h-4 rounded w-3/4 mb-2" style="background:var(--border)"></div></div>
       </div>
     </section>
@@ -155,28 +214,12 @@
       <div class="flex items-center justify-between mb-6">
         <div>
           <h1 class="text-2xl font-bold">Schools Management 🎓</h1>
-          <p class="text-sm" style="color:var(--text-secondary)">Add universities — students and staff choose from this list when registering</p>
+          <p class="text-sm" style="color:var(--text-secondary)">Add universities — users pick from this list when registering</p>
         </div>
-        <button onclick="showAddSchoolModal()" class="lynk-btn lynk-btn-primary text-sm py-2 px-4 rounded-xl">+ Add University</button>
+        <button onclick="document.getElementById('add-school-modal').classList.remove('hidden')" class="lynk-btn lynk-btn-primary text-sm py-2 px-4 rounded-xl">+ Add University</button>
       </div>
-
-      <!-- Schools List -->
-      <div id="schools-list" class="flex flex-col gap-4">
+      <div id="schools-list" class="flex flex-col gap-3">
         <div class="lynk-card p-5 animate-pulse"><div class="h-4 rounded w-1/2 mb-2" style="background:var(--border)"></div></div>
-      </div>
-    </section>
-
-    <!-- ===== SECURITY ===== -->
-    <section id="section-security" class="hidden fade-in">
-      <h1 class="text-2xl font-bold mb-6">Security Logs</h1>
-      <div class="lynk-card overflow-hidden">
-        <div class="p-4 border-b flex items-center justify-between" style="border-color:var(--border)">
-          <span class="text-sm font-medium">Recent Auth Events</span>
-          <span id="security-count" class="lynk-badge" style="background:var(--bg-card-hover)">0 events</span>
-        </div>
-        <div id="security-logs" class="divide-y" style="border-color:var(--border)">
-          <div class="p-4 text-sm" style="color:var(--text-muted)">Loading security logs...</div>
-        </div>
       </div>
     </section>
 
@@ -188,17 +231,26 @@
       </div>
     </section>
 
+    <!-- ===== SECURITY ===== -->
+    <section id="section-security" class="hidden fade-in">
+      <h1 class="text-2xl font-bold mb-6">Security Logs</h1>
+      <div class="lynk-card overflow-hidden">
+        <div class="p-4 border-b" style="border-color:var(--border)">
+          <span class="text-sm font-medium">Recent Auth Events</span>
+        </div>
+        <div id="security-list" class="p-4">
+          <div class="text-sm" style="color:var(--text-muted)">Loading...</div>
+        </div>
+      </div>
+    </section>
+
     <!-- ===== ANALYTICS ===== -->
     <section id="section-analytics" class="hidden fade-in">
       <h1 class="text-2xl font-bold mb-6">Platform Analytics</h1>
       <div class="grid lg:grid-cols-3 gap-4 mb-6">
         <div class="stat-card"><div class="text-2xl font-bold lynk-gradient-text" id="ana-dau">—</div><div class="text-sm mt-1">Daily Active Users</div></div>
         <div class="stat-card"><div class="text-2xl font-bold lynk-gradient-text" id="ana-posts-day">—</div><div class="text-sm mt-1">Posts Today</div></div>
-        <div class="stat-card"><div class="text-2xl font-bold lynk-gradient-text" id="ana-messages">—</div><div class="text-sm mt-1">Messages Sent Today</div></div>
-      </div>
-      <div class="grid lg:grid-cols-2 gap-5">
-        <div class="lynk-card p-5"><h3 class="font-semibold mb-4 text-sm">30-Day User Trend</h3><canvas id="chart-30day" height="200"></canvas></div>
-        <div class="lynk-card p-5"><h3 class="font-semibold mb-4 text-sm">Content Types Breakdown</h3><canvas id="chart-content-types" height="200"></canvas></div>
+        <div class="stat-card"><div class="text-2xl font-bold lynk-gradient-text" id="ana-messages">—</div><div class="text-sm mt-1">Messages Today</div></div>
       </div>
     </section>
 
@@ -206,7 +258,7 @@
     <section id="section-admins" class="hidden fade-in">
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold">Admin Management</h1>
-        <button onclick="showGrantAdminModal()" class="lynk-btn lynk-btn-primary text-sm py-2 px-4 rounded-xl">+ Grant Admin Role</button>
+        <button onclick="document.getElementById('grant-admin-modal').classList.remove('hidden')" class="lynk-btn lynk-btn-primary text-sm py-2 px-4 rounded-xl">+ Grant Admin Role</button>
       </div>
       <div class="grid md:grid-cols-2 gap-4 mb-6">
         <div class="lynk-card p-5">
@@ -220,23 +272,48 @@
           </div>
         </div>
         <div class="lynk-card p-5">
-          <h3 class="font-semibold text-sm mb-3">Current Admins</h3>
-          <div id="admins-list" class="flex flex-col gap-2" style="color:var(--text-muted);font-size:0.875rem">Loading...</div>
+          <h3 class="font-semibold text-sm mb-3">Grant New Admin</h3>
+          <div class="flex flex-col gap-3">
+            <input id="new-admin-email" type="email" class="lynk-input" placeholder="user@university.edu" />
+            <select id="new-admin-role" class="lynk-input">
+              <option value="super">Super Admin</option>
+              <option value="security">Security Admin</option>
+              <option value="analytics">Analytics Admin</option>
+              <option value="support">Support Admin</option>
+              <option value="content">Content Admin</option>
+            </select>
+            <button onclick="addAdmin()" class="lynk-btn lynk-btn-primary py-2.5 rounded-xl">Grant Admin Role</button>
+          </div>
         </div>
+      </div>
+      <div class="lynk-card p-5">
+        <h3 class="font-semibold text-sm mb-4">Current Admins</h3>
+        <div id="admins-list" class="flex flex-col gap-3">Loading...</div>
       </div>
     </section>
 
   </div>
 </main>
 
-<!-- USER ACTION MODAL -->
-<div id="user-action-modal" class="lynk-modal-overlay hidden">
-  <div class="lynk-card p-6 w-full max-w-sm mx-4">
-    <h3 class="font-bold text-lg mb-2" id="user-action-title">User Action</h3>
-    <p class="text-sm mb-5" id="user-action-desc" style="color:var(--text-secondary)"></p>
-    <div class="flex gap-3">
-      <button id="user-action-confirm" onclick="confirmUserAction()" class="lynk-btn lynk-btn-primary flex-1 py-3 rounded-xl">Confirm</button>
-      <button onclick="closeUserActionModal()" class="lynk-btn lynk-btn-secondary flex-1 py-3 rounded-xl">Cancel</button>
+<!-- ADD SCHOOL MODAL -->
+<div id="add-school-modal" class="lynk-modal-overlay hidden">
+  <div class="lynk-card p-6 w-full max-w-lg mx-4" style="max-height:90vh;overflow-y:auto">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-bold text-lg">Add University</h3>
+      <button onclick="document.getElementById('add-school-modal').classList.add('hidden')" class="lynk-btn lynk-btn-ghost p-1">✕</button>
+    </div>
+    <div class="flex flex-col gap-4">
+      <div>
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">University Full Name *</label>
+        <input id="new-school-name" type="text" class="lynk-input" placeholder="e.g. University of Benin" />
+      </div>
+      <div>
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Faculties and Departments</label>
+        <textarea id="new-school-faculties" class="lynk-input resize-none" rows="8"
+          placeholder="One line per faculty. Format:&#10;Faculty Name: Dept1, Dept2, Dept3&#10;&#10;Example:&#10;Engineering: Computer Science, Civil Engineering, Electrical Engineering&#10;Science: Physics, Chemistry, Mathematics"></textarea>
+        <p class="text-xs mt-1.5" style="color:var(--text-muted)">Each line: <strong>Faculty Name: Dept1, Dept2</strong></p>
+      </div>
+      <button onclick="saveNewSchool()" class="lynk-btn lynk-btn-primary py-3 rounded-xl">Save University</button>
     </div>
   </div>
 </div>
@@ -246,74 +323,19 @@
   <div class="lynk-card p-6 w-full max-w-sm mx-4">
     <div class="flex items-center justify-between mb-4">
       <h3 class="font-bold text-lg">Grant Admin Role</h3>
-      <button onclick="hideGrantAdminModal()" class="lynk-btn lynk-btn-ghost p-1">✕</button>
+      <button onclick="document.getElementById('grant-admin-modal').classList.add('hidden')" class="lynk-btn lynk-btn-ghost p-1">✕</button>
     </div>
     <div class="flex flex-col gap-4">
-      <div>
-        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">User Email</label>
-        <input id="grant-admin-email" type="email" class="lynk-input" placeholder="user@university.edu" />
-      </div>
-      <div>
-        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Admin Role</label>
-        <select id="grant-admin-role" class="lynk-input">
-          <option value="super">Super Admin</option>
-          <option value="security">Security Admin</option>
-          <option value="analytics">Analytics Admin</option>
-          <option value="support">Support Admin</option>
-          <option value="content">Content Admin</option>
-        </select>
-      </div>
-      <button onclick="grantAdminRole()" class="lynk-btn lynk-btn-primary py-3 rounded-xl">Grant Role</button>
+      <input id="new-admin-email-modal" type="email" class="lynk-input" placeholder="user@university.edu" />
+      <select id="new-admin-role-modal" class="lynk-input">
+        <option value="super">Super Admin</option>
+        <option value="security">Security Admin</option>
+        <option value="analytics">Analytics Admin</option>
+        <option value="support">Support Admin</option>
+        <option value="content">Content Admin</option>
+      </select>
+      <button onclick="addAdmin()" class="lynk-btn lynk-btn-primary py-3 rounded-xl">Grant Role</button>
     </div>
-  </div>
-</div>
-
-<!-- ADD SCHOOL MODAL -->
-<div id="add-school-modal" class="lynk-modal-overlay hidden">
-  <div class="lynk-card p-6 w-full max-w-lg mx-4" style="max-height:90vh;overflow-y:auto">
-    <div class="flex items-center justify-between mb-5">
-      <h3 class="font-bold text-lg">Add University</h3>
-      <button onclick="hideAddSchoolModal()" class="lynk-btn lynk-btn-ghost p-1">✕</button>
-    </div>
-    <div class="flex flex-col gap-4">
-      <div>
-        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">University Full Name *</label>
-        <input id="school-name" type="text" class="lynk-input" placeholder="e.g. University of Benin" />
-      </div>
-      <div>
-        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Short Name / Abbreviation</label>
-        <input id="school-short" type="text" class="lynk-input" placeholder="e.g. UNIBEN" />
-      </div>
-      <div>
-        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Location</label>
-        <input id="school-location" type="text" class="lynk-input" placeholder="e.g. Benin City, Edo State" />
-      </div>
-
-      <!-- Faculties & Departments -->
-      <div>
-        <div class="flex items-center justify-between mb-2">
-          <label class="text-sm font-medium" style="color:var(--text-secondary)">Faculties & Departments</label>
-          <button type="button" onclick="addFacultyRow()" class="lynk-btn lynk-btn-secondary text-xs py-1 px-3 rounded-lg">+ Add Faculty</button>
-        </div>
-        <div id="faculties-builder" class="flex flex-col gap-3">
-          <!-- Faculty rows added dynamically -->
-        </div>
-        <p class="text-xs mt-2" style="color:var(--text-muted)">For each faculty, list departments separated by commas</p>
-      </div>
-
-      <button onclick="saveSchool()" class="lynk-btn lynk-btn-primary py-3 rounded-xl mt-2">Save University</button>
-    </div>
-  </div>
-</div>
-
-<!-- MANAGE FACULTIES MODAL -->
-<div id="manage-school-modal" class="lynk-modal-overlay hidden">
-  <div class="lynk-card p-6 w-full max-w-lg mx-4" style="max-height:90vh;overflow-y:auto">
-    <div class="flex items-center justify-between mb-5">
-      <h3 class="font-bold text-lg" id="manage-school-title">Manage University</h3>
-      <button onclick="hideManageSchoolModal()" class="lynk-btn lynk-btn-ghost p-1">✕</button>
-    </div>
-    <div id="manage-school-content" class="flex flex-col gap-4"></div>
   </div>
 </div>
 
@@ -324,33 +346,13 @@
     document.getElementById(`section-${name}`)?.classList.remove('hidden');
     el?.classList.add('active');
   }
-  function showGrantAdminModal() { document.getElementById('grant-admin-modal').classList.remove('hidden'); }
-  function hideGrantAdminModal() { document.getElementById('grant-admin-modal').classList.add('hidden'); }
-  function closeUserActionModal() { document.getElementById('user-action-modal').classList.add('hidden'); }
-  function showAddSchoolModal() {
-    document.getElementById('faculties-builder').innerHTML = '';
-    document.getElementById('school-name').value = '';
-    document.getElementById('school-short').value = '';
-    document.getElementById('school-location').value = '';
-    addFacultyRow();
-    document.getElementById('add-school-modal').classList.remove('hidden');
-  }
-  function hideAddSchoolModal() { document.getElementById('add-school-modal').classList.add('hidden'); }
-  function hideManageSchoolModal() { document.getElementById('manage-school-modal').classList.add('hidden'); }
-
-  let facultyCounter = 0;
-  function addFacultyRow(name = '', depts = '') {
-    const id = facultyCounter++;
-    const builder = document.getElementById('faculties-builder');
-    builder.insertAdjacentHTML('beforeend', `
-      <div id="faculty-row-${id}" class="lynk-card p-3">
-        <div class="flex gap-2 mb-2">
-          <input type="text" class="lynk-input text-sm py-2 flex-1" placeholder="Faculty name (e.g. Engineering)" id="fac-name-${id}" value="${name}" />
-          <button onclick="document.getElementById('faculty-row-${id}').remove()" class="lynk-btn lynk-btn-ghost text-xs px-2 rounded-lg" style="color:#ef4444">✕</button>
-        </div>
-        <input type="text" class="lynk-input text-sm py-2 w-full" placeholder="Departments (comma-separated): Computer Sci, Electrical Eng, Civil Eng" id="fac-depts-${id}" value="${depts}" />
-      </div>`);
-  }
+  document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('lynk-theme', next);
+    document.getElementById('theme-icon').textContent = next === 'dark' ? '☀️' : '🌙';
+  });
 </script>
 <script type="module" src="js/admin.js"></script>
 </body>
