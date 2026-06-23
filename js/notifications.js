@@ -13,6 +13,15 @@ import app from './firebase-config.js';
 
 const VAPID_KEY = 'BKbN3IxNBozzZdG1P2vJVyb-LJzyaHMRoapJ2wDapc7aFNHm2Uylb3Vs4S3Jh5WfAWrOIIViUHGznyNCBdyBysQ';
 
+// Service worker path — works on GitHub Pages (/LYNK/) and Replit (/)
+const SW_PATH = window.location.hostname.endsWith('.github.io')
+  ? '/LYNK/firebase-messaging-sw.js'
+  : '/firebase-messaging-sw.js';
+
+// API base — relative on Replit, undefined on GitHub Pages (server not available)
+const _isGitHubPages = window.location.hostname.endsWith('.github.io');
+const API_BASE = _isGitHubPages ? null : '';
+
 let messaging = null;
 let currentUid = null;
 let unsubNotifications = null;
@@ -25,6 +34,10 @@ export async function initNotifications(uid) {
   injectSidebarBadges();
   listenForNotifications(uid);
   await setupFCM(uid);
+  // Subtle push permission prompt (shown once, respects prior decisions)
+  if (Notification.permission === 'default') {
+    setTimeout(() => showPushPromptBanner(uid), 3000);
+  }
 }
 
 // ===== NAVBAR BELL (dropdown) =====
@@ -217,8 +230,8 @@ window.markAllRead = async () => {
   await batch.commit();
 };
 
-// ===== SEND NOTIFICATION =====
-export async function sendNotification({ toUid, fromUid, fromName, fromPhoto, type, message, preview = '' }) {
+// ===== SEND NOTIFICATION (Firestore + FCM push) =====
+export async function sendNotification({ toUid, fromUid, fromName, fromPhoto, type, message, preview = '', icon = '', url = '' }) {
   if (!toUid || toUid === fromUid) return;
   await addDoc(collection(db, 'notifications'), {
     toUid, fromUid,
@@ -227,6 +240,36 @@ export async function sendNotification({ toUid, fromUid, fromName, fromPhoto, ty
     read: false,
     createdAt: serverTimestamp()
   });
+  // Also trigger a device push (works when app is closed)
+  const pushTitle = `LYNK — ${fromName || 'Someone'}`;
+  const pushBody  = message || 'You have a new notification';
+  triggerPush({ toUid, title: pushTitle, body: pushBody, icon: fromPhoto || icon, url });
+}
+
+// ===== PUSH PROMPT BANNER (shown once after login if permission not decided) =====
+function showPushPromptBanner(uid) {
+  if (document.getElementById('lynk-push-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'lynk-push-banner';
+  banner.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);z-index:8888;max-width:380px;width:calc(100% - 32px);background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);animation:fadeIn 0.3s ease';
+  banner.innerHTML = `
+    <span style="font-size:1.6rem;flex-shrink:0">🔔</span>
+    <div style="flex:1;min-width:0">
+      <p style="font-weight:600;font-size:0.85rem;margin-bottom:2px">Enable push notifications</p>
+      <p style="color:var(--text-muted);font-size:0.75rem">Get notified of likes, messages, and more — even when you're away.</p>
+    </div>
+    <div style="display:flex;gap:6px;flex-shrink:0">
+      <button id="lynk-push-deny" style="background:none;border:none;color:var(--text-muted);font-size:0.8rem;cursor:pointer;padding:6px 8px;border-radius:8px">Not now</button>
+      <button id="lynk-push-allow" class="lynk-btn lynk-btn-primary" style="font-size:0.8rem;padding:6px 14px;border-radius:8px">Allow</button>
+    </div>`;
+  document.body.appendChild(banner);
+  document.getElementById('lynk-push-allow').onclick = async () => {
+    banner.remove();
+    const ok = await requestPushPermission(uid);
+    if (ok) showToast('🔔 Push enabled', 'You\'ll now receive notifications even when away.');
+  };
+  document.getElementById('lynk-push-deny').onclick = () => banner.remove();
+  setTimeout(() => banner?.remove(), 20000);
 }
 
 // ===== FCM SETUP (background push — works on GitHub Pages via service worker) =====
@@ -234,7 +277,7 @@ async function setupFCM(uid) {
   if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
   try {
     messaging = getMessaging(app);
-    const swReg = await navigator.serviceWorker.register('/LYNK/firebase-messaging-sw.js');
+    const swReg = await navigator.serviceWorker.register(SW_PATH);
     if (Notification.permission === 'granted') {
       const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
       if (token) await saveFCMToken(uid, token);
@@ -252,12 +295,12 @@ async function setupFCM(uid) {
 }
 
 export async function requestPushPermission(uid) {
-  if (!('Notification' in window)) { alert('Your browser does not support push notifications.'); return false; }
+  if (!('Notification' in window)) { showToast('❌ Not supported', 'Your browser does not support push notifications.'); return false; }
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') return false;
   try {
     messaging = messaging || getMessaging(app);
-    const swReg = await navigator.serviceWorker.register('/LYNK/firebase-messaging-sw.js');
+    const swReg = await navigator.serviceWorker.register(SW_PATH);
     const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
     if (token) await saveFCMToken(uid, token);
     return true;
@@ -266,6 +309,20 @@ export async function requestPushPermission(uid) {
 
 async function saveFCMToken(uid, token) {
   await updateDoc(doc(db, 'users', uid), { fcmTokens: { [token]: true }, pushEnabled: true });
+}
+
+// ===== SERVER PUSH — calls Express API to trigger FCM when app is in background =====
+export async function triggerPush({ toUid, title, body, icon = '', url = '' }) {
+  if (API_BASE === null || !toUid) return;
+  try {
+    await fetch(`${API_BASE}/api/notify/push`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ toUid, title, body, icon, url }),
+    });
+  } catch (_) {
+    // Server not available — in-app notification still works via Firestore
+  }
 }
 
 // ===== FOREGROUND TOAST =====
