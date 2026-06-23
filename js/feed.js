@@ -2,7 +2,7 @@
 // LYNK By Legends — Feed Module (with Notifications)
 // ============================================================
 
-import { auth, db, storage } from './firebase-config.js';
+import { auth, db } from './firebase-config.js';
 import { ThemeManager } from './theme.js';
 import { initNotifications, sendNotification, showToast } from './notifications.js';
 import {
@@ -10,8 +10,11 @@ import {
   query, orderBy, limit, startAfter, where, serverTimestamp,
   arrayUnion, arrayRemove, increment
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { uploadToCloudinary, optimizeCloudinaryUrl } from './cloudinary.js';
+import { rankPosts, buildRankingContext } from './algorithm.js';
+
+const _firestoreFns = { collection, query, where, getDocs };
 
 ThemeManager.init();
 
@@ -20,6 +23,7 @@ let currentUserData = null;
 let lastPostDoc = null;
 let currentFilter = 'all';
 let activePostId = null;
+let _rankingCtx = null;
 window._postMediaFile = null;
 
 // Guard — require auth
@@ -30,6 +34,7 @@ onAuthStateChanged(auth, async (user) => {
   currentUserData = snap.data() || {};
   populateSidebar();
   await initNotifications(user.uid);
+  _rankingCtx = await buildRankingContext(db, user.uid, currentUserData, _firestoreFns);
   loadFeed();
   loadSuggestions();
   loadTrendingCommunities();
@@ -56,27 +61,30 @@ function populateSidebar() {
   }
 }
 
-// ===== LOAD FEED =====
+// ===== LOAD FEED (Ranked by algorithm) =====
 async function loadFeed(reset = true) {
   if (reset) {
     lastPostDoc = null;
     document.getElementById('feed-container').innerHTML = skeletons(3);
   }
+
   const postsRef = collection(db, 'posts');
   let q;
+
   if (currentFilter === 'faculty' && currentUserData.faculty) {
-    q = query(postsRef, where('faculty', '==', currentUserData.faculty), orderBy('createdAt', 'desc'), limit(10));
+    q = query(postsRef, where('faculty', '==', currentUserData.faculty), orderBy('createdAt', 'desc'), limit(50));
   } else if (currentFilter === 'trending') {
-    q = query(postsRef, orderBy('likesCount', 'desc'), limit(10));
+    q = query(postsRef, orderBy('likesCount', 'desc'), limit(50));
+  } else if (!reset && lastPostDoc) {
+    q = query(postsRef, orderBy('createdAt', 'desc'), startAfter(lastPostDoc), limit(30));
   } else {
-    q = query(postsRef, orderBy('createdAt', 'desc'), limit(10));
+    q = query(postsRef, orderBy('createdAt', 'desc'), limit(50));
   }
-  if (!reset && lastPostDoc) {
-    q = query(postsRef, orderBy('createdAt', 'desc'), startAfter(lastPostDoc), limit(10));
-  }
+
   try {
     const snap = await getDocs(q);
     lastPostDoc = snap.docs[snap.docs.length - 1];
+
     if (snap.empty && reset) {
       document.getElementById('feed-container').innerHTML = `
         <div class="lynk-card p-10 text-center">
@@ -86,11 +94,18 @@ async function loadFeed(reset = true) {
         </div>`;
       return;
     }
+
+    const rawPosts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    const ranked = (currentFilter === 'trending')
+      ? rawPosts
+      : (_rankingCtx ? rankPosts(rawPosts, _rankingCtx) : rawPosts);
+
     if (reset) document.getElementById('feed-container').innerHTML = '';
-    snap.docs.forEach(d => {
-      document.getElementById('feed-container').insertAdjacentHTML('beforeend', buildPostCard(d.id, d.data()));
+    ranked.forEach(post => {
+      document.getElementById('feed-container').insertAdjacentHTML('beforeend', buildPostCard(post.id, post));
     });
-    document.getElementById('load-more-btn')?.classList.toggle('hidden', snap.docs.length < 10);
+    document.getElementById('load-more-btn')?.classList.toggle('hidden', snap.docs.length < 30);
   } catch (e) {
     if (reset) document.getElementById('feed-container').innerHTML = `
       <div class="lynk-card p-6 text-center text-sm" style="color:var(--text-muted)">
@@ -126,7 +141,8 @@ function buildPostCard(postId, data) {
     if (d.mediaType === 'video') {
       mediaHtml = `<div class="post-media mt-3"><video src="${d.mediaUrl}" controls class="w-full rounded-xl"></video></div>`;
     } else {
-      mediaHtml = `<div class="post-media mt-3"><img src="${d.mediaUrl}" alt="Post image" class="w-full rounded-xl cursor-pointer" onclick="openPostModal('${postId}')" /></div>`;
+      const optimized = optimizeCloudinaryUrl(d.mediaUrl, { width: 800, crop: 'limit' });
+      mediaHtml = `<div class="post-media mt-3"><img src="${optimized}" alt="Post image" class="w-full rounded-xl cursor-pointer" loading="lazy" onclick="openPostModal('${postId}')" /></div>`;
     }
   }
 
@@ -215,10 +231,14 @@ window.submitPost = async () => {
 
   let mediaUrl = null, mediaType = null;
   if (window._postMediaFile) {
-    const fileRef = ref(storage, `posts/${currentUser.uid}/${Date.now()}-${window._postMediaFile.name}`);
-    await uploadBytes(fileRef, window._postMediaFile);
-    mediaUrl = await getDownloadURL(fileRef);
-    mediaType = window._postMediaFile.type.startsWith('video') ? 'video' : 'image';
+    try {
+      mediaUrl = await uploadToCloudinary(window._postMediaFile, `lynk/posts/${currentUser.uid}`);
+      mediaType = window._postMediaFile.type.startsWith('video') ? 'video' : 'image';
+    } catch (e) {
+      showToast('Upload Failed', 'Could not upload media. Check your Cloudinary preset.', '');
+      btn.disabled = false; btn.textContent = 'Post';
+      return;
+    }
   }
 
   await addDoc(collection(db, 'posts'), {
