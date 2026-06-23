@@ -3,6 +3,12 @@
 // Shared across all pages. No dependencies.
 // ============================================================
 
+// Apply saved theme immediately on every page load (no flash)
+(function () {
+  const saved = localStorage.getItem('lynk-theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+})();
+
 function openMobileNav() {
   document.querySelector('.lynk-sidebar')?.classList.add('drawer-open');
   document.getElementById('drawer-overlay')?.classList.add('open');
