@@ -13,10 +13,13 @@
 
 <!-- NAVBAR -->
 <nav class="lynk-nav h-16 flex items-center px-6 justify-between">
-  <a href="feed.html" class="flex flex-col leading-none">
-    <span class="logo-text">LYNK</span>
-    <span class="logo-sub">By Legends</span>
-  </a>
+  <div class="flex items-center gap-2">
+    <button id="hamburger-btn" onclick="openMobileNav()" aria-label="Open menu">☰</button>
+    <a href="feed.html" class="flex flex-col leading-none">
+      <span class="logo-text">LYNK</span>
+      <span class="logo-sub">By Legends</span>
+    </a>
+  </div>
   <div class="flex-1 max-w-sm mx-6">
     <input type="text" id="search-input" class="lynk-input text-sm py-2" placeholder="🔍 Search people, posts..."
            oninput="onSearchInput(this.value)" autofocus />
@@ -28,6 +31,8 @@
     </a>
   </div>
 </nav>
+
+<div id="drawer-overlay" class="lynk-drawer-overlay" onclick="closeMobileNav()"></div>
 
 <!-- SIDEBAR -->
 <aside class="lynk-sidebar pt-4 pb-20">
@@ -94,5 +99,13 @@
     document.getElementById('theme-icon').textContent = next === 'dark' ? '☀️' : '🌙';
   });
 </script>
+<nav class="lynk-bottom-nav">
+  <a href="feed.html"><span class="bnav-icon">🏠</span>Home</a>
+  <a href="search.html" class="active"><span class="bnav-icon">🔍</span>Search</a>
+  <a href="announcements.html"><span class="bnav-icon">📢</span>Alerts</a>
+  <a href="chat.html"><span class="bnav-icon">💬</span>Chat</a>
+  <a href="profile.html"><span class="bnav-icon">👤</span>Profile</a>
+</nav>
+<script src="js/mobile-nav.js"></script>
 </body>
 </html>
