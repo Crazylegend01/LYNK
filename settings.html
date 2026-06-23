@@ -135,6 +135,19 @@
 
     <!-- Notifications Settings -->
     <section id="section-notifications" class="settings-section hidden fade-in">
+      <!-- Push Notifications Card -->
+      <div class="lynk-card p-5 mb-4">
+        <div class="flex items-start gap-4">
+          <span class="text-3xl flex-shrink-0">🔔</span>
+          <div class="flex-1">
+            <h3 class="font-bold mb-1">Push Notifications</h3>
+            <p class="text-sm mb-3" style="color:var(--text-secondary)">Get notified of likes, comments, messages and announcements — even when LYNK is closed.</p>
+            <div id="push-status-text" class="text-xs mb-3" style="color:var(--text-muted)">Checking status…</div>
+            <button id="btn-enable-push" onclick="togglePushNotifications()" class="lynk-btn lynk-btn-primary px-5 py-2 rounded-xl text-sm">Enable Push Notifications</button>
+          </div>
+        </div>
+      </div>
+
       <div class="lynk-card p-5 mb-4">
         <h3 class="font-bold mb-4">Notification Preferences</h3>
         <p class="text-sm mb-4" style="color:var(--text-secondary)">Choose what you want to be notified about.</p>
@@ -288,6 +301,55 @@
 </main>
 
 <script type="module" src="js/settings.js"></script>
+<script type="module">
+  import { requestPushPermission } from './js/notifications.js';
+  import { auth } from './js/firebase-config.js';
+  import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+  // Push notification toggle on settings page
+  window.togglePushNotifications = async () => {
+    const btn = document.getElementById('btn-enable-push');
+    const statusEl = document.getElementById('push-status-text');
+    if (Notification.permission === 'granted') {
+      if (statusEl) statusEl.textContent = '✅ Push notifications are already enabled on this device.';
+      return;
+    }
+    if (Notification.permission === 'denied') {
+      if (statusEl) statusEl.textContent = '🚫 Push blocked in browser settings. Open browser site settings to re-enable.';
+      return;
+    }
+    if (btn) btn.textContent = 'Requesting…';
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
+      const ok = await requestPushPermission(user.uid);
+      if (ok) {
+        if (btn) { btn.textContent = '✅ Push Enabled'; btn.disabled = true; }
+        if (statusEl) statusEl.textContent = '✅ You\'ll receive push notifications even when LYNK is closed.';
+      } else {
+        if (btn) btn.textContent = 'Enable Push Notifications';
+        if (statusEl) statusEl.textContent = '❌ Permission denied. You can re-enable push in your browser settings.';
+      }
+    });
+  };
+
+  // Check current push status on load
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('btn-enable-push');
+    const statusEl = document.getElementById('push-status-text');
+    if (!('Notification' in window)) {
+      if (statusEl) statusEl.textContent = '❌ Push notifications are not supported in this browser.';
+      if (btn) btn.disabled = true;
+    } else if (Notification.permission === 'granted') {
+      if (statusEl) statusEl.textContent = '✅ Push notifications are enabled on this device.';
+      if (btn) { btn.textContent = '✅ Push Enabled'; btn.disabled = true; }
+    } else if (Notification.permission === 'denied') {
+      if (statusEl) statusEl.textContent = '🚫 Push blocked. Open your browser\'s site settings to allow notifications.';
+      if (btn) btn.textContent = 'Blocked by Browser';
+    } else {
+      if (statusEl) statusEl.textContent = 'Not yet enabled. Tap below to get notifications when you\'re away from LYNK.';
+    }
+  });
+</script>
 <script>
   document.getElementById('theme-toggle')?.addEventListener('click', () => {
     const current = document.documentElement.getAttribute('data-theme');
