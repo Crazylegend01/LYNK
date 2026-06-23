@@ -2,14 +2,14 @@
 // LYNK By Legends — Profile Module
 // ============================================================
 
-import { auth, db, storage } from './firebase-config.js';
+import { auth, db } from './firebase-config.js';
 import { ThemeManager } from './theme.js';
 import { initNotifications, sendNotification, showToast } from './notifications.js';
 import {
   collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc,
   query, where, orderBy, limit, serverTimestamp, increment, deleteField
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+import { uploadToCloudinary } from './cloudinary.js';
 import {
   onAuthStateChanged,
   signOut as firebaseSignOut,
@@ -486,14 +486,12 @@ window.updateAvatar = async (input) => {
   if (!file || !currentUser) return;
   showToast('Uploading...', 'Your photo is being uploaded.', '');
   try {
-    const r = ref(storage, `avatars/${currentUser.uid}`);
-    await uploadBytes(r, file);
-    const url = await getDownloadURL(r);
+    const url = await uploadToCloudinary(file, `lynk/avatars`);
     await updateDoc(doc(db, 'users', currentUser.uid), { photoURL: url });
     document.getElementById('profile-avatar').src = url;
     showToast('Photo Updated!', 'Your profile picture has been changed.', url);
   } catch (e) {
-    showToast('Upload Failed', 'Check your Firebase Storage rules.', '');
+    showToast('Upload Failed', 'Could not upload photo. Check your Cloudinary preset.', '');
   }
 };
 
@@ -503,14 +501,12 @@ window.updateCover = async (input) => {
   if (!file || !currentUser) return;
   showToast('Uploading cover...', 'Please wait.', '');
   try {
-    const r = ref(storage, `covers/${currentUser.uid}`);
-    await uploadBytes(r, file);
-    const url = await getDownloadURL(r);
+    const url = await uploadToCloudinary(file, `lynk/covers`);
     await updateDoc(doc(db, 'users', currentUser.uid), { coverURL: url });
     document.getElementById('cover-container').style.background = `url(${url}) center/cover`;
     showToast('Cover Updated!', 'Your cover photo has been changed.', url);
   } catch (e) {
-    showToast('Upload Failed', 'Check your Firebase Storage rules.', '');
+    showToast('Upload Failed', 'Could not upload cover. Check your Cloudinary preset.', '');
   }
 };
 
