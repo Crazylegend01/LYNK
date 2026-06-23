@@ -13,15 +13,20 @@
 
 <!-- NAVBAR -->
 <nav class="lynk-nav h-16 flex items-center px-6 justify-between">
-  <a href="index.html" class="flex flex-col leading-none">
-    <span class="logo-text">LYNK</span>
-    <span class="logo-sub">By Legends</span>
-  </a>
+  <div class="flex items-center gap-2">
+    <button id="hamburger-btn" onclick="openMobileNav()" aria-label="Open menu">☰</button>
+    <a href="index.html" class="flex flex-col leading-none">
+      <span class="logo-text">LYNK</span>
+      <span class="logo-sub">By Legends</span>
+    </a>
+  </div>
   <div class="flex items-center gap-3">
     <button id="theme-toggle" class="lynk-btn lynk-btn-ghost p-2 rounded-full"><span id="theme-icon">☀️</span></button>
     <a href="feed.html" class="lynk-btn lynk-btn-secondary text-sm">← Feed</a>
   </div>
 </nav>
+
+<div id="drawer-overlay" class="lynk-drawer-overlay" onclick="closeMobileNav()"></div>
 
 <!-- SIDEBAR -->
 <aside class="lynk-sidebar pt-4 pb-20">
@@ -236,5 +241,13 @@
     window.location.href = 'auth.html';
   };
 </script>
+<nav class="lynk-bottom-nav">
+  <a href="feed.html"><span class="bnav-icon">🏠</span>Home</a>
+  <a href="search.html"><span class="bnav-icon">🔍</span>Search</a>
+  <a href="announcements.html"><span class="bnav-icon">📢</span>Alerts</a>
+  <a href="chat.html"><span class="bnav-icon">💬</span>Chat</a>
+  <a href="profile.html"><span class="bnav-icon">👤</span>Profile</a>
+</nav>
+<script src="js/mobile-nav.js"></script>
 </body>
 </html>
