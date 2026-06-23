@@ -399,18 +399,26 @@ window.postAdminAnnouncement = async () => {
   const btn = document.getElementById('btn-post-admin-ann');
   btn.disabled = true; btn.textContent = 'Posting...';
 
-  await addDoc(collection(db, 'announcements'), {
-    title, body, priority, audience, category, link, linkLabel,
-    authorId: currentUser.uid,
-    authorName: currentUserData.displayName || 'Admin',
-    createdAt: serverTimestamp(), updatedAt: serverTimestamp()
-  });
+  try {
+    await addDoc(collection(db, 'announcements'), {
+      title, body, priority, audience, category, link, linkLabel,
+      authorId: currentUser.uid,
+      authorName: currentUserData.displayName || 'Admin',
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    });
 
-  ['admin-ann-title','admin-ann-body','admin-ann-category','admin-ann-link','admin-ann-link-label'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
-  btn.disabled = false; btn.textContent = 'Post Announcement';
-  loadAnnouncementsAdmin();
+    ['admin-ann-title','admin-ann-body','admin-ann-category','admin-ann-link','admin-ann-link-label'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    btn.textContent = '✓ Posted!';
+    setTimeout(() => { btn.textContent = 'Post Announcement'; }, 2000);
+    loadAnnouncementsAdmin();
+  } catch (err) {
+    console.error('Announcement post failed:', err);
+    alert(`Failed to post announcement: ${err.message || 'Permission denied. Make sure your account has adminRole set in Firestore.'}`);
+  } finally {
+    btn.disabled = false;
+  }
 };
 
 window.signOut = async () => {
