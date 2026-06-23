@@ -2,15 +2,15 @@
 // LYNK By Legends — Real-time Chat Module (with Notifications)
 // ============================================================
 
-import { auth, db, storage } from './firebase-config.js';
+import { auth, db } from './firebase-config.js';
 import { ThemeManager } from './theme.js';
 import { initNotifications, sendNotification } from './notifications.js';
 import {
   collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, query,
   where, orderBy, limit, onSnapshot, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { uploadToCloudinary } from './cloudinary.js';
 
 ThemeManager.init();
 
@@ -313,9 +313,13 @@ window.searchFriendsForChat = async (term) => {
 window.attachFile = async (input) => {
   const file = input.files[0];
   if (!file || !activeConvId) return;
-  const r = ref(storage, `chat/${activeConvId}/${Date.now()}-${file.name}`);
-  await uploadBytes(r, file);
-  const url = await getDownloadURL(r);
+  let url;
+  try {
+    url = await uploadToCloudinary(file, `lynk/chat/${activeConvId}`);
+  } catch (e) {
+    console.error('Cloudinary upload failed:', e);
+    return;
+  }
   const convSnap = await getDoc(doc(db, 'conversations', activeConvId));
   const otherUid = convSnap.data()?.participants?.find(uid => uid !== currentUser.uid);
   const currentUnread = convSnap.data()?.unread?.[otherUid] || 0;
