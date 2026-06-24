@@ -3,11 +3,19 @@
 // ============================================================
 
 export const ThemeManager = {
-  // Default gradient stops (hue values)
   defaults: {
-    g1: '#a855f7', // purple
-    g2: '#06b6d4', // cyan
-    g3: '#3b82f6', // blue
+    g1: '#a855f7',
+    g2: '#06b6d4',
+    g3: '#3b82f6',
+  },
+
+  themes: {
+    dark:     { g1: '#a855f7', g2: '#06b6d4', g3: '#3b82f6' },
+    light:    { g1: '#a855f7', g2: '#06b6d4', g3: '#3b82f6' },
+    sunset:   { g1: '#f97316', g2: '#ec4899', g3: '#8b5cf6' },
+    ocean:    { g1: '#06b6d4', g2: '#0ea5e9', g3: '#6366f1' },
+    forest:   { g1: '#22c55e', g2: '#10b981', g3: '#06b6d4' },
+    midnight: { g1: '#818cf8', g2: '#c084fc', g3: '#f472b6' },
   },
 
   init() {
@@ -21,8 +29,23 @@ export const ThemeManager = {
   apply(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('lynk-theme', theme);
+    // Apply theme gradient colors
+    if (this.themes[theme]) {
+      const t = this.themes[theme];
+      // Only auto-set gradient if user hasn't customized
+      const hasCustom = localStorage.getItem('lynk-custom-gradient');
+      if (!hasCustom) {
+        this.applyGradient(t.g1, t.g2, t.g3, false);
+      }
+    }
     const icon = document.getElementById('theme-icon');
-    if (icon) icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+    if (icon) {
+      const icons = { dark: '☀️', light: '🌙', sunset: '🌅', ocean: '🌊', forest: '🌿', midnight: '✨' };
+      icon.textContent = icons[theme] || '🎨';
+    }
+    // Highlight active swatch if present
+    document.querySelectorAll('.theme-swatch').forEach(el => el.classList.remove('selected'));
+    document.querySelector(`.theme-swatch-${theme}`)?.classList.add('selected');
   },
 
   toggle() {
@@ -31,26 +54,57 @@ export const ThemeManager = {
   },
 
   loadGradient() {
-    const s1 = localStorage.getItem('lynk-g1') || this.defaults.stop1;
-    const s2 = localStorage.getItem('lynk-g2') || this.defaults.stop2;
-    const s3 = localStorage.getItem('lynk-g3') || this.defaults.stop3;
-    this.applyGradient(s1, s2, s3);
+    const theme = localStorage.getItem('lynk-theme') || 'dark';
+    const hasCustom = localStorage.getItem('lynk-custom-gradient');
+    let s1, s2, s3;
+    if (hasCustom) {
+      s1 = localStorage.getItem('lynk-g1') || this.defaults.g1;
+      s2 = localStorage.getItem('lynk-g2') || this.defaults.g2;
+      s3 = localStorage.getItem('lynk-g3') || this.defaults.g3;
+    } else if (this.themes[theme]) {
+      s1 = this.themes[theme].g1;
+      s2 = this.themes[theme].g2;
+      s3 = this.themes[theme].g3;
+    } else {
+      s1 = localStorage.getItem('lynk-g1') || this.defaults.g1;
+      s2 = localStorage.getItem('lynk-g2') || this.defaults.g2;
+      s3 = localStorage.getItem('lynk-g3') || this.defaults.g3;
+    }
+    this.applyGradient(s1, s2, s3, false);
 
-    // Populate pickers if they exist
     ['g1','g2','g3'].forEach(id => {
       const el = document.getElementById(`picker-${id}`);
       if (el) el.value = localStorage.getItem(`lynk-${id}`) || this.defaults[id];
+      const el2 = document.getElementById(`modal-picker-${id}`);
+      if (el2) el2.value = localStorage.getItem(`lynk-${id}`) || this.defaults[id];
     });
   },
 
-  applyGradient(s1, s2, s3) {
+  applyGradient(s1, s2, s3, saveAsCustom = true) {
     const root = document.documentElement;
-    root.style.setProperty('--grad-1', s1);
-    root.style.setProperty('--grad-2', s2);
-    root.style.setProperty('--grad-3', s3);
-    localStorage.setItem('lynk-g1', s1);
-    localStorage.setItem('lynk-g2', s2);
-    localStorage.setItem('lynk-g3', s3);
+    root.style.setProperty('--grad-1', s1 || this.defaults.g1);
+    root.style.setProperty('--grad-2', s2 || this.defaults.g2);
+    root.style.setProperty('--grad-3', s3 || this.defaults.g3);
+    localStorage.setItem('lynk-g1', s1 || this.defaults.g1);
+    localStorage.setItem('lynk-g2', s2 || this.defaults.g2);
+    localStorage.setItem('lynk-g3', s3 || this.defaults.g3);
+    if (saveAsCustom) {
+      localStorage.setItem('lynk-custom-gradient', '1');
+    }
+  },
+
+  resetGradient() {
+    const theme = localStorage.getItem('lynk-theme') || 'dark';
+    localStorage.removeItem('lynk-custom-gradient');
+    const t = this.themes[theme] || this.defaults;
+    this.applyGradient(t.g1, t.g2, t.g3, false);
+    ['g1','g2','g3'].forEach((id, i) => {
+      const val = [t.g1, t.g2, t.g3][i];
+      const el = document.getElementById(`picker-${id}`);
+      if (el) el.value = val;
+      const el2 = document.getElementById(`modal-picker-${id}`);
+      if (el2) el2.value = val;
+    });
   },
 
   bindToggle() {
@@ -59,14 +113,16 @@ export const ThemeManager = {
   },
 
   bindGradientPicker() {
-    ['g1','g2','g3'].forEach((id, i) => {
-      const el = document.getElementById(`picker-${id}`);
-      if (!el) return;
-      el.addEventListener('input', () => {
-        const s1 = document.getElementById('picker-g1')?.value || this.defaults.stop1;
-        const s2 = document.getElementById('picker-g2')?.value || this.defaults.stop2;
-        const s3 = document.getElementById('picker-g3')?.value || this.defaults.stop3;
-        this.applyGradient(s1, s2, s3);
+    ['g1','g2','g3'].forEach(id => {
+      ['picker-', 'modal-picker-'].forEach(prefix => {
+        const el = document.getElementById(`${prefix}${id}`);
+        if (!el) return;
+        el.addEventListener('input', () => {
+          const s1 = document.getElementById('picker-g1')?.value || document.getElementById('modal-picker-g1')?.value || this.defaults.g1;
+          const s2 = document.getElementById('picker-g2')?.value || document.getElementById('modal-picker-g2')?.value || this.defaults.g2;
+          const s3 = document.getElementById('picker-g3')?.value || document.getElementById('modal-picker-g3')?.value || this.defaults.g3;
+          this.applyGradient(s1, s2, s3, true);
+        });
       });
     });
   }

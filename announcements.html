@@ -8,24 +8,30 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/custom.css" />
+  <script src="js/mobile-nav.js" defer></script>
 </head>
 <body>
 
 <!-- NAVBAR -->
-<nav class="lynk-nav h-16 flex items-center px-6 justify-between">
+<nav class="lynk-nav h-16 flex items-center px-4 justify-between">
   <div class="flex items-center gap-2">
-    <button id="hamburger-btn" onclick="openMobileNav()" aria-label="Open menu">☰</button>
+    <button id="hamburger-btn" onclick="openMobileNav()" aria-label="Open menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
     <a href="feed.html" class="flex flex-col leading-none">
       <span class="logo-text">LYNK</span>
       <span class="logo-sub">By Legends</span>
     </a>
   </div>
-  <div class="flex-1 max-w-sm mx-6">
-    <input type="text" class="lynk-input text-sm py-2" placeholder="🔍 Search LYNK..."
-           onfocus="window.location.href='search.html'" />
+  <div class="flex-1 max-w-sm mx-4">
+    <div class="relative">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" class="lynk-input text-sm py-2 pl-8" placeholder="Search LYNK..."
+             onfocus="window.location.href='search.html'" />
+    </div>
   </div>
   <div class="flex items-center gap-3">
-    <a href="profile.html" id="nav-avatar-wrap" class="relative">
+    <a href="profile.html">
       <img id="nav-avatar" src="https://ui-avatars.com/api/?name=User&background=a855f7&color=fff" class="lynk-avatar w-9 h-9 cursor-pointer" alt="Profile" />
     </a>
   </div>
@@ -45,106 +51,99 @@
     </div>
   </div>
   <nav class="flex flex-col gap-0.5">
-    <a href="feed.html" class="lynk-sidebar-link">🏠 <span>Home Feed</span></a>
-    <a href="search.html" class="lynk-sidebar-link">🔍 <span>Search</span></a>
-    <a href="announcements.html" class="lynk-sidebar-link active">📢 <span>Announcements</span></a>
-    <a href="profile.html" class="lynk-sidebar-link">👤 <span>My Profile</span></a>
-    <a href="chat.html" class="lynk-sidebar-link">💬 <span>Messages</span></a>
+    <a href="feed.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Home Feed</span>
+    </a>
+    <a href="search.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Search</span>
+    </a>
+    <a href="announcements.html" class="lynk-sidebar-link active">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+      <span>Announcements</span>
+    </a>
+    <a href="profile.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>My Profile</span>
+    </a>
+    <a href="chat.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>Messages</span>
+    </a>
+    <a href="notifications.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span>Notifications</span>
+    </a>
     <div class="px-4 mt-4 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Settings</div>
-    <a href="settings.html" class="lynk-sidebar-link">⚙️ <span>Settings</span></a>
-    <a href="admin.html" id="admin-link" class="lynk-sidebar-link hidden">🛡️ <span>Admin Panel</span></a>
-    <a href="#" onclick="signOut()" class="lynk-sidebar-link" style="color:#ef4444">🚪 <span>Sign Out</span></a>
+    <a href="settings.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Settings</span>
+    </a>
+    <a href="#" onclick="signOut()" class="lynk-sidebar-link" style="color:#ef4444">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <span>Sign Out</span>
+    </a>
   </nav>
 </aside>
 
 <!-- MAIN -->
 <main class="main-content">
-  <div class="max-w-2xl mx-auto px-4 py-6">
-
-    <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h1 class="text-2xl font-bold mb-1">📢 Announcements</h1>
-        <p style="color:var(--text-secondary);font-size:0.875rem">Official platform-wide notices from LYNK admins</p>
-      </div>
-      <select id="filter-audience" class="lynk-input text-sm py-2 w-auto" onchange="filterAnnouncements()">
-        <option value="all">All</option>
-        <option value="students">Students</option>
-        <option value="staff">Staff</option>
-        <option value="alumni">Alumni</option>
-      </select>
+  <div class="max-w-3xl mx-auto px-4 py-8">
+    <div class="flex items-center gap-3 mb-6">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--grad-1)"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+      <h1 class="text-2xl font-bold">Announcements</h1>
     </div>
 
-    <!-- Admin compose section (visible to admins only) -->
-    <div id="compose-section" class="lynk-card p-5 mb-6 hidden" style="border-left:3px solid var(--grad-1)">
-      <div class="flex items-center gap-2 mb-4">
-        <span class="text-xl">📝</span>
-        <h3 class="font-bold">Post Announcement</h3>
-        <span class="lynk-badge lynk-gradient text-white text-xs ml-auto">Admin</span>
-      </div>
-      <div class="flex flex-col gap-3">
-        <input id="ann-title" type="text" class="lynk-input" placeholder="Announcement title *" maxlength="120" />
-        <textarea id="ann-body" class="lynk-input resize-none" rows="4" placeholder="Message body *" maxlength="2000"></textarea>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-xs font-medium mb-1 block" style="color:var(--text-muted)">Priority</label>
-            <select id="ann-priority" class="lynk-input text-sm py-2">
-              <option value="low">🟢 Info</option>
-              <option value="medium">🟡 Important</option>
-              <option value="high">🔴 Urgent</option>
-            </select>
-          </div>
-          <div>
-            <label class="text-xs font-medium mb-1 block" style="color:var(--text-muted)">Audience</label>
-            <select id="ann-audience" class="lynk-input text-sm py-2">
-              <option value="all">🌍 Everyone</option>
-              <option value="students">🎓 Students only</option>
-              <option value="staff">👨‍🏫 Staff only</option>
-              <option value="alumni">🏆 Alumni only</option>
-            </select>
-          </div>
-        </div>
-        <input id="ann-category" type="text" class="lynk-input text-sm" placeholder="Category (e.g. Events, Exams, General)" maxlength="40" />
-        <div class="grid grid-cols-2 gap-3">
-          <input id="ann-link" type="url" class="lynk-input text-sm" placeholder="Link URL (optional)" />
-          <input id="ann-link-label" type="text" class="lynk-input text-sm" placeholder="Link label (e.g. Learn more)" maxlength="40" />
-        </div>
-        <div class="flex gap-2 mt-1">
-          <button id="btn-post-ann" onclick="postAnnouncement()" class="lynk-btn lynk-btn-primary flex-1 py-2.5 rounded-xl">Post Announcement</button>
-          <button onclick="cancelEdit()" class="lynk-btn lynk-btn-secondary px-4 py-2.5 rounded-xl text-sm">Cancel</button>
-        </div>
-      </div>
+    <!-- Filters -->
+    <div class="flex gap-2 mb-6 overflow-x-auto pb-1">
+      <button class="lynk-tab active" onclick="filterAnn('all',this)">All</button>
+      <button class="lynk-tab" onclick="filterAnn('academic',this)">Academic</button>
+      <button class="lynk-tab" onclick="filterAnn('events',this)">Events</button>
+      <button class="lynk-tab" onclick="filterAnn('high',this)">
+        <span class="inline-block w-2 h-2 rounded-full bg-red-500 mr-1"></span>Urgent
+      </button>
     </div>
 
-    <!-- Announcements list -->
     <div id="announcements-list" class="flex flex-col gap-4">
+      <!-- Skeleton -->
       <div class="lynk-card p-5 animate-pulse">
-        <div class="h-4 rounded w-1/3 mb-3" style="background:var(--border)"></div>
+        <div class="h-4 rounded w-2/3 mb-3" style="background:var(--border)"></div>
         <div class="h-3 rounded w-full mb-2" style="background:var(--border)"></div>
-        <div class="h-3 rounded w-2/3" style="background:var(--border)"></div>
+        <div class="h-3 rounded w-4/5" style="background:var(--border)"></div>
+      </div>
+      <div class="lynk-card p-5 animate-pulse">
+        <div class="h-4 rounded w-1/2 mb-3" style="background:var(--border)"></div>
+        <div class="h-3 rounded w-full mb-2" style="background:var(--border)"></div>
+        <div class="h-3 rounded w-3/4" style="background:var(--border)"></div>
       </div>
     </div>
-
   </div>
 </main>
 
-<script type="module" src="js/announcements.js"></script>
-<script>
-  document.getElementById('theme-toggle')?.addEventListener('click', () => {
-    const current = document.documentElement.getAttribute('data-theme');
-    const next = current === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('lynk-theme', next);
-    document.getElementById('theme-icon').textContent = next === 'dark' ? '☀️' : '🌙';
-  });
-</script>
+<!-- BOTTOM NAV -->
 <nav class="lynk-bottom-nav">
-  <a href="feed.html"><span class="bnav-icon">🏠</span>Home</a>
-  <a href="search.html"><span class="bnav-icon">🔍</span>Search</a>
-  <a href="announcements.html" class="active"><span class="bnav-icon">📢</span>Alerts</a>
-  <a href="chat.html"><span class="bnav-icon">💬</span>Chat</a>
-  <a href="profile.html"><span class="bnav-icon">👤</span>Profile</a>
+  <a href="feed.html">
+    <span class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+    Home
+  </a>
+  <a href="search.html">
+    <span class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+    Search
+  </a>
+  <a href="feed.html">
+    <span class="bnav-plus"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+  </a>
+  <a href="chat.html">
+    <span class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+    Chat
+  </a>
+  <a href="profile.html">
+    <span class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+    Profile
+  </a>
 </nav>
-<script src="js/mobile-nav.js"></script>
+
+<script type="module" src="js/announcements.js"></script>
 </body>
 </html>

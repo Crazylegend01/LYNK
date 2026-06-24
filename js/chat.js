@@ -1,5 +1,5 @@
 // ============================================================
-// LYNK By Legends — Real-time Chat Module (with Notifications)
+// LYNK By Legends — Real-time Chat Module
 // ============================================================
 
 import { auth, db } from './firebase-config.js';
@@ -21,12 +21,35 @@ let activeOtherUid = null;
 let messagesUnsub = null;
 let typingTimeout = null;
 
+// ===== SET ONLINE STATUS =====
+async function setOnlineStatus(online) {
+  if (!currentUser) return;
+  try {
+    await setDoc(doc(db, 'users', currentUser.uid), {
+      isOnline: online,
+      lastSeen: serverTimestamp()
+    }, { merge: true });
+  } catch (e) { /* silent */ }
+}
+
 onAuthStateChanged(auth, async (user) => {
   if (!user) { window.location.href = 'auth.html'; return; }
   currentUser = user;
   const snap = await getDoc(doc(db, 'users', user.uid));
   currentUserData = snap.data() || {};
-  await setDoc(doc(db, 'users', user.uid), { isOnline: true, lastSeen: serverTimestamp() }, { merge: true });
+
+  await setOnlineStatus(true);
+
+  // Set offline on page close/hide
+  window.addEventListener('beforeunload', () => setOnlineStatus(false));
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      setOnlineStatus(false);
+    } else {
+      setOnlineStatus(true);
+    }
+  });
+
   await initNotifications(user.uid);
   loadConversations();
 
@@ -50,7 +73,12 @@ async function loadConversations() {
   onSnapshot(q, async (snap) => {
     convList.innerHTML = '';
     if (snap.empty) {
-      convList.innerHTML = '<div class="p-6 text-sm text-center" style="color:var(--text-muted)">No conversations yet.<br/>Start chatting with a friend!</div>';
+      convList.innerHTML = `
+        <div class="p-8 text-center">
+          <svg class="mx-auto mb-3" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-muted)"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <p class="text-sm" style="color:var(--text-muted)">No conversations yet.</p>
+          <p class="text-xs mt-1" style="color:var(--text-muted)">Start chatting with a friend!</p>
+        </div>`;
       return;
     }
     for (const d of snap.docs) {
@@ -79,7 +107,7 @@ async function loadConversations() {
               <span class="text-xs flex-shrink-0 ml-2" style="color:var(--text-muted)">${ts}</span>
             </div>
             <p class="text-xs truncate mt-0.5 ${unread>0?'font-semibold':''}" style="color:${unread>0?'var(--text-primary)':'var(--text-muted)'}">
-              ${conv.lastMessage || 'Say hello! 👋'}
+              ${conv.lastMessage || 'Say hello!'}
             </p>
           </div>
           ${unread > 0 ? `<span class="lynk-badge lynk-gradient text-white ml-1 flex-shrink-0">${unread}</span>` : ''}
@@ -118,12 +146,12 @@ window.selectConversation = async (convId, otherUid) => {
   if (other.isOnline) {
     statusEl.textContent = 'Online';
     statusEl.style.color = '#22c55e';
-    dotEl.classList.remove('hidden');
+    if (dotEl) dotEl.classList.remove('hidden');
   } else {
     const lastSeen = other.lastSeen?.toDate?.()?.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) || '';
     statusEl.textContent = lastSeen ? `Last seen ${lastSeen}` : 'Offline';
     statusEl.style.color = 'var(--text-muted)';
-    dotEl.classList.add('hidden');
+    if (dotEl) dotEl.classList.add('hidden');
   }
 
   // Reset unread count
@@ -152,10 +180,10 @@ window.selectConversation = async (convId, otherUid) => {
     const ti = document.getElementById('typing-indicator');
     const tt = document.getElementById('typing-text');
     if (othersTyping.length > 0) {
-      ti.classList.remove('hidden');
-      tt.textContent = `${other.displayName?.split(' ')[0] || 'Someone'} is typing`;
+      ti?.classList.remove('hidden');
+      if (tt) tt.textContent = `${other.displayName?.split(' ')[0] || 'Someone'} is typing`;
     } else {
-      ti.classList.add('hidden');
+      ti?.classList.add('hidden');
     }
   });
 };
@@ -180,7 +208,7 @@ function renderMessage(msg) {
     </div>`);
 }
 
-// ===== SEND MESSAGE — fires notification =====
+// ===== SEND MESSAGE =====
 window.sendMessage = async () => {
   if (!activeConvId || !currentUser) return;
   const input = document.getElementById('msg-input');
@@ -210,7 +238,6 @@ window.sendMessage = async () => {
     typing: []
   });
 
-  // Send notification to recipient
   if (otherUid) {
     await sendNotification({
       toUid: otherUid,
@@ -278,7 +305,7 @@ window.searchConversations = (term) => {
 window.searchFriendsForChat = async (term) => {
   const results = document.getElementById('friend-search-results');
   if (!term) {
-    results.innerHTML = '<p class="text-sm text-center py-4" style="color:var(--text-muted)">Start typing to search your friends...</p>';
+    results.innerHTML = '<p class="text-sm text-center py-4" style="color:var(--text-muted)">Start typing to search users...</p>';
     return;
   }
   const q = query(collection(db, 'users'), where('university', '==', currentUserData.university || ''), limit(20));
@@ -299,12 +326,15 @@ window.searchFriendsForChat = async (term) => {
       <div class="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors"
            style="background:var(--bg-card-hover)"
            onclick="openOrCreateConversation('${d.id}')">
-        <img src="${ava}" class="lynk-avatar w-10 h-10" />
+        <div class="relative flex-shrink-0">
+          <img src="${ava}" class="lynk-avatar w-10 h-10" />
+          ${u.isOnline ? '<span class="online-dot" style="width:8px;height:8px"></span>' : ''}
+        </div>
         <div class="flex-1 min-w-0">
           <p class="font-semibold text-sm truncate">${u.displayName}</p>
           <p class="text-xs truncate" style="color:var(--text-muted)">${u.department || u.faculty || u.university || ''}</p>
         </div>
-        <span style="color:var(--grad-2)">→</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--grad-2);flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
       </div>`);
   });
 };
@@ -317,7 +347,6 @@ window.attachFile = async (input) => {
   try {
     url = await uploadToCloudinary(file, `lynk/chat/${activeConvId}`);
   } catch (e) {
-    console.error('Cloudinary upload failed:', e);
     return;
   }
   const convSnap = await getDoc(doc(db, 'conversations', activeConvId));
@@ -332,7 +361,7 @@ window.attachFile = async (input) => {
     createdAt: serverTimestamp()
   });
   await updateDoc(doc(db, 'conversations', activeConvId), {
-    lastMessage: '📎 Sent an attachment',
+    lastMessage: 'Sent an image',
     lastMessageAt: serverTimestamp(),
     [`unread.${otherUid}`]: currentUnread + 1
   });
@@ -343,17 +372,15 @@ window.attachFile = async (input) => {
       fromName: currentUserData.displayName || 'Someone',
       fromPhoto: currentUserData.photoURL || '',
       type: 'message',
-      message: 'sent you an attachment',
-      preview: '📎 Image'
+      message: 'sent you an image',
+      preview: 'Image'
     });
   }
 };
 
 // ===== SIGN OUT =====
 window.signOut = async () => {
-  if (currentUser) {
-    await setDoc(doc(db, 'users', currentUser.uid), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true });
-  }
+  await setOnlineStatus(false);
   await firebaseSignOut(auth);
   window.location.href = 'auth.html';
 };

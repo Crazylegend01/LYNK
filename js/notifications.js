@@ -13,14 +13,17 @@ import app from './firebase-config.js';
 
 const VAPID_KEY = 'BKbN3IxNBozzZdG1P2vJVyb-LJzyaHMRoapJ2wDapc7aFNHm2Uylb3Vs4S3Jh5WfAWrOIIViUHGznyNCBdyBysQ';
 
-// Service worker path — works on GitHub Pages (/LYNK/) and Replit (/)
 const SW_PATH = window.location.hostname.endsWith('.github.io')
   ? '/LYNK/firebase-messaging-sw.js'
   : '/firebase-messaging-sw.js';
 
-// API base — relative on Replit, undefined on GitHub Pages (server not available)
 const _isGitHubPages = window.location.hostname.endsWith('.github.io');
 const API_BASE = _isGitHubPages ? null : '';
+
+// Only show notification bell on the feed/home page
+const _isFeedPage = window.location.pathname.endsWith('feed.html')
+  || window.location.pathname.endsWith('/')
+  || window.location.pathname === '';
 
 let messaging = null;
 let currentUid = null;
@@ -30,29 +33,30 @@ let _baseTitleSet = false;
 // ===== INIT — call on every page after auth =====
 export async function initNotifications(uid) {
   currentUid = uid;
-  renderNotificationBell();
-  injectSidebarBadges();
+  // Only inject bell on home/feed page
+  if (_isFeedPage) {
+    renderNotificationBell();
+    injectSidebarBadges();
+  }
   listenForNotifications(uid);
   await setupFCM(uid);
-  // Subtle push permission prompt (shown once, respects prior decisions)
   if (Notification.permission === 'default') {
     setTimeout(() => showPushPromptBanner(uid), 3000);
   }
 }
 
-// ===== NAVBAR BELL (dropdown) =====
+// ===== NAVBAR BELL (dropdown) — only on feed page =====
 function renderNotificationBell() {
   const nav = document.querySelector('nav');
   if (!nav || document.getElementById('notif-bell')) return;
 
-  const themeBtn = document.getElementById('theme-toggle');
   const bellWrapper = document.createElement('div');
   bellWrapper.className = 'relative';
   bellWrapper.id = 'notif-bell-wrapper';
   bellWrapper.innerHTML = `
     <button id="notif-bell" onclick="toggleNotifDropdown()"
-            class="lynk-btn lynk-btn-ghost p-2 rounded-full relative" aria-label="Notifications">
-      🔔
+            class="lynk-icon-btn relative" aria-label="Notifications">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
       <span id="notif-bell-badge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full
             text-white text-[10px] font-bold flex items-center justify-center lynk-gradient px-1">0</span>
     </button>
@@ -67,299 +71,217 @@ function renderNotificationBell() {
         <div class="p-6 text-center text-sm" style="color:var(--text-muted)">Loading...</div>
       </div>
       <div class="px-4 py-2 border-t text-center" style="border-color:var(--border)">
-        <a href="notifications.html" class="text-xs lynk-gradient-text font-medium">View all notifications →</a>
+        <a href="notifications.html" class="text-xs lynk-gradient-text font-medium">View all notifications</a>
       </div>
     </div>`;
 
-  if (themeBtn) {
-    themeBtn.parentNode.insertBefore(bellWrapper, themeBtn);
+  // Insert before avatar (last child of right icons section)
+  const navRight = nav.querySelector('.flex.items-center.gap-3');
+  if (navRight) {
+    navRight.insertBefore(bellWrapper, navRight.firstChild);
   } else {
     nav.appendChild(bellWrapper);
   }
 
   document.addEventListener('click', (e) => {
-    const dd   = document.getElementById('notif-dropdown');
-    const bell = document.getElementById('notif-bell');
-    if (dd && !dd.contains(e.target) && !bell?.contains(e.target)) {
-      dd.classList.add('hidden');
+    const wrapper = document.getElementById('notif-bell-wrapper');
+    if (wrapper && !wrapper.contains(e.target)) {
+      document.getElementById('notif-dropdown')?.classList.add('hidden');
     }
   });
 }
 
-// ===== SIDEBAR BADGES — auto-inject into every notification link =====
+// ===== SIDEBAR BADGE =====
 function injectSidebarBadges() {
-  // Find every sidebar link that goes to notifications (sidebar links have class lynk-sidebar-link)
-  document.querySelectorAll('a.lynk-sidebar-link[href*="notifications"]').forEach(link => {
-    if (link.querySelector('.lynk-sidebar-notif-badge')) return; // already injected
-    link.style.display = 'flex';
-    link.style.alignItems = 'center';
+  // Badge on Messages link
+  const chatLink = document.querySelector('a[href="chat.html"]');
+  if (chatLink && !chatLink.querySelector('.msg-badge')) {
     const badge = document.createElement('span');
-    badge.className = 'lynk-sidebar-notif-badge hidden ml-auto min-w-[18px] h-[18px] rounded-full text-white text-[10px] font-bold flex items-center justify-center lynk-gradient px-1';
-    badge.style.cssText = 'display:none;margin-left:auto;min-width:18px;height:18px;border-radius:9999px;color:white;font-size:10px;font-weight:700;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--grad-1),var(--grad-3));padding:0 4px;';
-    badge.textContent = '0';
-    link.appendChild(badge);
+    badge.className = 'msg-badge hidden ml-auto min-w-[18px] h-[18px] rounded-full text-white text-[10px] font-bold flex items-center justify-center lynk-gradient px-1';
+    badge.id = 'sidebar-msg-badge';
+    chatLink.appendChild(badge);
+  }
+}
+
+// ===== LISTEN FOR REAL-TIME NOTIFICATIONS =====
+function listenForNotifications(uid) {
+  if (unsubNotifications) unsubNotifications();
+  const q = query(
+    collection(db, 'users', uid, 'notifications'),
+    where('read', '==', false),
+    orderBy('createdAt', 'desc'),
+    limit(30)
+  );
+  unsubNotifications = onSnapshot(q, (snap) => {
+    const count = snap.docs.length;
+    updateBadges(count);
+    renderNotifList(snap.docs);
+    updateTabTitle(count);
   });
 }
 
-// ===== TOGGLE DROPDOWN =====
+function updateBadges(count) {
+  const badge = document.getElementById('notif-bell-badge');
+  if (badge) {
+    badge.textContent = count > 99 ? '99+' : count;
+    badge.classList.toggle('hidden', count === 0);
+  }
+  const oldBadge = document.getElementById('notif-badge');
+  if (oldBadge) {
+    oldBadge.textContent = count;
+    oldBadge.classList.toggle('hidden', count === 0);
+  }
+}
+
+function updateTabTitle(count) {
+  if (!_baseTitleSet) { _baseTitleSet = true; }
+  const base = document.title.replace(/^\(\d+\)\s*/, '');
+  document.title = count > 0 ? `(${count}) ${base}` : base;
+}
+
+function renderNotifList(docs) {
+  const list = document.getElementById('notif-list');
+  if (!list) return;
+  if (docs.length === 0) {
+    list.innerHTML = '<div class="p-6 text-center text-sm" style="color:var(--text-muted)">No new notifications</div>';
+    return;
+  }
+  list.innerHTML = '';
+  docs.slice(0, 10).forEach(d => {
+    const n = d.data();
+    const ts = n.createdAt?.toDate?.()?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '';
+    const ava = n.fromPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(n.fromName||'U')}&background=a855f7&color=fff&size=48`;
+    const icons = { like: '❤', comment: '💬', friend_request: '🤝', poll: '📊', message: '✉', announcement: '📢' };
+    list.insertAdjacentHTML('beforeend', `
+      <div class="flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors border-b"
+           style="border-color:var(--border);background:var(--bg-card-hover)"
+           onclick="markOneRead('${d.id}')">
+        <div class="relative flex-shrink-0">
+          <img src="${ava}" class="lynk-avatar w-9 h-9" />
+          <span class="absolute -bottom-1 -right-1 text-xs leading-none">${icons[n.type] || '🔔'}</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm"><strong>${escHtml(n.fromName || 'Someone')}</strong> ${escHtml(n.message || '')}</p>
+          ${n.preview ? `<p class="text-xs mt-0.5 truncate" style="color:var(--text-muted)">${escHtml(n.preview)}</p>` : ''}
+          <p class="text-xs mt-1" style="color:var(--text-muted)">${ts}</p>
+        </div>
+      </div>`);
+  });
+}
+
 window.toggleNotifDropdown = () => {
   document.getElementById('notif-dropdown')?.classList.toggle('hidden');
 };
 
-// ===== REAL-TIME LISTENER (onSnapshot — works on GitHub Pages) =====
-function listenForNotifications(uid) {
-  if (unsubNotifications) unsubNotifications();
-  const q = query(
-    collection(db, 'notifications'),
-    where('toUid', '==', uid),
-    orderBy('createdAt', 'desc'),
-    limit(20)
-  );
-  unsubNotifications = onSnapshot(q, (snap) => {
-    const all    = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const unread = all.filter(n => !n.read).length;
-    updateAllBadges(unread);
-    renderNotifList(all);
-  });
-}
-
-// ===== UPDATE ALL BADGES ON THE PAGE =====
-function updateAllBadges(count) {
-  const show = count > 0;
-  const label = count > 99 ? '99+' : String(count);
-
-  // 1. Navbar dropdown bell badge
-  const bellBadge = document.getElementById('notif-bell-badge');
-  if (bellBadge) {
-    bellBadge.textContent = label;
-    bellBadge.style.display = show ? 'flex' : 'none';
-    show ? bellBadge.classList.remove('hidden') : bellBadge.classList.add('hidden');
-  }
-
-  // 2. Static navbar bell badge (feed.html hardcoded bell with id="notif-bell")
-  //    Its inner badge has id="notif-badge"
-  const staticBadge = document.getElementById('notif-badge');
-  if (staticBadge) {
-    staticBadge.textContent = show ? label : '!';
-    show ? staticBadge.classList.remove('hidden') : staticBadge.classList.add('hidden');
-  }
-
-  // 3. All sidebar notification link badges (injected by injectSidebarBadges)
-  document.querySelectorAll('.lynk-sidebar-notif-badge').forEach(el => {
-    el.textContent = label;
-    el.style.display = show ? 'flex' : 'none';
-  });
-
-  // 4. Document title — shows "(3) Feed — LYNK By Legends"
-  if (!_baseTitleSet) {
-    document._lynkBaseTitle = document.title.replace(/^\(\d+\+?\)\s/, '');
-    _baseTitleSet = true;
-  }
-  document.title = show
-    ? `(${label}) ${document._lynkBaseTitle || document.title}`
-    : (document._lynkBaseTitle || document.title);
-}
-
-// ===== RENDER NOTIFICATION LIST (dropdown) =====
-function renderNotifList(notifications) {
-  const list = document.getElementById('notif-list');
-  if (!list) return;
-  if (notifications.length === 0) {
-    list.innerHTML = `<div class="p-8 text-center">
-      <div class="text-4xl mb-2">🔔</div>
-      <p class="text-sm" style="color:var(--text-muted)">You're all caught up!</p>
-    </div>`;
-    return;
-  }
-  list.innerHTML = notifications.map(n => buildNotifItem(n)).join('');
-}
-
-function buildNotifItem(n) {
-  const icons = {
-    like: '❤️', comment: '💬', friend_request: '🤝',
-    friend_accepted: '✅', message: '💌', mention: '📣', poll: '📊',
-    announcement: '📢'
-  };
-  const links = {
-    like: 'feed.html', comment: 'feed.html', poll: 'feed.html', mention: 'feed.html',
-    friend_request: `profile.html?uid=${n.fromUid}`,
-    friend_accepted: `profile.html?uid=${n.fromUid}`,
-    message: `chat.html?uid=${n.fromUid}`,
-    announcement: 'announcements.html'
-  };
-  const ts  = n.createdAt?.toDate?.()?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '';
-  const ago = n.createdAt?.toDate ? getTimeAgo(n.createdAt.toDate()) : '';
-  const ava = n.fromPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(n.fromName||'U')}&background=a855f7&color=fff&size=40`;
-
-  return `
-    <a href="${links[n.type] || 'feed.html'}"
-       onclick="markRead('${n.id}')"
-       class="flex items-start gap-3 px-4 py-3 hover:bg-opacity-80 transition-colors border-b cursor-pointer block"
-       style="background:${n.read ? 'transparent' : 'linear-gradient(135deg,var(--grad-1)08,var(--grad-3)08)'};border-color:var(--border);text-decoration:none;color:inherit">
-      <div class="relative flex-shrink-0">
-        <img src="${ava}" class="lynk-avatar w-9 h-9" />
-        <span class="absolute -bottom-1 -right-1 text-sm leading-none">${icons[n.type] || '🔔'}</span>
-      </div>
-      <div class="flex-1 min-w-0">
-        <p class="text-sm leading-snug">
-          <strong>${escHtml(n.fromName || 'LYNK')}</strong>
-          <span style="color:var(--text-secondary)"> ${n.message || 'interacted with you'}</span>
-        </p>
-        ${n.preview ? `<p class="text-xs mt-0.5 truncate" style="color:var(--text-muted)">"${escHtml(n.preview)}"</p>` : ''}
-        <p class="text-xs mt-1" style="color:var(--text-muted)">${ago || ts}</p>
-      </div>
-      ${!n.read ? `<span class="w-2 h-2 rounded-full flex-shrink-0 mt-1.5" style="background:var(--grad-2)"></span>` : ''}
-    </a>`;
-}
-
-// ===== MARK READ =====
-window.markRead = async (notifId) => {
-  await updateDoc(doc(db, 'notifications', notifId), { read: true });
-};
-
 window.markAllRead = async () => {
   if (!currentUid) return;
-  const q = query(
-    collection(db, 'notifications'),
-    where('toUid', '==', currentUid),
-    where('read', '==', false)
-  );
-  const snap  = await getDocs(q);
+  const snap = await getDocs(query(
+    collection(db, 'users', currentUid, 'notifications'),
+    where('read', '==', false), limit(50)
+  ));
+  if (snap.empty) return;
   const batch = writeBatch(db);
   snap.docs.forEach(d => batch.update(d.ref, { read: true }));
   await batch.commit();
+  document.getElementById('notif-dropdown')?.classList.add('hidden');
 };
 
-// ===== SEND NOTIFICATION (Firestore + FCM push) =====
-export async function sendNotification({ toUid, fromUid, fromName, fromPhoto, type, message, preview = '', icon = '', url = '' }) {
+window.markOneRead = async (notifId) => {
+  if (!currentUid) return;
+  await updateDoc(doc(db, 'users', currentUid, 'notifications', notifId), { read: true });
+};
+
+// ===== SEND NOTIFICATION =====
+export async function sendNotification({ toUid, fromUid, fromName, fromPhoto, type, message, preview }) {
   if (!toUid || toUid === fromUid) return;
-  await addDoc(collection(db, 'notifications'), {
-    toUid, fromUid,
-    fromName, fromPhoto: fromPhoto || '',
-    type, message, preview,
-    read: false,
-    createdAt: serverTimestamp()
-  });
-  // Also trigger a device push (works when app is closed)
-  const pushTitle = `LYNK — ${fromName || 'Someone'}`;
-  const pushBody  = message || 'You have a new notification';
-  triggerPush({ toUid, title: pushTitle, body: pushBody, icon: fromPhoto || icon, url });
-}
-
-// ===== PUSH PROMPT BANNER (shown once after login if permission not decided) =====
-function showPushPromptBanner(uid) {
-  if (document.getElementById('lynk-push-banner')) return;
-  const banner = document.createElement('div');
-  banner.id = 'lynk-push-banner';
-  banner.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);z-index:8888;max-width:380px;width:calc(100% - 32px);background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);animation:fadeIn 0.3s ease';
-  banner.innerHTML = `
-    <span style="font-size:1.6rem;flex-shrink:0">🔔</span>
-    <div style="flex:1;min-width:0">
-      <p style="font-weight:600;font-size:0.85rem;margin-bottom:2px">Enable push notifications</p>
-      <p style="color:var(--text-muted);font-size:0.75rem">Get notified of likes, messages, and more — even when you're away.</p>
-    </div>
-    <div style="display:flex;gap:6px;flex-shrink:0">
-      <button id="lynk-push-deny" style="background:none;border:none;color:var(--text-muted);font-size:0.8rem;cursor:pointer;padding:6px 8px;border-radius:8px">Not now</button>
-      <button id="lynk-push-allow" class="lynk-btn lynk-btn-primary" style="font-size:0.8rem;padding:6px 14px;border-radius:8px">Allow</button>
-    </div>`;
-  document.body.appendChild(banner);
-  document.getElementById('lynk-push-allow').onclick = async () => {
-    banner.remove();
-    const ok = await requestPushPermission(uid);
-    if (ok) showToast('🔔 Push enabled', 'You\'ll now receive notifications even when away.');
-  };
-  document.getElementById('lynk-push-deny').onclick = () => banner.remove();
-  setTimeout(() => banner?.remove(), 20000);
-}
-
-// ===== FCM SETUP (background push — works on GitHub Pages via service worker) =====
-async function setupFCM(uid) {
-  if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
   try {
+    await addDoc(collection(db, 'users', toUid, 'notifications'), {
+      fromUid, fromName, fromPhoto, type, message, preview,
+      read: false, createdAt: serverTimestamp()
+    });
+  } catch (e) { /* silent */ }
+}
+
+// ===== FCM SETUP =====
+async function setupFCM(uid) {
+  try {
+    if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
     messaging = getMessaging(app);
-    const swReg = await navigator.serviceWorker.register(SW_PATH);
-    if (Notification.permission === 'granted') {
-      const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
-      if (token) await saveFCMToken(uid, token);
-    }
     onMessage(messaging, (payload) => {
       showToast(
-        payload.notification?.title || 'LYNK',
-        payload.notification?.body  || '',
-        payload.notification?.icon  || ''
+        payload.notification?.title || 'New notification',
+        payload.notification?.body || '',
+        payload.notification?.image || ''
       );
     });
-  } catch (e) {
-    // FCM not critical — in-app onSnapshot badge works without it
-  }
+  } catch (e) { /* silent */ }
 }
 
 export async function requestPushPermission(uid) {
-  if (!('Notification' in window)) { showToast('❌ Not supported', 'Your browser does not support push notifications.'); return false; }
-  const permission = await Notification.requestPermission();
-  if (permission !== 'granted') return false;
   try {
-    messaging = messaging || getMessaging(app);
-    const swReg = await navigator.serviceWorker.register(SW_PATH);
-    const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
-    if (token) await saveFCMToken(uid, token);
-    return true;
-  } catch (e) { console.error('FCM token error:', e); return false; }
+    if (!('serviceWorker' in navigator)) return false;
+    const reg = await navigator.serviceWorker.register(SW_PATH);
+    messaging = getMessaging(app);
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+    if (token) {
+      await updateDoc(doc(db, 'users', uid), { fcmToken: token });
+      return true;
+    }
+  } catch (e) { /* silent */ }
+  return false;
 }
 
-async function saveFCMToken(uid, token) {
-  await updateDoc(doc(db, 'users', uid), { fcmTokens: { [token]: true }, pushEnabled: true });
+// ===== PUSH PROMPT BANNER =====
+function showPushPromptBanner(uid) {
+  if (document.getElementById('push-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'push-banner';
+  banner.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);z-index:800;max-width:360px;width:calc(100% - 32px)';
+  banner.innerHTML = `
+    <div class="lynk-card p-4 flex items-center gap-3 shadow-2xl" style="border-left:3px solid var(--grad-1)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <div class="flex-1 min-w-0">
+        <p class="text-xs font-semibold">Stay in the loop</p>
+        <p class="text-xs" style="color:var(--text-muted)">Enable notifications for likes and messages</p>
+      </div>
+      <button onclick="enablePush('${uid}')" class="lynk-btn lynk-btn-primary text-xs py-1.5 px-3 rounded-lg flex-shrink-0">Allow</button>
+      <button onclick="document.getElementById('push-banner').remove()" class="lynk-icon-btn w-6 h-6 flex-shrink-0">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>`;
+  document.body.appendChild(banner);
+  setTimeout(() => banner.remove(), 10000);
 }
 
-// ===== SERVER PUSH — calls Express API to trigger FCM when app is in background =====
-export async function triggerPush({ toUid, title, body, icon = '', url = '' }) {
-  if (API_BASE === null || !toUid) return;
-  try {
-    await fetch(`${API_BASE}/api/notify/push`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ toUid, title, body, icon, url }),
-    });
-  } catch (_) {
-    // Server not available — in-app notification still works via Firestore
-  }
-}
+window.enablePush = async (uid) => {
+  document.getElementById('push-banner')?.remove();
+  await requestPushPermission(uid);
+};
 
-// ===== FOREGROUND TOAST =====
-export function showToast(title, body, icon = '', duration = 5000) {
-  const existing = document.getElementById('lynk-toast-container');
-  const container = existing || (() => {
-    const el = document.createElement('div');
-    el.id = 'lynk-toast-container';
-    el.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;max-width:320px';
-    document.body.appendChild(el);
-    return el;
-  })();
+// ===== TOAST =====
+export function showToast(title, body, avatarUrl) {
+  const existing = document.getElementById('lynk-toast');
+  if (existing) existing.remove();
 
   const toast = document.createElement('div');
-  toast.style.cssText = 'background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;gap:12px;align-items:flex-start;box-shadow:var(--shadow);animation:fadeIn 0.3s ease;cursor:pointer';
+  toast.id = 'lynk-toast';
+  toast.style.cssText = 'position:fixed;bottom:80px;right:16px;z-index:9999;max-width:320px;animation:fadeIn 0.3s ease';
+  const ava = avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(title||'L')}&background=a855f7&color=fff&size=40`;
   toast.innerHTML = `
-    ${icon ? `<img src="${icon}" style="width:36px;height:36px;border-radius:50%;flex-shrink:0;object-fit:cover" />` : `<span style="font-size:1.5rem;flex-shrink:0">🔔</span>`}
-    <div style="flex:1;min-width:0">
-      <p style="font-weight:600;font-size:0.875rem;margin-bottom:2px">${escHtml(title)}</p>
-      <p style="color:var(--text-secondary);font-size:0.8rem;line-height:1.3">${escHtml(body)}</p>
-    </div>
-    <button onclick="this.parentElement.remove()" style="color:var(--text-muted);background:none;border:none;cursor:pointer;font-size:1rem;flex-shrink:0;padding:0">✕</button>`;
-  toast.addEventListener('click', (e) => { if (e.target.tagName !== 'BUTTON') toast.remove(); });
-  container.appendChild(toast);
-  setTimeout(() => toast.remove(), duration);
-}
-
-// ===== HELPERS =====
-function getTimeAgo(date) {
-  const diff = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (diff < 60)     return 'just now';
-  if (diff < 3600)   return `${Math.floor(diff/60)}m ago`;
-  if (diff < 86400)  return `${Math.floor(diff/3600)}h ago`;
-  if (diff < 604800) return `${Math.floor(diff/86400)}d ago`;
-  return date.toLocaleDateString();
+    <div class="lynk-card p-3 flex items-start gap-3 shadow-2xl" style="border-left:3px solid var(--grad-1)">
+      <img src="${ava}" class="lynk-avatar w-9 h-9 flex-shrink-0" onerror="this.src='https://ui-avatars.com/api/?name=L&background=a855f7&color=fff'" />
+      <div class="flex-1 min-w-0">
+        <p class="font-semibold text-sm truncate">${escHtml(title)}</p>
+        <p class="text-xs truncate" style="color:var(--text-secondary)">${escHtml(body)}</p>
+      </div>
+      <button onclick="this.closest('#lynk-toast').remove()" class="lynk-icon-btn w-6 h-6 flex-shrink-0">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast?.remove(), 5000);
 }
 
 function escHtml(s) {
-  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }

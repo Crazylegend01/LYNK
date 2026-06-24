@@ -26,18 +26,45 @@ let activePostId = null;
 let _rankingCtx = null;
 window._postMediaFile = null;
 
+// ===== SET ONLINE STATUS =====
+async function setOnlineStatus(online) {
+  if (!currentUser) return;
+  try {
+    await setDoc(doc(db, 'users', currentUser.uid), {
+      isOnline: online,
+      lastSeen: serverTimestamp()
+    }, { merge: true });
+  } catch (e) { /* silent */ }
+}
+
 // Guard — require auth
 onAuthStateChanged(auth, async (user) => {
   if (!user) { window.location.href = 'auth.html'; return; }
   currentUser = user;
   const snap = await getDoc(doc(db, 'users', user.uid));
   currentUserData = snap.data() || {};
+
+  // Set online status
+  await setOnlineStatus(true);
+
+  // Clear online status on page leave
+  window.addEventListener('beforeunload', () => setOnlineStatus(false));
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      setOnlineStatus(false);
+    } else if (document.visibilityState === 'visible') {
+      setOnlineStatus(true);
+    }
+  });
+
   populateSidebar();
   await initNotifications(user.uid);
   _rankingCtx = await buildRankingContext(db, user.uid, currentUserData, _firestoreFns);
   loadFeed();
   loadSuggestions();
   loadTrendingCommunities();
+  loadOnlineFriends();
+  loadSidebarAnnouncements();
   checkOnboarding();
 });
 
@@ -61,7 +88,7 @@ function populateSidebar() {
   }
 }
 
-// ===== LOAD FEED (Ranked by algorithm) =====
+// ===== LOAD FEED =====
 async function loadFeed(reset = true) {
   if (reset) {
     lastPostDoc = null;
@@ -88,7 +115,7 @@ async function loadFeed(reset = true) {
     if (snap.empty && reset) {
       document.getElementById('feed-container').innerHTML = `
         <div class="lynk-card p-10 text-center">
-          <div class="text-5xl mb-3">📭</div>
+          <svg class="mx-auto mb-3" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-muted)"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
           <h3 class="font-semibold mb-2">No posts yet</h3>
           <p style="color:var(--text-secondary);font-size:0.875rem">Be the first to share something with your campus!</p>
         </div>`;
@@ -96,7 +123,6 @@ async function loadFeed(reset = true) {
     }
 
     const rawPosts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
     const ranked = (currentFilter === 'trending')
       ? rawPosts
       : (_rankingCtx ? rankPosts(rawPosts, _rankingCtx) : rawPosts);
@@ -156,7 +182,9 @@ function buildPostCard(postId, data) {
         const voteCount = Array.isArray(votes[i]) ? votes[i].length : 0;
         const pct = total > 0 ? Math.round((voteCount / total) * 100) : 0;
         const isMine = Array.isArray(votes[i]) && votes[i].includes(currentUser?.uid);
-        return `<div class="poll-option${isMine ? ' voted' : ''}" onclick="${userVoted ? '' : `votePoll('${postId}', ${i}, '${d.authorId}', '${escHtml(opt)}')`}" style="${userVoted ? 'cursor:default' : 'cursor:pointer'}">
+        return `<div class="poll-option${isMine ? ' voted' : ''}"
+          onclick="${userVoted ? '' : `votePoll('${postId}', ${i}, '${d.authorId}', '${escHtml(opt)}')`}"
+          style="${userVoted ? 'cursor:default' : 'cursor:pointer'}">
           <div class="poll-fill" style="width:${pct}%"></div>
           <div class="flex items-center justify-between" style="position:relative;z-index:1">
             <span class="text-sm font-medium">${escHtml(opt)}${isMine ? ' ✓' : ''}</span>
@@ -168,7 +196,12 @@ function buildPostCard(postId, data) {
     </div>`;
   }
 
-  const roleLabel = d.authorType === 'staff' ? '👨‍🏫 Staff' : d.authorType === 'alumni' ? '🏆 Alumni' : '';
+  const roleLabel = d.authorType === 'staff' ? 'Staff' : d.authorType === 'alumni' ? 'Alumni' : '';
+  const visIcon = d.visibility === 'faculty'
+    ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/></svg>`
+    : d.visibility === 'friends'
+    ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`
+    : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`;
 
   return `
     <div class="lynk-card p-5 fade-in" id="post-${postId}">
@@ -182,24 +215,31 @@ function buildPostCard(postId, data) {
               <a href="profile.html?uid=${d.authorId}" class="font-semibold text-sm hover:underline">${escHtml(d.authorName || 'LYNK User')}</a>
               ${roleLabel ? `<span class="text-xs ml-1 lynk-badge" style="background:rgba(168,85,247,0.1);color:var(--grad-1)">${roleLabel}</span>` : ''}
               <span class="text-xs ml-1 lynk-badge" style="background:var(--bg-card-hover);color:var(--text-muted)">${escHtml(d.faculty || d.university || '')}</span>
-              <p class="text-xs mt-0.5" style="color:var(--text-muted)">${ts} · ${d.visibility === 'public' ? '🌍' : d.visibility === 'faculty' ? '🏛️' : '👥'}</p>
+              <p class="text-xs mt-0.5 flex items-center gap-1" style="color:var(--text-muted)">${ts} · ${visIcon}</p>
             </div>
             ${isOwn
-              ? `<button onclick="deletePost('${postId}')" class="lynk-btn lynk-btn-ghost p-1 text-xs" style="color:var(--text-muted)">🗑</button>`
-              : `<button onclick="reportPost('${postId}')" class="lynk-btn lynk-btn-ghost p-1 text-xs" style="color:var(--text-muted)" data-tooltip="Report post">⚑</button>`}
+              ? `<button onclick="deletePost('${postId}')" class="lynk-btn lynk-btn-ghost p-1" style="color:var(--text-muted)" data-tooltip="Delete">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                </button>`
+              : `<button onclick="reportPost('${postId}')" class="lynk-btn lynk-btn-ghost p-1" style="color:var(--text-muted)" data-tooltip="Report">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                </button>`}
           </div>
           ${d.content ? `<p class="text-sm mt-2 whitespace-pre-wrap">${escHtml(d.content)}</p>` : ''}
           ${mediaHtml}
           ${pollHtml}
           <div class="flex items-center gap-2 mt-4 pt-3 border-t" style="border-color:var(--border)">
             <button class="reaction-btn ${liked ? 'active' : ''}" onclick="toggleLike('${postId}', '${d.authorId}', ${JSON.stringify(d.authorName || '')})">
-              ❤️ <span id="likes-${postId}">${d.likesCount || 0}</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="${liked ? 'var(--grad-1)' : 'none'}" stroke="${liked ? 'var(--grad-1)' : 'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <span id="likes-${postId}">${d.likesCount || 0}</span>
             </button>
             <button class="reaction-btn" onclick="openPostModal('${postId}')">
-              💬 <span>${d.commentsCount || 0}</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <span>${d.commentsCount || 0}</span>
             </button>
             <button class="reaction-btn" onclick="sharePost('${postId}')">
-              ↗️ Share
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              Share
             </button>
           </div>
         </div>
@@ -264,22 +304,45 @@ window.submitPost = async () => {
     <input type="text" class="lynk-input text-sm py-2" placeholder="Option 1" id="poll-opt-0" />
     <input type="text" class="lynk-input text-sm py-2" placeholder="Option 2" id="poll-opt-1" />`;
 
+  // Hide POST button area again
+  document.getElementById('post-actions-bar')?.classList.add('hidden');
+
   btn.disabled = false; btn.textContent = 'Post';
   showToast('Posted!', 'Your post is live on the feed.', currentUserData.photoURL || '');
   loadFeed();
 };
 
-// ===== LIKE — fires notification =====
+// Show/hide post button based on content
+window.onPostInput = (el) => {
+  const bar = document.getElementById('post-actions-bar');
+  if (!bar) return;
+  if (el.value.trim() || window._postMediaFile) {
+    bar.classList.remove('hidden');
+  } else {
+    // Keep showing if poll open
+    const pollOpen = !document.getElementById('poll-builder')?.classList.contains('hidden');
+    if (!pollOpen) bar.classList.add('hidden');
+  }
+};
+
+// ===== LIKE =====
 window.toggleLike = async (postId, authorId, authorName) => {
   if (!currentUser) return;
 
-  // Optimistic update
   const el = document.getElementById(`likes-${postId}`);
   const btn = el?.closest('.reaction-btn');
   const currentlyLiked = btn?.classList.contains('active');
   const currentCount = parseInt(el?.textContent || '0');
   if (el) el.textContent = currentlyLiked ? currentCount - 1 : currentCount + 1;
-  if (btn) btn.classList.toggle('active', !currentlyLiked);
+  if (btn) {
+    btn.classList.toggle('active', !currentlyLiked);
+    const heartSvg = btn.querySelector('svg');
+    if (heartSvg) {
+      const newColor = !currentlyLiked ? 'var(--grad-1)' : 'currentColor';
+      heartSvg.setAttribute('fill', !currentlyLiked ? 'var(--grad-1)' : 'none');
+      heartSvg.setAttribute('stroke', newColor);
+    }
+  }
 
   const postRef = doc(db, 'posts', postId);
   const snap = await getDoc(postRef);
@@ -292,12 +355,17 @@ window.toggleLike = async (postId, authorId, authorName) => {
     likesCount: liked ? Math.max((data.likesCount || 1) - 1, 0) : (data.likesCount || 0) + 1
   });
 
-  // Sync with actual server value
   const newCount = liked ? Math.max((data.likesCount || 1) - 1, 0) : (data.likesCount || 0) + 1;
   if (el) el.textContent = newCount;
-  if (btn) btn.classList.toggle('active', !liked);
+  if (btn) {
+    btn.classList.toggle('active', !liked);
+    const heartSvg = btn.querySelector('svg');
+    if (heartSvg) {
+      heartSvg.setAttribute('fill', !liked ? 'var(--grad-1)' : 'none');
+      heartSvg.setAttribute('stroke', !liked ? 'var(--grad-1)' : 'currentColor');
+    }
+  }
 
-  // Send notification if newly liked
   if (!liked) {
     await sendNotification({
       toUid: authorId,
@@ -314,39 +382,29 @@ window.toggleLike = async (postId, authorId, authorName) => {
 // ===== POLL VOTE =====
 window.votePoll = async (postId, optIndex, authorId, optLabel) => {
   if (!currentUser) return;
-
   await updateDoc(doc(db, 'posts', postId), {
     [`poll.votes.${optIndex}`]: arrayUnion(currentUser.uid)
   });
-
-  // Re-render the post card with updated poll data
   const postSnap = await getDoc(doc(db, 'posts', postId));
   if (postSnap.exists()) {
     const postEl = document.getElementById(`post-${postId}`);
-    if (postEl) {
-      postEl.outerHTML = buildPostCard(postId, postSnap.data());
-    }
+    if (postEl) postEl.outerHTML = buildPostCard(postId, postSnap.data());
   }
-
   await sendNotification({
-    toUid: authorId,
-    fromUid: currentUser.uid,
+    toUid: authorId, fromUid: currentUser.uid,
     fromName: currentUserData.displayName || 'Someone',
     fromPhoto: currentUserData.photoURL || '',
-    type: 'poll',
-    message: 'voted on your poll',
-    preview: optLabel
+    type: 'poll', message: 'voted on your poll', preview: optLabel
   });
 };
 
-// ===== DELETE POST =====
+// ===== DELETE / REPORT =====
 window.deletePost = async (postId) => {
   if (!confirm('Delete this post?')) return;
   await deleteDoc(doc(db, 'posts', postId));
   document.getElementById(`post-${postId}`)?.remove();
 };
 
-// ===== REPORT =====
 window.reportPost = async (postId) => {
   await addDoc(collection(db, 'reports'), {
     postId, reportedBy: currentUser.uid,
@@ -356,7 +414,6 @@ window.reportPost = async (postId) => {
   showToast('Reported', 'Our moderation team will review this post.', '');
 };
 
-// ===== SHARE =====
 window.sharePost = (postId) => {
   const url = `${window.location.origin}${window.location.pathname.replace('feed.html', '')}feed.html?post=${postId}`;
   navigator.clipboard?.writeText(url).then(() => showToast('Copied!', 'Post link copied to clipboard.', ''));
@@ -394,170 +451,225 @@ async function loadComments(postId) {
   snap.docs.forEach(d => {
     const c = d.data();
     const ava = c.authorPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.authorName||'U')}&background=a855f7&color=fff`;
+    const ts2 = c.createdAt?.toDate?.()?.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) || '';
     list.insertAdjacentHTML('beforeend', `
       <div class="flex gap-2 items-start">
         <img src="${ava}" class="lynk-avatar w-7 h-7 flex-shrink-0" />
-        <div style="background:var(--bg-card-hover);padding:8px 12px;border-radius:12px;flex:1">
-          <p class="text-xs font-semibold mb-0.5">${escHtml(c.authorName)}</p>
-          <p class="text-xs">${escHtml(c.content)}</p>
+        <div class="flex-1 min-w-0">
+          <div class="inline-block rounded-2xl rounded-tl-sm px-3 py-2" style="background:var(--bg-card-hover)">
+            <p class="text-xs font-semibold mb-0.5">${escHtml(c.authorName || 'User')}</p>
+            <p class="text-sm">${escHtml(c.content)}</p>
+          </div>
+          <p class="text-xs mt-1" style="color:var(--text-muted)">${ts2}</p>
         </div>
       </div>`);
   });
 }
 
-// ===== COMMENT — fires notification =====
 window.submitComment = async () => {
-  if (!activePostId || !currentUser) return;
   const input = document.getElementById('comment-input');
-  const content = input.value.trim();
-  if (!content) return;
-
+  const text = input?.value.trim();
+  if (!text || !activePostId) return;
+  const btn = document.getElementById('btn-comment');
+  if (btn) btn.disabled = true;
+  const snap = await getDoc(doc(db, 'posts', activePostId));
+  const authorId = snap.data()?.authorId;
   await addDoc(collection(db, 'posts', activePostId, 'comments'), {
-    content, authorId: currentUser.uid,
-    authorName: currentUserData.displayName || 'User',
+    content: text,
+    authorId: currentUser.uid,
+    authorName: currentUserData.displayName || 'LYNK User',
     authorPhoto: currentUserData.photoURL || '',
     createdAt: serverTimestamp()
   });
-
-  const postSnap = await getDoc(doc(db, 'posts', activePostId));
-  const postData = postSnap.data();
   await updateDoc(doc(db, 'posts', activePostId), { commentsCount: increment(1) });
-
-  if (postData?.authorId && postData.authorId !== currentUser.uid) {
+  if (authorId) {
     await sendNotification({
-      toUid: postData.authorId,
-      fromUid: currentUser.uid,
+      toUid: authorId, fromUid: currentUser.uid,
       fromName: currentUserData.displayName || 'Someone',
       fromPhoto: currentUserData.photoURL || '',
-      type: 'comment',
-      message: 'commented on your post',
-      preview: content.slice(0, 80)
+      type: 'comment', message: 'commented on your post', preview: text.slice(0, 80)
     });
   }
-
-  input.value = '';
+  if (input) input.value = '';
+  if (btn) btn.disabled = false;
   loadComments(activePostId);
 };
 
-// ===== FILTER =====
+// ===== MEDIA UPLOAD for Compose =====
+window.pickPostMedia = (input) => {
+  const file = input.files[0];
+  if (!file) return;
+  window._postMediaFile = file;
+  const prev = document.getElementById('media-preview');
+  const img = document.getElementById('preview-img');
+  const vid = document.getElementById('preview-vid');
+  prev.classList.remove('hidden');
+  if (file.type.startsWith('video')) {
+    img.classList.add('hidden');
+    vid.classList.remove('hidden');
+    vid.src = URL.createObjectURL(file);
+  } else {
+    vid.classList.add('hidden');
+    img.classList.remove('hidden');
+    img.src = URL.createObjectURL(file);
+  }
+  document.getElementById('post-actions-bar')?.classList.remove('hidden');
+};
+
+window.clearMediaPreview = () => {
+  window._postMediaFile = null;
+  document.getElementById('media-preview').classList.add('hidden');
+  document.getElementById('preview-img').src = '';
+  document.getElementById('preview-vid').src = '';
+};
+
+// ===== POLL BUILDER =====
+window.togglePollBuilder = () => {
+  const builder = document.getElementById('poll-builder');
+  builder.classList.toggle('hidden');
+  document.getElementById('post-actions-bar')?.classList.remove('hidden');
+};
+
+window.addPollOption = () => {
+  const container = document.getElementById('poll-options');
+  const count = container.children.length;
+  if (count >= 5) return;
+  container.insertAdjacentHTML('beforeend', `
+    <input type="text" class="lynk-input text-sm py-2" placeholder="Option ${count + 1}" id="poll-opt-${count}" />`);
+};
+
+// ===== FEED FILTERS =====
 window.setFilter = (filter, btn) => {
   currentFilter = filter;
-  document.querySelectorAll('.lynk-tab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn?.classList.add('active');
   loadFeed();
 };
 
 window.loadMorePosts = () => loadFeed(false);
 
-// ===== MEDIA UPLOAD =====
-window.handleMediaUpload = (input) => {
-  const file = input.files[0];
-  if (!file) return;
-  window._postMediaFile = file;
-  if (file.type.startsWith('image')) {
-    document.getElementById('media-preview-img').src = URL.createObjectURL(file);
-    document.getElementById('media-preview').classList.remove('hidden');
+// ===== ONLINE FRIENDS (right sidebar) =====
+async function loadOnlineFriends() {
+  const list = document.getElementById('online-friends-list');
+  if (!list) return;
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'users'),
+      where('isOnline', '==', true),
+      limit(8)
+    ));
+    const friends = snap.docs.filter(d => d.id !== currentUser.uid);
+    if (friends.length === 0) {
+      list.innerHTML = '<p class="text-xs" style="color:var(--text-muted)">No one online right now.</p>';
+      return;
+    }
+    list.innerHTML = '';
+    friends.forEach(d => {
+      const u = d.data();
+      const ava = u.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.displayName||'U')}&background=a855f7&color=fff&size=32`;
+      list.insertAdjacentHTML('beforeend', `
+        <div class="online-friend-item">
+          <div class="relative flex-shrink-0">
+            <img src="${ava}" class="lynk-avatar w-8 h-8" />
+            <span class="online-dot" style="width:8px;height:8px"></span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="name truncate">${escHtml(u.displayName || 'LYNK User')}</p>
+            <p class="status">● Online</p>
+          </div>
+          <a href="chat.html?uid=${d.id}" class="lynk-icon-btn w-7 h-7 flex-shrink-0" style="color:var(--grad-2)" data-tooltip="Message">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </a>
+        </div>`);
+    });
+  } catch (e) {
+    list.innerHTML = '<p class="text-xs" style="color:var(--text-muted)">Could not load.</p>';
   }
-};
+}
 
-// ===== SUGGESTIONS =====
+// ===== SIDEBAR ANNOUNCEMENTS =====
+async function loadSidebarAnnouncements() {
+  const list = document.getElementById('sidebar-announcements');
+  if (!list) return;
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'announcements'),
+      orderBy('createdAt', 'desc'),
+      limit(3)
+    ));
+    if (snap.empty) { list.innerHTML = '<p class="text-xs" style="color:var(--text-muted)">No announcements.</p>'; return; }
+    list.innerHTML = '';
+    snap.docs.forEach(d => {
+      const a = d.data();
+      const priorityDot = a.priority === 'high' ? '#ef4444' : a.priority === 'medium' ? '#f59e0b' : '#22c55e';
+      list.insertAdjacentHTML('beforeend', `
+        <a href="announcements.html" class="block py-2 border-b" style="border-color:var(--border)">
+          <div class="flex items-start gap-2">
+            <span class="w-2 h-2 rounded-full flex-shrink-0 mt-1.5" style="background:${priorityDot}"></span>
+            <div class="min-w-0">
+              <p class="text-xs font-semibold truncate">${escHtml(a.title || '')}</p>
+              <p class="text-xs truncate" style="color:var(--text-muted)">${escHtml((a.body||'').slice(0,50))}</p>
+            </div>
+          </div>
+        </a>`);
+    });
+  } catch (e) {/* silent */}
+}
+
+// ===== PEOPLE SUGGESTIONS =====
 async function loadSuggestions() {
-  const list = document.getElementById('suggestions-list');
-  const mobileList = document.getElementById('mobile-suggestions-list');
-  if (!list && !mobileList) return;
+  const deskList = document.getElementById('suggestions-list');
+  const mobList = document.getElementById('mobile-suggestions');
+  if (!deskList && !mobList) return;
 
-  const d = currentUserData;
+  const snap = await getDocs(query(
+    collection(db, 'users'),
+    where('university', '==', currentUserData.university || ''),
+    limit(10)
+  ));
+  const users = snap.docs.filter(d => d.id !== currentUser.uid).slice(0, 6);
+  if (users.length === 0) return;
 
-  if (!d.university && !d.faculty && !d.department) {
-    const msg = `<div class="text-xs text-center py-2" style="color:var(--text-muted)">
-      <p class="mb-2">Complete your profile to see classmates!</p>
-      <button onclick="document.getElementById('onboarding-modal').classList.remove('hidden')"
-              class="lynk-btn lynk-btn-primary text-xs py-1.5 px-3 rounded-lg">Set up profile</button>
-    </div>`;
-    if (list) list.innerHTML = msg;
-    if (mobileList) mobileList.innerHTML = msg;
-    return;
-  }
-
-  const [fromSnap, toSnap] = await Promise.all([
-    getDocs(query(collection(db, 'friends'), where('from', '==', currentUser.uid))),
-    getDocs(query(collection(db, 'friends'), where('to', '==', currentUser.uid)))
-  ]);
-  const excludeUids = new Set([currentUser.uid]);
-  fromSnap.docs.forEach(doc => excludeUids.add(doc.data().to));
-  toSnap.docs.forEach(doc => excludeUids.add(doc.data().from));
-
-  const queryDefs = [];
-  if (d.department) queryDefs.push({ q: query(collection(db, 'users'), where('department', '==', d.department), limit(12)), score: 3, label: '📚 Same department' });
-  if (d.faculty)    queryDefs.push({ q: query(collection(db, 'users'), where('faculty', '==', d.faculty), limit(12)), score: 2, label: '🏛️ Same faculty' });
-  if (d.university) queryDefs.push({ q: query(collection(db, 'users'), where('university', '==', d.university), limit(12)), score: 1, label: '🎓 Same university' });
-
-  const snaps = await Promise.all(queryDefs.map(def => getDocs(def.q)));
-  const scored = new Map();
-  snaps.forEach((snap, i) => {
-    const { score, label } = queryDefs[i];
-    snap.docs.forEach(doc => {
-      if (excludeUids.has(doc.id)) return;
-      const existing = scored.get(doc.id);
-      if (!existing || score > existing.score) {
-        scored.set(doc.id, { uid: doc.id, data: doc.data(), score, label });
+  [deskList, mobList].forEach(list => {
+    if (!list) return;
+    const isMob = list.id === 'mobile-suggestions';
+    list.innerHTML = '';
+    users.forEach(d => {
+      const u = d.data();
+      const ava = u.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.displayName||'U')}&background=a855f7&color=fff&size=64`;
+      const uid = d.id;
+      const label = u.faculty ? `${u.faculty} · ${u.university||''}` : (u.university || '');
+      if (isMob) {
+        list.insertAdjacentHTML('beforeend', `
+          <div class="flex-shrink-0 w-24 text-center">
+            <div class="relative inline-block mb-1">
+              <img src="${ava}" class="lynk-avatar w-12 h-12 mx-auto" />
+              ${u.isOnline ? '<span class="online-dot" style="width:8px;height:8px;right:0;bottom:0"></span>' : ''}
+            </div>
+            <p class="text-xs font-semibold truncate mb-0.5">${escHtml(u.displayName||'User')}</p>
+            <p class="text-xs mb-2" style="color:var(--text-muted);font-size:10px;line-height:1.2">${escHtml(label.slice(0,30))}</p>
+            <button onclick="quickAddFriend('${uid}','${escHtml(u.displayName||'')}','${ava}')"
+                    id="mob-sugg-btn-${uid}"
+                    class="lynk-btn lynk-btn-primary w-full text-xs py-1 rounded-lg">+Add</button>
+          </div>`);
+      } else {
+        list.insertAdjacentHTML('beforeend', `
+          <div class="flex items-center gap-3 py-2 border-b" style="border-color:var(--border)">
+            <div class="relative flex-shrink-0">
+              <img src="${ava}" class="lynk-avatar w-9 h-9" />
+              ${u.isOnline ? '<span class="online-dot" style="width:8px;height:8px"></span>' : ''}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium truncate">${escHtml(u.displayName||'User')}</p>
+              <p class="text-xs truncate" style="color:var(--text-muted)">${escHtml(label.slice(0,30))}</p>
+            </div>
+            <button onclick="quickAddFriend('${uid}','${escHtml(u.displayName||'')}','${ava}')"
+                    id="sugg-btn-${uid}"
+                    class="lynk-btn lynk-btn-primary text-xs py-1 px-3 rounded-lg flex-shrink-0">Add</button>
+          </div>`);
       }
     });
   });
-
-  const sorted = [...scored.values()].sort((a, b) => b.score - a.score).slice(0, 6);
-  const emptyMsg = `<div class="text-xs" style="color:var(--text-muted)">No suggestions yet — invite your classmates to join LYNK!</div>`;
-
-  if (sorted.length === 0) {
-    if (list) list.innerHTML = emptyMsg;
-    if (mobileList) mobileList.innerHTML = emptyMsg;
-    return;
-  }
-
-  if (list) {
-    list.innerHTML = '';
-    sorted.forEach(({ uid, data: u, label }) => {
-      const ava = u.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.displayName||'U')}&background=a855f7&color=fff&size=64`;
-      list.insertAdjacentHTML('beforeend', `
-        <div class="flex items-center gap-2.5" id="suggestion-${uid}">
-          <a href="profile.html?uid=${uid}" class="flex-shrink-0">
-            <div class="relative">
-              <img src="${ava}" class="lynk-avatar w-9 h-9" />
-              ${u.isOnline ? '<span class="online-dot" style="width:8px;height:8px;right:0;bottom:0"></span>' : ''}
-            </div>
-          </a>
-          <div class="flex-1 min-w-0">
-            <p class="text-xs font-semibold truncate">
-              ${escHtml(u.displayName||'User')}
-              ${u.userType === 'staff' ? '<span style="color:#38bdf8;font-size:10px"> Staff</span>' : u.userType === 'alumni' ? '<span style="color:#f59e0b;font-size:10px"> Alumni</span>' : ''}
-            </p>
-            <p class="text-xs truncate lynk-gradient-text font-medium">${label}</p>
-          </div>
-          <button onclick="quickAddFriend('${uid}','${escHtml(u.displayName||'')}','${ava}')"
-                  id="sugg-btn-${uid}"
-                  class="lynk-btn lynk-btn-primary text-xs py-1 px-2 rounded-lg flex-shrink-0">+Add</button>
-        </div>`);
-    });
-  }
-
-  if (mobileList) {
-    mobileList.innerHTML = '';
-    sorted.forEach(({ uid, data: u, label }) => {
-      const ava = u.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.displayName||'U')}&background=a855f7&color=fff&size=96`;
-      mobileList.insertAdjacentHTML('beforeend', `
-        <div class="flex-shrink-0 w-28 lynk-card p-3 text-center">
-          <div class="relative inline-block mb-2">
-            <img src="${ava}" class="lynk-avatar w-12 h-12 mx-auto" />
-            ${u.isOnline ? '<span class="online-dot" style="width:8px;height:8px;right:0;bottom:0"></span>' : ''}
-          </div>
-          <p class="text-xs font-semibold truncate mb-0.5">${escHtml(u.displayName||'User')}</p>
-          <p class="text-xs mb-2" style="color:var(--text-muted);font-size:10px;line-height:1.2">${label}</p>
-          <button onclick="quickAddFriend('${uid}','${escHtml(u.displayName||'')}','${ava}')"
-                  id="mob-sugg-btn-${uid}"
-                  class="lynk-btn lynk-btn-primary w-full text-xs py-1 rounded-lg">+Add</button>
-        </div>`);
-    });
-  }
 }
 
 window.quickAddFriend = async (toUid, toName, toPhoto) => {
@@ -579,7 +691,7 @@ window.quickAddFriend = async (toUid, toName, toPhoto) => {
     type: 'friend_request', message: 'sent you a friend request',
     preview: `${currentUserData.faculty || ''} · ${currentUserData.university || ''}`
   });
-  showToast('Request Sent! 🤝', `Friend request sent to ${toName}.`, toPhoto);
+  showToast('Request Sent!', `Friend request sent to ${toName}.`, toPhoto);
 };
 
 // ===== TRENDING COMMUNITIES =====
@@ -592,14 +704,18 @@ async function loadTrendingCommunities() {
     const c = d.data();
     list.insertAdjacentHTML('beforeend', `
       <div class="flex items-center justify-between py-1.5 text-sm">
-        <span class="truncate" style="color:var(--text-secondary)">${c.type === 'faculty' ? '🏛️' : '📚'} ${c.name}</span>
-        <span class="text-xs lynk-badge" style="background:var(--bg-card-hover);color:var(--text-muted)">${c.memberCount}</span>
+        <span class="truncate flex items-center gap-1.5" style="color:var(--text-secondary)">
+          ${c.type === 'faculty'
+            ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/></svg>'
+            : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>'}
+          ${c.name}
+        </span>
+        <span class="text-xs lynk-badge ml-2 flex-shrink-0" style="background:var(--bg-card-hover);color:var(--text-muted)">${c.memberCount}</span>
       </div>`);
   });
   if (snap.empty) list.innerHTML = '<div class="text-xs" style="color:var(--text-muted)">No communities yet.</div>';
 }
 
-// ===== FRIEND REQUEST =====
 window.sendFriendRequest = async (toUid, toName) => {
   if (!currentUser) return;
   await setDoc(doc(db, 'friends', `${currentUser.uid}_${toUid}`), {
@@ -617,9 +733,7 @@ window.sendFriendRequest = async (toUid, toName) => {
 
 // ===== SIGN OUT =====
 window.signOut = async () => {
-  if (currentUser) {
-    await setDoc(doc(db, 'users', currentUser.uid), { isOnline: false, lastSeen: serverTimestamp() }, { merge: true });
-  }
+  await setOnlineStatus(false);
   await firebaseSignOut(auth);
   window.location.href = 'auth.html';
 };
@@ -644,8 +758,8 @@ async function checkOnboarding() {
   document.getElementById('onboard-name').textContent = currentUserData.displayName || 'LYNK User';
   document.getElementById('onboard-handle').textContent = `@${currentUserData.username || ''}`;
 
-  const typeLabels = { staff: '👨‍🏫 Staff Member', alumni: '🏆 Alumni', student: '🎓 Student' };
-  document.getElementById('onboard-type').textContent = typeLabels[currentUserData.userType] || '🎓 Student';
+  const typeLabels = { staff: 'Staff Member', alumni: 'Alumni', student: 'Student' };
+  document.getElementById('onboard-type').textContent = typeLabels[currentUserData.userType] || 'Student';
 
   if (currentUserData.userType === 'staff') {
     document.getElementById('onboard-position-wrap')?.classList.remove('hidden');
@@ -728,11 +842,11 @@ function _buildOnboardSummary() {
   const summary = document.getElementById('onboard-summary');
   if (!summary) return;
   const rows = [
-    ['🎓 University', schoolName || 'Not selected'],
-    ['🏛️ Faculty', faculty || 'Not selected'],
-    ['📚 Department', dept || 'Not selected'],
+    ['University', schoolName || 'Not selected'],
+    ['Faculty', faculty || 'Not selected'],
+    ['Department', dept || 'Not selected'],
   ];
-  if (currentUserData.userType === 'staff') rows.push(['👔 Position', position || 'Not set']);
+  if (currentUserData.userType === 'staff') rows.push(['Position', position || 'Not set']);
   summary.innerHTML = rows.map(([label, val]) => `
     <div class="flex justify-between items-center text-sm">
       <span style="color:var(--text-muted)">${label}</span>
@@ -773,7 +887,7 @@ window.finishOnboarding = async () => {
   localStorage.setItem(`lynk_onboarded_${currentUser.uid}`, '1');
   document.getElementById('onboarding-modal').classList.add('hidden');
   populateSidebar();
-  showToast('Profile Complete! 🎓', `Welcome to ${faculty || 'LYNK'}!`, currentUserData.photoURL || '');
+  showToast('Profile Complete!', `Welcome to ${faculty || 'LYNK'}!`, currentUserData.photoURL || '');
 };
 
 window.dismissOnboarding = () => {
