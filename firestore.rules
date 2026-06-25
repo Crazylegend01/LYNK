@@ -21,7 +21,8 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if true;
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId) || isSuperAdmin();
+      // Any admin (not just super) can update users — allows suspend/unsuspend
+      allow update: if isOwner(userId) || isAdmin();
       allow delete: if isSuperAdmin();
     }
 
@@ -29,7 +30,14 @@ service cloud.firestore {
     match /posts/{postId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && isNotSuspended();
-      allow update: if isSignedIn() && (resource.data.authorId == request.auth.uid || isAdmin());
+      // Authors and admins can update anything.
+      // Any signed-in non-suspended user can update reaction fields (likes, counts, poll).
+      allow update: if isSignedIn() && isNotSuspended() && (
+        resource.data.authorId == request.auth.uid ||
+        isAdmin() ||
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['likes', 'likesCount', 'commentsCount', 'poll'])
+      );
       allow delete: if isSignedIn() && (resource.data.authorId == request.auth.uid || isAdmin());
       match /comments/{commentId} {
         allow read: if isSignedIn();
@@ -66,7 +74,7 @@ service cloud.firestore {
       allow delete: if isSignedIn() && (resource.data.toUid == request.auth.uid || isAdmin());
     }
 
-    // ===== SCHOOLS — public read so sign-up page can load schools before auth =====
+    // ===== SCHOOLS =====
     match /schools/{schoolId} {
       allow read: if true;
       allow create, update: if isAdmin();
