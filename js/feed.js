@@ -8,7 +8,7 @@ import { initNotifications, sendNotification, showToast } from './notifications.
 import {
   collection, addDoc, getDocs, getDoc, doc, setDoc, updateDoc, deleteDoc,
   query, orderBy, limit, startAfter, where, serverTimestamp,
-  arrayUnion, arrayRemove, increment
+  arrayUnion, arrayRemove, increment, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { uploadToCloudinary, optimizeCloudinaryUrl } from './cloudinary.js';
@@ -24,6 +24,7 @@ let lastPostDoc = null;
 let currentFilter = 'all';
 let activePostId = null;
 let _rankingCtx = null;
+let commentsUnsub = null;
 window._postMediaFile = null;
 
 // ===== SET ONLINE STATUS =====
@@ -271,11 +272,16 @@ window.submitPost = async () => {
 
   let mediaUrl = null, mediaType = null;
   if (window._postMediaFile) {
+    const isVideo = window._postMediaFile.type.startsWith('video');
+    mediaType = isVideo ? 'video' : 'image';
     try {
-      mediaUrl = await uploadToCloudinary(window._postMediaFile, `lynk/posts/${currentUser.uid}`);
-      mediaType = window._postMediaFile.type.startsWith('video') ? 'video' : 'image';
+      mediaUrl = await uploadToCloudinary(
+        window._postMediaFile,
+        `lynk/posts/${currentUser.uid}`,
+        (pct) => { btn.textContent = `Uploading ${pct}%`; }
+      );
     } catch (e) {
-      showToast('Upload Failed', 'Could not upload media. Check your Cloudinary preset.', '');
+      showToast('Upload Failed', 'Could not upload media. Try a smaller file or check your connection.', '');
       btn.disabled = false; btn.textContent = 'Post';
       return;
     }
@@ -433,36 +439,55 @@ window.openPostModal = async (postId) => {
 
 window.closePostModal = () => {
   document.getElementById('post-modal').classList.add('hidden');
+  // Clean up the comments real-time listener
+  if (commentsUnsub) { commentsUnsub(); commentsUnsub = null; }
   activePostId = null;
 };
 
-async function loadComments(postId) {
+function loadComments(postId) {
   const list = document.getElementById('comments-list');
-  list.innerHTML = '<div class="text-xs" style="color:var(--text-muted)">Loading...</div>';
-  const snap = await getDocs(query(
+  if (!list) return;
+
+  // Cancel any previous listener to prevent duplicate renders
+  if (commentsUnsub) { commentsUnsub(); commentsUnsub = null; }
+
+  list.innerHTML = '<div class="text-xs py-2" style="color:var(--text-muted)">Loading comments...</div>';
+
+  const q = query(
     collection(db, 'posts', postId, 'comments'),
-    orderBy('createdAt', 'asc'), limit(50)
-  ));
-  if (snap.empty) {
-    list.innerHTML = '<div class="text-xs" style="color:var(--text-muted)">No comments yet. Be first!</div>';
-    return;
-  }
-  list.innerHTML = '';
-  snap.docs.forEach(d => {
-    const c = d.data();
-    const ava = c.authorPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.authorName||'U')}&background=a855f7&color=fff`;
-    const ts2 = c.createdAt?.toDate?.()?.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) || '';
-    list.insertAdjacentHTML('beforeend', `
-      <div class="flex gap-2 items-start">
-        <img src="${ava}" class="lynk-avatar w-7 h-7 flex-shrink-0" />
-        <div class="flex-1 min-w-0">
-          <div class="inline-block rounded-2xl rounded-tl-sm px-3 py-2" style="background:var(--bg-card-hover)">
-            <p class="text-xs font-semibold mb-0.5">${escHtml(c.authorName || 'User')}</p>
-            <p class="text-sm">${escHtml(c.content)}</p>
+    orderBy('createdAt', 'asc'),
+    limit(100)
+  );
+
+  commentsUnsub = onSnapshot(q, (snap) => {
+    if (!list) return;
+    if (snap.empty) {
+      list.innerHTML = '<div class="text-xs py-2" style="color:var(--text-muted)">No comments yet. Be the first!</div>';
+      return;
+    }
+    // Full re-render on every snapshot (list is small, <100 comments)
+    list.innerHTML = '';
+    snap.docs.forEach(d => {
+      const c = d.data();
+      const ava = c.authorPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.authorName||'U')}&background=a855f7&color=fff`;
+      const ts2 = c.createdAt?.toDate?.()?.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) || '';
+      list.insertAdjacentHTML('beforeend', `
+        <div class="flex gap-2 items-start">
+          <img src="${ava}" class="lynk-avatar w-7 h-7 flex-shrink-0" />
+          <div class="flex-1 min-w-0">
+            <div class="inline-block rounded-2xl rounded-tl-sm px-3 py-2" style="background:var(--bg-card-hover)">
+              <p class="text-xs font-semibold mb-0.5">${escHtml(c.authorName || 'User')}</p>
+              <p class="text-sm">${escHtml(c.content)}</p>
+            </div>
+            <p class="text-xs mt-1" style="color:var(--text-muted)">${ts2}</p>
           </div>
-          <p class="text-xs mt-1" style="color:var(--text-muted)">${ts2}</p>
-        </div>
-      </div>`);
+        </div>`);
+    });
+    // Scroll to bottom
+    list.scrollTop = list.scrollHeight;
+  }, (err) => {
+    list.innerHTML = `<div class="text-xs py-2" style="color:var(--text-muted)">Could not load comments.</div>`;
+    console.warn('Comments listener error:', err.message);
   });
 }
 
@@ -492,7 +517,7 @@ window.submitComment = async () => {
   }
   if (input) input.value = '';
   if (btn) btn.disabled = false;
-  loadComments(activePostId);
+  // No need to call loadComments — the onSnapshot listener auto-updates
 };
 
 // ===== MEDIA UPLOAD for Compose =====
