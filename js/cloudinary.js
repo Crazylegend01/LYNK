@@ -1,17 +1,11 @@
 // ============================================================
-// LYNK By Legends — Cloudinary Upload & Optimization Helper
-// Safe for browser use: uses unsigned uploads (no API secret).
-// Requires an unsigned upload preset in your Cloudinary
-// dashboard → Settings → Upload → Upload presets.
+// LYNK By Legends — Cloudinary Upload Helper
+// Uses unsigned uploads with XHR for progress tracking.
 // ============================================================
 
 const CLOUD_NAME = 'dc5biubfq';
 const UPLOAD_PRESET = 'lynk_uploads';
 
-/**
- * Transform a Cloudinary URL with auto-format, auto-quality, and optional resize.
- * Safe to call with non-Cloudinary URLs — returns them unchanged.
- */
 export function optimizeCloudinaryUrl(url, { width, height, crop = 'fill' } = {}) {
   if (!url || !url.includes('res.cloudinary.com')) return url;
   const transforms = ['f_auto', 'q_auto'];
@@ -22,29 +16,52 @@ export function optimizeCloudinaryUrl(url, { width, height, crop = 'fill' } = {}
 }
 
 /**
- * Upload a file to Cloudinary and return the secure URL.
- * @param {File}   file   - The file to upload (image or video)
- * @param {string} folder - Cloudinary folder path (e.g. 'lynk/posts')
- * @returns {Promise<string>} The secure HTTPS URL of the uploaded file
+ * Upload a file to Cloudinary with optional progress callback.
+ * @param {File}      file       - The file to upload
+ * @param {string}    folder     - Cloudinary folder (e.g. 'lynk/posts')
+ * @param {Function}  onProgress - Called with 0–100 as upload progresses
+ * @returns {Promise<string>}    Secure URL
  */
-export async function uploadToCloudinary(file, folder = 'lynk') {
-  const resourceType = file.type.startsWith('video') ? 'video' : 'image';
+export function uploadToCloudinary(file, folder = 'lynk', onProgress = null) {
+  return new Promise((resolve, reject) => {
+    const resourceType = file.type.startsWith('video') ? 'video' : 'image';
 
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('upload_preset', UPLOAD_PRESET);
-  formData.append('folder', folder);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', UPLOAD_PRESET);
+    formData.append('folder', folder);
 
-  const res = await fetch(
-    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`,
-    { method: 'POST', body: formData }
-  );
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`);
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error?.message || `Cloudinary upload failed (${res.status})`);
-  }
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
 
-  const data = await res.json();
-  return data.secure_url;
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          resolve(data.secure_url);
+        } catch (e) {
+          reject(new Error('Invalid Cloudinary response'));
+        }
+      } else {
+        try {
+          const err = JSON.parse(xhr.responseText);
+          reject(new Error(err.error?.message || `Upload failed (${xhr.status})`));
+        } catch {
+          reject(new Error(`Upload failed (${xhr.status})`));
+        }
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Network error during upload'));
+    xhr.ontimeout = () => reject(new Error('Upload timed out'));
+    xhr.timeout = 120000; // 2-minute timeout for large videos
+
+    xhr.send(formData);
+  });
 }
