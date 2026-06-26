@@ -160,9 +160,25 @@ body {
   border: 1px solid var(--border);
   border-radius: 16px;
   box-shadow: var(--shadow);
-  transition: background 0.3s, border-color 0.3s, transform 0.2s;
+  transition: background 0.3s, border-color 0.3s;
 }
 .lynk-card:hover { background: var(--bg-card-hover); }
+
+/* Right sidebar — stays pinned while page scrolls */
+.lynk-right-sidebar {
+  position: sticky;
+  top: 84px;
+  align-self: flex-start;
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.lynk-right-sidebar::-webkit-scrollbar { width: 4px; }
+.lynk-right-sidebar::-webkit-scrollbar-track { background: transparent; }
+.lynk-right-sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+/* Cards inside the right sidebar should NOT lift on hover */
+.lynk-right-sidebar .lynk-card:hover { background: var(--bg-card); }
 
 /* Navigation */
 .lynk-nav {
