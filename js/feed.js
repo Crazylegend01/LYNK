@@ -230,7 +230,7 @@ function buildPostCard(postId, data) {
           ${mediaHtml}
           ${pollHtml}
           <div class="flex items-center gap-2 mt-4 pt-3 border-t" style="border-color:var(--border)">
-            <button class="reaction-btn ${liked ? 'active' : ''}" onclick="toggleLike('${postId}', '${d.authorId}', ${JSON.stringify(d.authorName || '')})">
+            <button class="reaction-btn ${liked ? 'active' : ''}" onclick="toggleLike('${postId}', '${d.authorId}')">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="${liked ? 'var(--grad-1)' : 'none'}" stroke="${liked ? 'var(--grad-1)' : 'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
               <span id="likes-${postId}">${d.likesCount || 0}</span>
             </button>
@@ -240,7 +240,7 @@ function buildPostCard(postId, data) {
             </button>
             <button class="reaction-btn" onclick="sharePost('${postId}')">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-              Share
+              <span id="shares-${postId}">${d.sharesCount || 0}</span>
             </button>
           </div>
         </div>
@@ -332,7 +332,7 @@ window.onPostInput = (el) => {
 };
 
 // ===== LIKE =====
-window.toggleLike = async (postId, authorId, authorName) => {
+window.toggleLike = async (postId, authorId) => {
   if (!currentUser) return;
 
   const el = document.getElementById(`likes-${postId}`);
@@ -420,9 +420,14 @@ window.reportPost = async (postId) => {
   showToast('Reported', 'Our moderation team will review this post.', '');
 };
 
-window.sharePost = (postId) => {
+window.sharePost = async (postId) => {
   const url = `${window.location.origin}${window.location.pathname.replace('feed.html', '')}feed.html?post=${postId}`;
   navigator.clipboard?.writeText(url).then(() => showToast('Copied!', 'Post link copied to clipboard.', ''));
+  try {
+    await updateDoc(doc(db, 'posts', postId), { sharesCount: increment(1) });
+    const el = document.getElementById(`shares-${postId}`);
+    if (el) el.textContent = parseInt(el.textContent || '0') + 1;
+  } catch (_) {}
 };
 
 // ===== POST MODAL (Comments) =====
