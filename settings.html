@@ -104,8 +104,10 @@
 
     <!-- PROFILE TAB -->
     <div id="tab-profile">
-      <div class="lynk-card p-6 mb-4">
-        <h2 class="font-semibold text-lg mb-4">Profile Info</h2>
+      <div class="lynk-card p-6">
+        <h2 class="font-semibold text-lg mb-4">My Profile</h2>
+
+        <!-- Avatar row -->
         <div class="flex items-center gap-4 mb-6">
           <div class="relative">
             <img id="profile-avatar-preview" src="https://ui-avatars.com/api/?name=U&background=a855f7&color=fff" class="lynk-avatar w-20 h-20 lynk-avatar-ring" />
@@ -120,7 +122,9 @@
             <p class="text-sm" style="color:var(--text-muted)" id="profile-handle-show">—</p>
           </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        <!-- Editable fields -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label class="text-sm font-medium block mb-1.5" style="color:var(--text-secondary)">Display Name</label>
             <input id="edit-display-name" type="text" class="lynk-input" placeholder="Your name" />
@@ -134,19 +138,21 @@
             <textarea id="edit-bio" class="lynk-input resize-y" rows="3" placeholder="Tell people about yourself..."></textarea>
           </div>
         </div>
-        <div class="mt-4 flex gap-2">
+
+        <!-- Academic info (read-only) -->
+        <div class="border-t pt-4 mt-2" style="border-color:var(--border)">
+          <p class="text-sm font-semibold mb-3" style="color:var(--text-secondary)">Academic Info <span class="font-normal text-xs" style="color:var(--text-muted)">(contact admin to update)</span></p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div><label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">University</label><p class="text-sm" id="academic-university" style="color:var(--text-secondary)">—</p></div>
+            <div><label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Faculty</label><p class="text-sm" id="academic-faculty" style="color:var(--text-secondary)">—</p></div>
+            <div><label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Department</label><p class="text-sm" id="academic-department" style="color:var(--text-secondary)">—</p></div>
+            <div><label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">User Type</label><p class="text-sm" id="academic-type" style="color:var(--text-secondary)">—</p></div>
+          </div>
+        </div>
+
+        <div class="mt-5 flex gap-2">
           <button onclick="saveProfile()" class="lynk-btn lynk-btn-primary px-6 py-2.5 rounded-xl">Save Changes</button>
         </div>
-      </div>
-      <div class="lynk-card p-6">
-        <h2 class="font-semibold text-lg mb-4">Academic Info</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div><label class="text-sm font-medium block mb-1.5" style="color:var(--text-secondary)">University</label><p class="text-sm" id="academic-university" style="color:var(--text-secondary)">—</p></div>
-          <div><label class="text-sm font-medium block mb-1.5" style="color:var(--text-secondary)">Faculty</label><p class="text-sm" id="academic-faculty" style="color:var(--text-secondary)">—</p></div>
-          <div><label class="text-sm font-medium block mb-1.5" style="color:var(--text-secondary)">Department</label><p class="text-sm" id="academic-department" style="color:var(--text-secondary)">—</p></div>
-          <div><label class="text-sm font-medium block mb-1.5" style="color:var(--text-secondary)">User Type</label><p class="text-sm" id="academic-type" style="color:var(--text-secondary)">—</p></div>
-        </div>
-        <p class="text-xs mt-4" style="color:var(--text-muted)">To change academic info, contact your admin.</p>
       </div>
     </div>
 
