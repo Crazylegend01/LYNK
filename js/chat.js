@@ -73,10 +73,11 @@ function listenConversations() {
         </div>
       </div>`).join('')}`;
 
+  // No orderBy here — combining array-contains + orderBy requires a Firestore
+  // composite index that may not be set up. We sort client-side instead.
   const q = query(
     collection(db, 'conversations'),
     where('participants', 'array-contains', currentUser.uid),
-    orderBy('lastMessageAt', 'desc'),
     limit(40)
   );
 
@@ -96,8 +97,10 @@ function listenConversations() {
       return;
     }
 
-    // Fetch all other-user profiles in parallel
-    const convData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Sort by most recent message client-side (avoids composite index requirement)
+    const convData = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (b.lastMessageAt?.toMillis?.() || 0) - (a.lastMessageAt?.toMillis?.() || 0));
     const otherUids = [...new Set(convData.map(c => c.participants?.find(uid => uid !== currentUser.uid)).filter(Boolean))];
     const userSnaps = await Promise.all(otherUids.map(uid => getDoc(doc(db, 'users', uid))));
     const userMap = {};
