@@ -499,30 +499,37 @@ function loadComments(postId) {
 window.submitComment = async () => {
   const input = document.getElementById('comment-input');
   const text = input?.value.trim();
-  if (!text || !activePostId) return;
+  if (!text || !activePostId || !currentUser) return;
   const btn = document.getElementById('btn-comment');
   if (btn) btn.disabled = true;
-  const snap = await getDoc(doc(db, 'posts', activePostId));
-  const authorId = snap.data()?.authorId;
-  await addDoc(collection(db, 'posts', activePostId, 'comments'), {
-    content: text,
-    authorId: currentUser.uid,
-    authorName: currentUserData.displayName || 'LYNK User',
-    authorPhoto: currentUserData.photoURL || '',
-    createdAt: serverTimestamp()
-  });
-  await updateDoc(doc(db, 'posts', activePostId), { commentsCount: increment(1) });
-  if (authorId) {
-    await sendNotification({
-      toUid: authorId, fromUid: currentUser.uid,
-      fromName: currentUserData.displayName || 'Someone',
-      fromPhoto: currentUserData.photoURL || '',
-      type: 'comment', message: 'commented on your post', preview: text.slice(0, 80)
+  try {
+    const snap = await getDoc(doc(db, 'posts', activePostId));
+    const authorId = snap.data()?.authorId;
+    await addDoc(collection(db, 'posts', activePostId, 'comments'), {
+      content: text,
+      authorId: currentUser.uid,
+      authorName: currentUserData.displayName || 'LYNK User',
+      authorPhoto: currentUserData.photoURL || '',
+      createdAt: serverTimestamp()
     });
+    await updateDoc(doc(db, 'posts', activePostId), { commentsCount: increment(1) });
+    if (input) input.value = '';
+    // Fire-and-forget — notification failure must never block the comment
+    if (authorId && authorId !== currentUser.uid) {
+      sendNotification({
+        toUid: authorId, fromUid: currentUser.uid,
+        fromName: currentUserData.displayName || 'Someone',
+        fromPhoto: currentUserData.photoURL || '',
+        type: 'comment', message: 'commented on your post', preview: text.slice(0, 80)
+      }).catch(e => console.warn('Notification error:', e));
+    }
+  } catch (e) {
+    console.error('Comment failed:', e);
+    showToast('Error', 'Could not post your comment. Please try again.', '');
+  } finally {
+    if (btn) btn.disabled = false;
   }
-  if (input) input.value = '';
-  if (btn) btn.disabled = false;
-  // No need to call loadComments — the onSnapshot listener auto-updates
+  // onSnapshot listener auto-updates the list — no manual reload needed
 };
 
 // ===== MEDIA UPLOAD for Compose =====
