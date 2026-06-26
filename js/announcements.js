@@ -55,6 +55,19 @@ async function loadAnnouncements() {
   filterAnnouncements();
 }
 
+// Called by the tab buttons in announcements.html
+window.filterAnn = (type, btn) => {
+  document.querySelectorAll('.lynk-tab').forEach(b => b.classList.remove('active'));
+  btn?.classList.add('active');
+  const filtered = type === 'all'
+    ? allAnnouncements
+    : type === 'high'
+    ? allAnnouncements.filter(a => a.priority === 'high')
+    : allAnnouncements.filter(a => (a.category || '').toLowerCase() === type.toLowerCase());
+  renderAnnouncements(filtered);
+};
+
+// Legacy select-based filter (kept for backward compatibility)
 window.filterAnnouncements = () => {
   const audience = document.getElementById('filter-audience')?.value || 'all';
   currentAudience = audience;
