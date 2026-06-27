@@ -76,7 +76,7 @@ function renderNotificationBell() {
     </div>`;
 
   // Insert before avatar (last child of right icons section)
-  const navRight = nav.querySelector('.flex.items-center.gap-3');
+  const navRight = nav.querySelector('.flex.items-center.gap-2');
   if (navRight) {
     navRight.insertBefore(bellWrapper, navRight.firstChild);
   } else {
