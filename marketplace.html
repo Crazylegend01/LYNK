@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marketplace — LYNK By Legends</title>
+  <link rel="icon" href="assets/logo.jpg" type="image/jpeg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/custom.css" />
+  <script src="js/mobile-nav.js" defer></script>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="lynk-nav h-16 flex items-center px-4 justify-between gap-2">
+  <div class="flex items-center gap-2 flex-shrink-0">
+    <button id="hamburger-btn" onclick="openMobileNav()" aria-label="Open menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <a href="feed.html" class="flex flex-col leading-none">
+      <span class="logo-text">LYNK</span>
+      <span class="logo-sub">By Legends</span>
+    </a>
+  </div>
+  <div class="flex-1 max-w-sm mx-2">
+    <div class="search-pill">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted);flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="market-search-input" placeholder="Search listings..." oninput="searchListings(this.value)" />
+    </div>
+  </div>
+  <div class="flex items-center gap-2 flex-shrink-0">
+    <button onclick="showCreateListing()" class="lynk-btn lynk-btn-primary text-sm py-2 px-3">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span class="hidden sm:inline">Sell</span>
+    </button>
+    <a href="profile.html"><img id="nav-avatar" src="https://ui-avatars.com/api/?name=User&background=a855f7&color=fff" class="lynk-avatar w-9 h-9" /></a>
+  </div>
+</nav>
+
+<div id="drawer-overlay" class="lynk-drawer-overlay" onclick="closeMobileNav()"></div>
+
+<!-- SIDEBAR -->
+<aside class="lynk-sidebar pt-4 pb-20">
+  <div class="px-4 mb-4">
+    <div class="flex items-center gap-3 p-3 rounded-xl" style="background:var(--bg-card-hover)">
+      <img id="sidebar-avatar" src="https://ui-avatars.com/api/?name=User&background=a855f7&color=fff" class="lynk-avatar w-10 h-10" />
+      <div class="overflow-hidden">
+        <p class="font-semibold text-sm truncate" id="sidebar-name">Loading...</p>
+        <p class="text-xs truncate" style="color:var(--text-muted)" id="sidebar-dept"></p>
+      </div>
+    </div>
+  </div>
+  <nav class="flex flex-col gap-0.5">
+    <a href="feed.html" class="lynk-sidebar-link"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home Feed</span></a>
+    <a href="communities.html" class="lynk-sidebar-link"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Communities</span></a>
+    <a href="marketplace.html" class="lynk-sidebar-link active"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg><span>Marketplace</span></a>
+    <a href="ai.html" class="lynk-sidebar-link"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span>LYNK AI</span></a>
+    <a href="events.html" class="lynk-sidebar-link"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Events</span></a>
+    <a href="clubs.html" class="lynk-sidebar-link"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><span>Clubs</span></a>
+    <div class="h-px mx-4 my-2" style="background:var(--border)"></div>
+    <a href="chat.html" class="lynk-sidebar-link"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Messages</span></a>
+    <a href="profile.html" class="lynk-sidebar-link"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>My Profile</span></a>
+    <a href="premium.html" class="lynk-sidebar-link"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><span style="color:var(--grad-1)">LYNK Premium</span></a>
+    <a href="settings.html" class="lynk-sidebar-link"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Settings</span></a>
+    <a href="admin.html" id="admin-link" class="lynk-sidebar-link hidden"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Admin Panel</span></a>
+    <a href="#" onclick="signOut()" class="lynk-sidebar-link" style="color:#ef4444"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>Sign Out</span></a>
+  </nav>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+  <div class="max-w-6xl mx-auto px-4 py-6">
+
+    <!-- HERO -->
+    <div class="lynk-card p-6 mb-6 lynk-gradient relative overflow-hidden">
+      <div class="relative z-10">
+        <h1 class="text-2xl font-black text-white mb-1">Campus Marketplace</h1>
+        <p class="text-white/80 text-sm mb-4">Buy, sell, and discover within your university community</p>
+        <div class="flex gap-3">
+          <button onclick="showCreateListing()" class="lynk-btn text-sm py-2 px-4" style="background:white;color:#0f172a;font-weight:700">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            List Item
+          </button>
+          <button onclick="document.getElementById('tab-saved').click()" class="lynk-btn text-sm py-2 px-4" style="background:rgba(255,255,255,0.2);color:white">
+            Saved Items
+          </button>
+        </div>
+      </div>
+      <div class="absolute right-4 top-4 opacity-20 text-8xl">🛒</div>
+    </div>
+
+    <!-- CATEGORIES -->
+    <div class="flex gap-2 overflow-x-auto pb-2 mb-5">
+      <button class="category-chip active" onclick="filterCategory('all',this)">All</button>
+      <button class="category-chip" onclick="filterCategory('textbooks',this)">📚 Textbooks</button>
+      <button class="category-chip" onclick="filterCategory('electronics',this)">💻 Electronics</button>
+      <button class="category-chip" onclick="filterCategory('services',this)">🔧 Services</button>
+      <button class="category-chip" onclick="filterCategory('tutorials',this)">🎓 Tutorials</button>
+      <button class="category-chip" onclick="filterCategory('roommates',this)">🏠 Roommates</button>
+      <button class="category-chip" onclick="filterCategory('business',this)">🏪 Businesses</button>
+      <button class="category-chip" onclick="filterCategory('clothing',this)">👕 Clothing</button>
+      <button class="category-chip" onclick="filterCategory('other',this)">📦 Other</button>
+    </div>
+
+    <!-- TABS -->
+    <div class="flex gap-3 mb-5 border-b" style="border-color:var(--border)">
+      <button id="tab-all" class="lynk-tab active pb-3 rounded-none border-b-2" style="border-color:var(--grad-1)" onclick="switchMarketTab('all',this)">All Listings</button>
+      <button id="tab-mine" class="lynk-tab pb-3 rounded-none border-b-2 border-transparent" onclick="switchMarketTab('mine',this)">My Listings</button>
+      <button id="tab-saved" class="lynk-tab pb-3 rounded-none border-b-2 border-transparent" onclick="switchMarketTab('saved',this)">Saved</button>
+    </div>
+
+    <!-- LISTINGS GRID -->
+    <div id="listings-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div class="col-span-full text-center py-10" style="color:var(--text-muted)">
+        <div class="spinner w-8 h-8 border-4 rounded-full mx-auto mb-3" style="border-color:var(--grad-1);border-top-color:transparent"></div>
+        Loading listings...
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- LISTING DETAIL MODAL -->
+<div id="listing-modal" class="lynk-modal-overlay hidden" onclick="closeListingModal(event)">
+  <div class="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl" style="background:var(--bg-card);margin:16px" onclick="event.stopPropagation()">
+    <div id="listing-modal-content"></div>
+  </div>
+</div>
+
+<!-- CREATE LISTING MODAL -->
+<div id="create-listing-modal" class="lynk-modal-overlay hidden" onclick="closeCreateListing(event)">
+  <div class="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl p-6" style="background:var(--bg-card);margin:16px" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="text-lg font-bold">Create Listing</h3>
+      <button onclick="closeCreateListing()" class="lynk-icon-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="flex flex-col gap-4">
+      <div>
+        <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">TITLE *</label>
+        <input id="listing-title" class="lynk-input" placeholder="e.g. Introduction to Physics textbook" />
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">CATEGORY *</label>
+          <select id="listing-category" class="lynk-input">
+            <option value="textbooks">📚 Textbooks</option>
+            <option value="electronics">💻 Electronics</option>
+            <option value="services">🔧 Services</option>
+            <option value="tutorials">🎓 Tutorials</option>
+            <option value="roommates">🏠 Roommates</option>
+            <option value="business">🏪 Business</option>
+            <option value="clothing">👕 Clothing</option>
+            <option value="other">📦 Other</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">PRICE (₦) *</label>
+          <input id="listing-price" class="lynk-input" type="number" placeholder="0 = Free" min="0" />
+        </div>
+      </div>
+      <div>
+        <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">DESCRIPTION *</label>
+        <textarea id="listing-desc" class="lynk-input resize-none" rows="4" placeholder="Describe your item or service in detail..."></textarea>
+      </div>
+      <div>
+        <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">CONDITION</label>
+        <select id="listing-condition" class="lynk-input">
+          <option value="new">New</option>
+          <option value="like-new">Like New</option>
+          <option value="good">Good</option>
+          <option value="fair">Fair</option>
+          <option value="service">Service / Not applicable</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">PHOTOS (up to 4)</label>
+        <label class="flex items-center gap-3 p-3 rounded-xl cursor-pointer border-2 border-dashed transition-colors hover:border-purple-500" style="border-color:var(--border)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted)"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <span class="text-sm" style="color:var(--text-muted)">Click to upload photos</span>
+          <input type="file" id="listing-photos" class="hidden" accept="image/*" multiple onchange="previewListingPhotos(this)" />
+        </label>
+        <div id="listing-photos-preview" class="flex gap-2 mt-2 flex-wrap"></div>
+      </div>
+      <div>
+        <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">CONTACT PREFERENCE</label>
+        <select id="listing-contact" class="lynk-input">
+          <option value="chat">In-app Chat</option>
+          <option value="whatsapp">WhatsApp</option>
+          <option value="both">Both</option>
+        </select>
+      </div>
+      <input id="listing-whatsapp" class="lynk-input hidden" placeholder="WhatsApp number (e.g. +234...)" />
+      <button onclick="submitListing()" class="lynk-btn lynk-btn-primary w-full">Publish Listing</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="lynk-bottom-nav">
+  <a href="feed.html"><div class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><span>Home</span></a>
+  <a href="search.html"><div class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><span>Search</span></a>
+  <a href="communities.html"><div class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><span>Groups</span></a>
+  <a href="marketplace.html" class="active"><div class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div><span>Market</span></a>
+  <a href="ai.html"><div class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><span>AI</span></a>
+</nav>
+
+<script type="module" src="js/marketplace.js"></script>
+</body>
+</html>

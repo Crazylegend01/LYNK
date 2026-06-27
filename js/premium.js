@@ -1,0 +1,265 @@
+// ============================================================
+// LYNK By Legends — Premium & Payments Module (Phase 3)
+// ============================================================
+
+import { auth, db } from './firebase-config.js';
+import { ThemeManager } from './theme.js';
+import {
+  doc, getDoc, setDoc, addDoc, collection, serverTimestamp, updateDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+ThemeManager.init();
+
+let currentUser = null;
+let currentUserData = null;
+let flutterwaveKey = null;
+
+const PLANS = {
+  weekly:    { amount: 1000,  label: 'Weekly Premium',    days: 7  },
+  monthly:   { amount: 3500,  label: 'Monthly Premium',   days: 30 },
+  quarterly: { amount: 9000,  label: 'Quarterly Premium', days: 90 },
+};
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { window.location.href = 'auth.html'; return; }
+  currentUser = user;
+  const snap = await getDoc(doc(db, 'users', user.uid));
+  currentUserData = snap.data() || {};
+
+  const navAvatar = document.getElementById('nav-avatar');
+  if (navAvatar) navAvatar.src = currentUserData.photoURL || `https://ui-avatars.com/api/?name=U&background=a855f7&color=fff`;
+
+  // Load Flutterwave key from admin settings
+  try {
+    const settingsSnap = await getDoc(doc(db, 'settings', 'payments'));
+    flutterwaveKey = settingsSnap.data()?.flutterwavePublicKey || settingsSnap.data()?.fw_public_key || null;
+  } catch { flutterwaveKey = null; }
+
+  await checkCurrentStatus();
+});
+
+async function checkCurrentStatus() {
+  const statusEl = document.getElementById('current-status');
+  const statusText = document.getElementById('status-text');
+  const premiumBadge = document.getElementById('premium-status-badge');
+
+  const snap = await getDoc(doc(db, 'premiumSubscriptions', currentUser.uid));
+  if (snap.exists()) {
+    const sub = snap.data();
+    const expires = sub.expiresAt?.toDate?.();
+    const isActive = sub.status === 'active' && expires && expires > new Date();
+
+    if (isActive) {
+      if (statusText) statusText.innerHTML = `⭐ <strong>Premium Active</strong> — expires ${expires.toLocaleDateString()}`;
+      if (statusEl) statusEl.style.borderColor = 'rgba(168,85,247,0.5)';
+      if (premiumBadge) premiumBadge.classList.remove('hidden');
+      return;
+    }
+  }
+
+  if (statusText) statusText.textContent = 'Free tier — 30 min AI per day';
+
+  // Check verified seller status
+  if (currentUserData.verifiedSeller) {
+    const sellerExp = currentUserData.verifiedSellerExpires?.toDate?.();
+    if (sellerExp && sellerExp > new Date()) {
+      if (statusText) statusText.innerHTML += ` · <span style="color:#22c55e">✓ Verified Seller until ${sellerExp.toLocaleDateString()}</span>`;
+    }
+  }
+}
+
+// ===== SUBSCRIBE PREMIUM =====
+window.subscribePremium = async (planKey) => {
+  const plan = PLANS[planKey];
+  if (!plan) return;
+
+  if (!flutterwaveKey) {
+    alert('Payment gateway not configured. Please contact admin to set up Flutterwave integration.');
+    return;
+  }
+
+  const txRef = `LYNK_PREMIUM_${currentUser.uid}_${Date.now()}`;
+
+  FlutterwaveCheckout({
+    public_key: flutterwaveKey,
+    tx_ref: txRef,
+    amount: plan.amount,
+    currency: 'NGN',
+    payment_options: 'card,banktransfer,ussd',
+    customer: {
+      email: currentUser.email,
+      name: currentUserData.displayName || 'LYNK User',
+    },
+    customizations: {
+      title: 'LYNK By Legends',
+      description: plan.label,
+      logo: window.location.origin + '/assets/logo.jpg',
+    },
+    callback: async (response) => {
+      if (response.status === 'successful' || response.status === 'completed') {
+        await activatePremium(planKey, txRef, response.transaction_id, plan.days);
+        alert(`🎉 Welcome to ${plan.label}! Your premium benefits are now active.`);
+        location.reload();
+      } else {
+        alert('Payment was not completed. Please try again.');
+      }
+    },
+    onclose: () => {},
+  });
+};
+
+async function activatePremium(planKey, txRef, transactionId, days) {
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + days);
+
+  await setDoc(doc(db, 'premiumSubscriptions', currentUser.uid), {
+    uid: currentUser.uid,
+    plan: planKey,
+    status: 'active',
+    txRef, transactionId,
+    activatedAt: serverTimestamp(),
+    expiresAt: expiresAt,
+  });
+
+  await updateDoc(doc(db, 'users', currentUser.uid), {
+    isPremium: true,
+    premiumPlan: planKey,
+    premiumExpires: expiresAt,
+  });
+
+  await addDoc(collection(db, 'paymentLogs'), {
+    uid: currentUser.uid,
+    type: 'premium',
+    plan: planKey,
+    amount: PLANS[planKey].amount,
+    currency: 'NGN',
+    txRef, transactionId,
+    status: 'success',
+    createdAt: serverTimestamp()
+  });
+}
+
+// ===== VERIFIED SELLER =====
+window.purchaseVerifiedSeller = async () => {
+  if (!flutterwaveKey) {
+    alert('Payment gateway not configured. Please contact admin.');
+    return;
+  }
+
+  const txRef = `LYNK_SELLER_${currentUser.uid}_${Date.now()}`;
+
+  FlutterwaveCheckout({
+    public_key: flutterwaveKey,
+    tx_ref: txRef,
+    amount: 2500,
+    currency: 'NGN',
+    payment_options: 'card,banktransfer,ussd',
+    customer: {
+      email: currentUser.email,
+      name: currentUserData.displayName || 'LYNK User',
+    },
+    customizations: {
+      title: 'LYNK Verified Seller',
+      description: 'Verified Seller Badge — 15 days',
+      logo: window.location.origin + '/assets/logo.jpg',
+    },
+    callback: async (response) => {
+      if (response.status === 'successful' || response.status === 'completed') {
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 15);
+
+        await updateDoc(doc(db, 'users', currentUser.uid), {
+          verifiedSeller: true,
+          verifiedSellerExpires: expiresAt,
+        });
+
+        await addDoc(collection(db, 'paymentLogs'), {
+          uid: currentUser.uid,
+          type: 'verified_seller',
+          amount: 2500,
+          currency: 'NGN',
+          txRef,
+          transactionId: response.transaction_id,
+          status: 'success',
+          createdAt: serverTimestamp()
+        });
+
+        alert('✅ Verified Seller badge activated for 15 days!');
+        location.reload();
+      }
+    },
+    onclose: () => {},
+  });
+};
+
+// ===== SPONSORED POSTS =====
+window.createSponsoredPost = () => {
+  document.getElementById('sponsored-post-modal').classList.remove('hidden');
+};
+
+window.closeSponsoredModal = (e) => {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('sponsored-post-modal').classList.add('hidden');
+};
+
+window.submitSponsoredPost = async () => {
+  const title = document.getElementById('sp-title').value.trim();
+  const content = document.getElementById('sp-content').value.trim();
+  const link = document.getElementById('sp-link').value.trim();
+  const days = Number(document.getElementById('sp-days').value);
+
+  if (!title || !content) { alert('Please fill in all required fields.'); return; }
+
+  const prices = { 1: 1000, 3: 2800, 7: 6000, 14: 11000 };
+  const amount = prices[days] || 1000;
+
+  // Submit for review first, pay on approval
+  await addDoc(collection(db, 'sponsoredPosts'), {
+    title, content, link, days, amount,
+    sponsorId: currentUser.uid,
+    sponsorName: currentUserData.displayName || 'Sponsor',
+    sponsorEmail: currentUser.email,
+    university: currentUserData.university || '',
+    status: 'pending_review',
+    createdAt: serverTimestamp()
+  });
+
+  closeSponsoredModal();
+  alert('📬 Your sponsored post has been submitted for review. You\'ll be notified when it\'s approved, and payment will be collected then.');
+};
+
+// ===== PAY FOR APPROVED SPONSORED POST (called when admin approves) =====
+window.payForSponsoredPost = (postId, amount) => {
+  if (!flutterwaveKey) { alert('Payment not configured.'); return; }
+
+  const txRef = `LYNK_SPONSORED_${currentUser.uid}_${Date.now()}`;
+
+  FlutterwaveCheckout({
+    public_key: flutterwaveKey,
+    tx_ref: txRef,
+    amount,
+    currency: 'NGN',
+    payment_options: 'card,banktransfer,ussd',
+    customer: { email: currentUser.email, name: currentUserData.displayName || 'Sponsor' },
+    customizations: { title: 'LYNK Sponsored Post', description: `Sponsored post payment` },
+    callback: async (response) => {
+      if (response.status === 'successful' || response.status === 'completed') {
+        await updateDoc(doc(db, 'sponsoredPosts', postId), {
+          status: 'active',
+          txRef,
+          transactionId: response.transaction_id,
+          paidAt: serverTimestamp(),
+          startsAt: serverTimestamp(),
+        });
+        alert('🎉 Your sponsored post is now live!');
+      }
+    },
+    onclose: () => {},
+  });
+};
+
+window.signOut = async () => {
+  await firebaseSignOut(auth);
+  window.location.href = 'auth.html';
+};
