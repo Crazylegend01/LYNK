@@ -10,19 +10,31 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && (getUserData().role == 'admin' || getUserData().adminRole != null);
     }
+    // Super admin = adminRole 'super' OR a legacy admin with role='admin' but no adminRole sub-type
     function isSuperAdmin() {
-      return isSignedIn() && getUserData().adminRole == 'super';
+      return isSignedIn() && (
+        getUserData().adminRole == 'super' ||
+        (getUserData().role == 'admin' && getUserData().get('adminRole', null) == null)
+      );
     }
     function isNotSuspended() {
       return !getUserData().get('suspended', false);
+    }
+    function isChangingAdminFields() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'adminRole']);
     }
 
     // ===== USERS =====
     match /users/{userId} {
       allow read: if true;
       allow create: if isOwner(userId);
-      // Any admin (not just super) can update users — allows suspend/unsuspend
-      allow update: if isOwner(userId) || isAdmin();
+      // Only super admins may promote/demote (change role or adminRole).
+      // Any admin can update other user fields (suspend, badge, etc.).
+      // Users can update their own non-admin fields.
+      allow update: if
+        isSuperAdmin() ||
+        (isOwner(userId) && !isChangingAdminFields()) ||
+        (isAdmin() && !isChangingAdminFields());
       allow delete: if isSuperAdmin();
     }
 
@@ -30,8 +42,6 @@ service cloud.firestore {
     match /posts/{postId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && isNotSuspended();
-      // Authors and admins can update anything.
-      // Any signed-in non-suspended user can update reaction fields (likes, counts, poll).
       allow update: if isSignedIn() && isNotSuspended() && (
         resource.data.authorId == request.auth.uid ||
         isAdmin() ||
@@ -74,6 +84,18 @@ service cloud.firestore {
       allow delete: if isSignedIn() && (resource.data.toUid == request.auth.uid || isAdmin());
     }
 
+    // ===== FCM TOKENS =====
+    match /fcmTokens/{uid} {
+      allow read: if isAdmin() || isOwner(uid);
+      allow write: if isOwner(uid);
+    }
+
+    // ===== PUSH NOTIFICATION QUEUE =====
+    match /pushQueue/{docId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isAdmin();
+    }
+
     // ===== SCHOOLS =====
     match /schools/{schoolId} {
       allow read: if true;
@@ -84,9 +106,75 @@ service cloud.firestore {
     // ===== COMMUNITIES =====
     match /communities/{communityId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && isAdmin();
+      allow create: if isSignedIn() && isNotSuspended();
+      allow update: if isSignedIn();
       allow delete: if isSuperAdmin();
+    }
+
+    match /communityMembers/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    // ===== MARKETPLACE =====
+    match /marketplaceListings/{listingId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isNotSuspended();
+      allow update: if isSignedIn() && (resource.data.sellerId == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && (resource.data.sellerId == request.auth.uid || isAdmin());
+    }
+
+    match /savedListings/{docId} {
+      allow create: if isSignedIn();
+      allow read, write: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+    }
+
+    // ===== EVENTS =====
+    match /events/{eventId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isNotSuspended();
+      allow update: if isSignedIn() && (resource.data.createdBy == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && (resource.data.createdBy == request.auth.uid || isAdmin());
+    }
+
+    match /eventRsvps/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    // ===== CLUBS =====
+    match /clubs/{clubId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isNotSuspended();
+      allow update: if isSignedIn() && (resource.data.createdBy == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && (resource.data.createdBy == request.auth.uid || isAdmin());
+    }
+
+    match /clubMembers/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    // ===== PREMIUM SUBSCRIPTIONS =====
+    match /premiumSubscriptions/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow write: if isSuperAdmin();
+    }
+
+    // ===== AI USAGE =====
+    match /aiUsage/{docId} {
+      allow read, write: if isSignedIn() && docId.matches(request.auth.uid + '_.*');
+    }
+
+    match /aiUsageLogs/{docId} {
+      allow create: if isSignedIn();
+      allow read: if isAdmin();
+    }
+
+    // ===== SETTINGS (AI keys, payment keys) =====
+    match /settings/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isSuperAdmin();
     }
 
     // ===== REPORTS =====

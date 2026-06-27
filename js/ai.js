@@ -9,6 +9,7 @@ import {
   serverTimestamp, increment, query, where, getDocs, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { initFCM, notifyAILimitReached } from './notifications-fcm.js';
 
 ThemeManager.init();
 
@@ -49,9 +50,15 @@ onAuthStateChanged(auth, async (user) => {
   await loadAISettings();
   await loadUsageToday();
   updateUsageUI();
+  initFCM(user.uid).catch(() => {});
 });
 
 async function checkPremiumStatus() {
+  // Admins and super admins always have premium access for free
+  if (currentUserData.role === 'admin' || currentUserData.adminRole) {
+    isPremium = true;
+    return;
+  }
   const snap = await getDoc(doc(db, 'premiumSubscriptions', currentUser.uid));
   if (snap.exists()) {
     const d = snap.data();
@@ -100,6 +107,10 @@ function updateUsageUI() {
       const sendBtn = document.getElementById('ai-send-btn');
       if (input) input.disabled = true;
       if (sendBtn) sendBtn.disabled = true;
+      // Notify user their limit is reached (shows toast + queues push)
+      if (usageToday === FREE_LIMIT_MINUTES && currentUser) {
+        notifyAILimitReached({ toUid: currentUser.uid }).catch(() => {});
+      }
     }
   }
 }

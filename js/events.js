@@ -9,7 +9,7 @@ import {
   query, where, orderBy, limit, serverTimestamp, increment, arrayUnion, arrayRemove, Timestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { sendNotification } from './notifications.js';
+import { initFCM, notifyEventReminder, showToast } from './notifications-fcm.js';
 
 ThemeManager.init();
 
@@ -31,6 +31,7 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('admin-link')?.classList.remove('hidden');
   }
 
+  initFCM(user.uid).catch(() => {});
   loadEvents();
 });
 
@@ -158,15 +159,32 @@ window.rsvpEvent = async (eventId, going) => {
     await updateDoc(doc(db, 'events', eventId), {
       attendees: arrayUnion(currentUser.uid)
     }).catch(() => {});
-    import('./firebase-config.js').then(({ db }) => {
-      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js").then(({ doc: d, setDoc: sd, serverTimestamp: st }) => {
-        sd(d(db, 'eventRsvps', rsvpId), {
-          eventId, uid: currentUser.uid,
-          displayName: currentUserData.displayName || '',
-          createdAt: st()
-        });
+    // Save RSVP record
+    import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js").then(({ doc: d, setDoc: sd, serverTimestamp: st }) => {
+      sd(d(db, 'eventRsvps', rsvpId), {
+        eventId, uid: currentUser.uid,
+        displayName: currentUserData.displayName || '',
+        createdAt: st()
       });
     });
+    // Notify event creator and queue reminder for attendee
+    try {
+      const evSnap = await getDoc(doc(db, 'events', eventId));
+      if (evSnap.exists()) {
+        const evData = evSnap.data();
+        const evDate = evData.date?.toDate?.()?.toLocaleDateString() || '';
+        // Notify event creator someone RSVPed
+        if (evData.createdBy && evData.createdBy !== currentUser.uid) {
+          await notifyEventReminder({
+            toUid: evData.createdBy,
+            eventTitle: `${currentUserData.displayName || 'Someone'} is going to "${evData.title}"`,
+            eventDate: evDate
+          });
+        }
+        // Show in-app confirmation toast for the person RSVPing
+        showToast(`🎉 RSVP Confirmed!`, `You're going to "${evData.title}" on ${evDate}. We'll remind you!`, 'assets/logo.jpg', 'events.html');
+      }
+    } catch (_) {}
     if (btn) { btn.textContent = '✓ Going'; btn.className = 'lynk-btn lynk-btn-secondary text-xs py-2 px-3'; }
   } else {
     await updateDoc(doc(db, 'events', eventId), { rsvpCount: increment(-1) });

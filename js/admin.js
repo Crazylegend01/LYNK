@@ -481,26 +481,50 @@ async function loadAdminsList() {
 
 // Works for both inline form and modal form
 window.addAdmin = async () => {
+  // Only super admins may grant admin roles
+  const callerRole = currentUserData.adminRole;
+  const callerIsSuper = callerRole === 'super' || (currentUserData.role === 'admin' && !callerRole);
+  if (!callerIsSuper) {
+    alert('Only Super Admins can grant admin roles to other users.\n\nIf you are the main admin, make sure your Firestore user document has adminRole = "super" set. You can set this directly in the Firebase Console → Firestore → users → your UID → Edit adminRole field.');
+    return;
+  }
+
   const emailEl = document.getElementById('new-admin-email-modal') || document.getElementById('new-admin-email');
   const roleEl  = document.getElementById('new-admin-role-modal')  || document.getElementById('new-admin-role');
   const email = emailEl?.value?.trim();
   const role  = roleEl?.value || 'content';
   if (!email) { alert('Please enter an email address.'); return; }
 
-  const snap = await getDocs(query(collection(db, 'users'), where('email','==',email), limit(1)));
-  if (snap.empty) { alert('No LYNK user found with that email.'); return; }
+  try {
+    const snap = await getDocs(query(collection(db, 'users'), where('email','==',email), limit(1)));
+    if (snap.empty) { alert('No LYNK user found with that email. Make sure they have signed up on LYNK first.'); return; }
 
-  await updateDoc(snap.docs[0].ref, { adminRole: role, role:'admin' });
-  if (emailEl) emailEl.value = '';
-  document.getElementById('grant-admin-modal')?.classList.add('hidden');
-  loadAdminsList();
-  alert(`Admin role granted to ${email}`);
+    await updateDoc(snap.docs[0].ref, { adminRole: role, role: 'admin' });
+    if (emailEl) emailEl.value = '';
+    document.getElementById('grant-admin-modal')?.classList.add('hidden');
+    loadAdminsList();
+    alert(`✅ Admin role (${role}) granted to ${email}`);
+  } catch (err) {
+    console.error('addAdmin error:', err);
+    if (err.code === 'permission-denied') {
+      alert('❌ Permission denied.\n\nTo fix this:\n1. Open Firebase Console → Firestore\n2. Find your user document (users → your UID)\n3. Set the field: adminRole = "super"\n4. Reload the admin panel and try again.');
+    } else {
+      alert(`❌ Failed: ${err.message}`);
+    }
+  }
 };
 
 window.removeAdmin = async (uid) => {
+  const callerRole = currentUserData.adminRole;
+  const callerIsSuper = callerRole === 'super' || (currentUserData.role === 'admin' && !callerRole);
+  if (!callerIsSuper) { alert('Only Super Admins can remove admin access.'); return; }
   if (!confirm('Remove this user\'s admin access?')) return;
-  await updateDoc(doc(db, 'users', uid), { adminRole: null, role:'user' });
-  loadAdminsList();
+  try {
+    await updateDoc(doc(db, 'users', uid), { adminRole: null, role: 'user' });
+    loadAdminsList();
+  } catch (err) {
+    alert(`❌ Failed: ${err.message}`);
+  }
 };
 
 // ===== SCHOOLS =====

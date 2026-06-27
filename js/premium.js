@@ -43,6 +43,26 @@ async function checkCurrentStatus() {
   const statusEl = document.getElementById('current-status');
   const statusText = document.getElementById('status-text');
   const premiumBadge = document.getElementById('premium-status-badge');
+  const plansSection = document.getElementById('plans-section');
+
+  // Admins get all premium features free — show a special badge and hide payment plans
+  if (currentUserData.role === 'admin' || currentUserData.adminRole) {
+    const roleLabels = { super: 'Super Admin', security: 'Security Admin', analytics: 'Analytics Admin', support: 'Support Admin', content: 'Content Admin' };
+    const roleLabel = roleLabels[currentUserData.adminRole] || 'Admin';
+    if (statusText) statusText.innerHTML = `👑 <strong>${roleLabel} — All Premium Features Unlocked</strong><br><small style="color:var(--text-muted)">Admins have free lifetime premium access</small>`;
+    if (statusEl) {
+      statusEl.style.borderColor = 'rgba(168,85,247,0.8)';
+      statusEl.style.background = 'linear-gradient(135deg,rgba(168,85,247,.08),rgba(99,102,241,.08))';
+    }
+    if (premiumBadge) premiumBadge.classList.remove('hidden');
+    if (plansSection) plansSection.innerHTML = `
+      <div class="lynk-card p-6 text-center">
+        <div class="text-4xl mb-3">👑</div>
+        <h3 class="font-bold text-lg mb-2">Admin Access</h3>
+        <p style="color:var(--text-muted)">As an admin you already have unlimited access to all premium features — AI, marketplace, communities, clubs and more — at no cost.</p>
+      </div>`;
+    return;
+  }
 
   const snap = await getDoc(doc(db, 'premiumSubscriptions', currentUser.uid));
   if (snap.exists()) {

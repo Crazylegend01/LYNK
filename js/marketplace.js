@@ -10,6 +10,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { uploadToCloudinary } from './cloudinary.js';
+import { initFCM, notifyMarketplaceMessage } from './notifications-fcm.js';
 
 ThemeManager.init();
 
@@ -44,6 +45,7 @@ onAuthStateChanged(auth, async (user) => {
     wa?.classList.toggle('hidden', e.target.value === 'chat');
   });
 
+  initFCM(user.uid).catch(() => {});
   loadListings();
 });
 
@@ -197,7 +199,17 @@ window.toggleSave = async (listingId) => {
 };
 
 // ===== CONTACT SELLER =====
-window.contactSeller = (sellerId, listingId) => {
+window.contactSeller = async (sellerId, listingId) => {
+  // Queue a push notification to the seller
+  try {
+    const listingSnap = await getDoc(doc(db, 'marketplaceListings', listingId));
+    const listingTitle = listingSnap.exists() ? (listingSnap.data().title || 'your listing') : 'your listing';
+    await notifyMarketplaceMessage({
+      toUid: sellerId,
+      fromName: currentUserData.displayName || 'Someone',
+      listingTitle
+    });
+  } catch (_) {}
   window.location.href = `chat.html?uid=${sellerId}`;
 };
 
