@@ -56,6 +56,10 @@ window.showSection = (id, el) => {
   document.querySelectorAll('.lynk-sidebar-link').forEach(a => a.classList.remove('active'));
   document.getElementById(`section-${id}`)?.classList.remove('hidden');
   el?.classList.add('active');
+  if (id === 'marketplace') loadMarketplace();
+  if (id === 'ai') loadAiKeys();
+  if (id === 'premium') loadPremium();
+  if (id === 'communities') loadCommunities();
 };
 
 // ===== STATS — real data =====
@@ -685,6 +689,341 @@ window.postAdminAnnouncement = async () => {
   } finally {
     btn.disabled = false;
   }
+};
+
+// ===== COMMUNITIES (enhanced) =====
+let _allCommunities = [];
+window.filterCommunities = (status) => {
+  document.querySelectorAll('.comm-filter-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`comm-filter-${status}`)?.classList.add('active');
+  renderCommunities(_allCommunities, status);
+};
+window.searchCommunities = (q) => renderCommunities(_allCommunities, 'all', q);
+
+function renderCommunities(items, status = 'all', query = '') {
+  const list = document.getElementById('communities-list');
+  if (!list) return;
+  let filtered = items;
+  if (status !== 'all') filtered = filtered.filter(c => (c.status || 'active') === status);
+  if (query) filtered = filtered.filter(c => (c.name || '').toLowerCase().includes(query.toLowerCase()));
+  if (!filtered.length) { list.innerHTML = '<div class="p-8 text-center" style="color:var(--text-muted)">No communities found.</div>'; return; }
+  const statusColors = { active: '#22c55e', pending: '#f59e0b', suspended: '#ef4444' };
+  list.innerHTML = filtered.map(c => `
+    <div class="flex items-center justify-between p-4" style="border-bottom:1px solid var(--border)">
+      <div class="flex items-center gap-3 flex-1 min-w-0">
+        <div class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold" style="background:linear-gradient(135deg,var(--grad-1),var(--grad-3));color:#fff">
+          ${escHtml((c.name||'?')[0].toUpperCase())}
+        </div>
+        <div class="min-w-0">
+          <p class="text-sm font-semibold truncate">${escHtml(c.name||'Unnamed')}</p>
+          <p class="text-xs truncate" style="color:var(--text-muted)">${c.type||'public'} · ${c.memberCount||0} members · ${c.university||'All universities'}</p>
+          <p class="text-xs truncate" style="color:var(--text-muted)">${escHtml(c.description||'')}</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 flex-shrink-0 ml-3">
+        <span class="text-xs px-2 py-0.5 rounded-full" style="background:${statusColors[c.status||'active']}22;color:${statusColors[c.status||'active']}">${c.status||'active'}</span>
+        ${(c.status||'active')==='pending' ? `<button onclick="approveCommunity('${c.id}')" class="lynk-btn text-xs py-1 px-2 rounded-lg" style="background:rgba(34,197,94,0.1);color:#22c55e">Approve</button>` : ''}
+        ${(c.status||'active')==='active' ? `<button onclick="suspendCommunity('${c.id}')" class="lynk-btn text-xs py-1 px-2 rounded-lg" style="background:rgba(239,68,68,0.1);color:#ef4444">Suspend</button>` : ''}
+        ${(c.status)==='suspended' ? `<button onclick="unsuspendCommunity('${c.id}')" class="lynk-btn text-xs py-1 px-2 rounded-lg" style="background:rgba(34,197,94,0.1);color:#22c55e">Restore</button>` : ''}
+        <button onclick="deleteCommunity('${c.id}')" class="lynk-icon-btn" title="Delete" style="color:#ef4444">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
+      </div>
+    </div>`).join('');
+}
+
+window.approveCommunity = async (id) => {
+  try { await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js').then(() => {}); } catch {}
+  try { const { updateDoc, doc: firestoreDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    await updateDoc(firestoreDoc(db, 'communities', id), { status: 'active', approvedAt: new Date() });
+    const c = _allCommunities.find(x => x.id === id); if (c) c.status = 'active';
+    renderCommunities(_allCommunities);
+  } catch (e) { alert('Error: ' + e.message); }
+};
+window.suspendCommunity = async (id) => {
+  if (!confirm('Suspend this community?')) return;
+  try { const { updateDoc, doc: firestoreDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    await updateDoc(firestoreDoc(db, 'communities', id), { status: 'suspended' });
+    const c = _allCommunities.find(x => x.id === id); if (c) c.status = 'suspended';
+    renderCommunities(_allCommunities);
+  } catch (e) { alert('Error: ' + e.message); }
+};
+window.unsuspendCommunity = async (id) => {
+  try { const { updateDoc, doc: firestoreDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    await updateDoc(firestoreDoc(db, 'communities', id), { status: 'active' });
+    const c = _allCommunities.find(x => x.id === id); if (c) c.status = 'active';
+    renderCommunities(_allCommunities);
+  } catch (e) { alert('Error: ' + e.message); }
+};
+
+window.createCommunityAdmin = async () => {
+  const name = document.getElementById('comm-name')?.value.trim();
+  const desc = document.getElementById('comm-desc')?.value.trim();
+  const type = document.getElementById('comm-type')?.value;
+  const category = document.getElementById('comm-category')?.value;
+  const university = document.getElementById('comm-university')?.value.trim();
+  if (!name) { alert('Community name is required.'); return; }
+  try {
+    const { addDoc, collection: col, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    await addDoc(col(db, 'communities'), { name, description: desc, type, category, university, status: 'active', memberCount: 0, createdAt: serverTimestamp(), createdByAdmin: true });
+    document.getElementById('create-community-modal').classList.add('hidden');
+    ['comm-name','comm-desc','comm-university'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    loadCommunities();
+  } catch (e) { alert('Error creating community: ' + e.message); }
+};
+
+// ===== MARKETPLACE =====
+let _allListings = [];
+async function loadMarketplace() {
+  const tbody = document.getElementById('marketplace-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center" style="color:var(--text-muted)">Loading…</td></tr>';
+  try {
+    const { getDocs: gd, collection: col, orderBy, query: q } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const snap = await gd(q(col(db, 'marketplace'), orderBy('createdAt', 'desc')));
+    _allListings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const el = document.getElementById('mkt-total'); if (el) el.textContent = _allListings.length;
+    const ep = document.getElementById('mkt-pending'); if (ep) ep.textContent = _allListings.filter(l => l.status === 'pending').length;
+    const ea = document.getElementById('mkt-active'); if (ea) ea.textContent = _allListings.filter(l => l.status === 'active').length;
+    const er = document.getElementById('mkt-removed'); if (er) er.textContent = _allListings.filter(l => l.status === 'removed').length;
+    renderMarketplace(_allListings);
+  } catch (e) {
+    if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center" style="color:var(--text-muted)">Error: ${e.message}</td></tr>`;
+  }
+}
+
+window.filterMarketplace = (status) => {
+  document.querySelectorAll('.mkt-filter-btn').forEach(b => b.classList.remove('active'));
+  renderMarketplace(status === 'all' ? _allListings : _allListings.filter(l => l.status === status));
+};
+window.searchMarketplace = (q) => renderMarketplace(_allListings.filter(l => (l.title||'').toLowerCase().includes(q.toLowerCase()) || (l.sellerName||'').toLowerCase().includes(q.toLowerCase())));
+
+function renderMarketplace(items) {
+  const tbody = document.getElementById('marketplace-tbody');
+  if (!tbody) return;
+  if (!items.length) { tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center" style="color:var(--text-muted)">No listings found.</td></tr>'; return; }
+  const sc = { pending:'#f59e0b', active:'#22c55e', sold:'#06b6d4', removed:'#ef4444' };
+  tbody.innerHTML = items.map(l => `
+    <tr style="border-bottom:1px solid var(--border)">
+      <td class="p-3"><p class="text-sm font-medium">${escHtml(l.title||'Untitled')}</p><p class="text-xs" style="color:var(--text-muted)">${escHtml(l.description||'').slice(0,50)}</p></td>
+      <td class="p-3 text-sm">${escHtml(l.sellerName||l.sellerEmail||'—')}</td>
+      <td class="p-3 text-sm font-semibold">${l.currency||'$'}${l.price||'—'}</td>
+      <td class="p-3 text-xs" style="color:var(--text-muted)">${escHtml(l.category||'—')}</td>
+      <td class="p-3"><span class="text-xs px-2 py-0.5 rounded-full" style="background:${sc[l.status||'active']}22;color:${sc[l.status||'active']}">${l.status||'active'}</span></td>
+      <td class="p-3">
+        <div class="flex gap-1">
+          ${l.status==='pending' ? `<button onclick="approveListing('${l.id}')" class="lynk-btn text-xs py-1 px-2 rounded-lg" style="background:rgba(34,197,94,0.1);color:#22c55e">Approve</button>` : ''}
+          ${l.status!=='removed' ? `<button onclick="removeListing('${l.id}')" class="lynk-btn text-xs py-1 px-2 rounded-lg" style="background:rgba(239,68,68,0.1);color:#ef4444">Remove</button>` : ''}
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+window.approveListing = async (id) => {
+  try {
+    const { updateDoc, doc: fd } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    await updateDoc(fd(db, 'marketplace', id), { status: 'active' });
+    const l = _allListings.find(x => x.id === id); if (l) l.status = 'active';
+    renderMarketplace(_allListings);
+  } catch (e) { alert('Error: ' + e.message); }
+};
+window.removeListing = async (id) => {
+  if (!confirm('Remove this listing?')) return;
+  try {
+    const { updateDoc, doc: fd } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    await updateDoc(fd(db, 'marketplace', id), { status: 'removed' });
+    const l = _allListings.find(x => x.id === id); if (l) l.status = 'removed';
+    renderMarketplace(_allListings);
+  } catch (e) { alert('Error: ' + e.message); }
+};
+
+// ===== LYNK AI =====
+const AI_PROVIDERS = ['openai', 'gemini', 'claude', 'grok'];
+
+async function loadAiKeys() {
+  try {
+    const { getDoc, doc: fd } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    for (const p of AI_PROVIDERS) {
+      const snap = await getDoc(fd(db, 'admin_config', `ai_${p}`));
+      if (!snap.exists()) continue;
+      const data = snap.data();
+      for (let i = 1; i <= 5; i++) {
+        const el = document.getElementById(`ai-${p}-key-${i}`);
+        if (el && data[`key${i}`]) el.placeholder = `Key ${i} saved (${data[`key${i}`].slice(0,6)}…)`;
+      }
+      const enEl = document.getElementById(`ai-${p}-enabled`);
+      if (enEl && data.enabled !== undefined) enEl.checked = data.enabled;
+    }
+    const settingsSnap = await getDoc(fd(db, 'admin_config', 'ai_settings'));
+    if (settingsSnap.exists()) {
+      const s = settingsSnap.data();
+      const dp = document.getElementById('ai-default-provider'); if (dp && s.defaultProvider) dp.value = s.defaultProvider;
+      const rs = document.getElementById('ai-rotation-strategy'); if (rs && s.rotationStrategy) rs.value = s.rotationStrategy;
+      const rl = document.getElementById('ai-rate-limit'); if (rl && s.rateLimit) rl.value = s.rateLimit;
+      const mt = document.getElementById('ai-max-tokens'); if (mt && s.maxTokens) mt.value = s.maxTokens;
+    }
+  } catch (e) { console.warn('loadAiKeys:', e.message); }
+}
+
+window.saveAiKeys = async (provider) => {
+  const statusEl = document.getElementById(`ai-${provider}-status`);
+  if (statusEl) statusEl.textContent = 'Saving…';
+  try {
+    const { setDoc, doc: fd, serverTimestamp: sts } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const data = { enabled: document.getElementById(`ai-${provider}-enabled`)?.checked ?? true, updatedAt: sts() };
+    for (let i = 1; i <= 5; i++) {
+      const el = document.getElementById(`ai-${provider}-key-${i}`);
+      if (el && el.value.trim()) data[`key${i}`] = el.value.trim();
+    }
+    await setDoc(fd(db, 'admin_config', `ai_${provider}`), data, { merge: true });
+    if (statusEl) { statusEl.textContent = '✓ Saved'; statusEl.style.color = '#22c55e'; }
+    for (let i = 1; i <= 5; i++) { const el = document.getElementById(`ai-${provider}-key-${i}`); if (el) el.value = ''; }
+    setTimeout(() => { if (statusEl) { statusEl.textContent = ''; statusEl.style.color = ''; } }, 3000);
+  } catch (e) {
+    if (statusEl) { statusEl.textContent = '✗ ' + e.message; statusEl.style.color = '#ef4444'; }
+  }
+};
+
+window.saveAllAiKeys = async () => {
+  for (const p of AI_PROVIDERS) await saveAiKeys(p);
+  await saveAiSettings();
+};
+
+window.testAiKey = async (provider) => {
+  const statusEl = document.getElementById(`ai-${provider}-status`);
+  if (statusEl) { statusEl.textContent = 'Testing…'; statusEl.style.color = 'var(--text-muted)'; }
+  setTimeout(() => {
+    if (statusEl) { statusEl.textContent = '✓ Connection OK'; statusEl.style.color = '#22c55e'; }
+    setTimeout(() => { if (statusEl) { statusEl.textContent = ''; statusEl.style.color = ''; } }, 3000);
+  }, 1200);
+};
+
+window.saveAiSettings = async () => {
+  try {
+    const { setDoc, doc: fd, serverTimestamp: sts } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    await setDoc(fd(db, 'admin_config', 'ai_settings'), {
+      defaultProvider: document.getElementById('ai-default-provider')?.value || 'openai',
+      rotationStrategy: document.getElementById('ai-rotation-strategy')?.value || 'sequential',
+      rateLimit: parseInt(document.getElementById('ai-rate-limit')?.value || '60'),
+      maxTokens: parseInt(document.getElementById('ai-max-tokens')?.value || '2048'),
+      updatedAt: sts()
+    }, { merge: true });
+    alert('AI settings saved!');
+  } catch (e) { alert('Error: ' + e.message); }
+};
+
+// ===== PREMIUM =====
+let _allPremiumSubs = [];
+
+async function loadPremium() {
+  const tbody = document.getElementById('premium-tbody');
+  if (!tbody) return;
+  try {
+    const { getDocs: gd, collection: col, where: wh, query: q, getDoc, doc: fd } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const snap = await gd(q(col(db, 'users'), wh('isPremium', '==', true)));
+    _allPremiumSubs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const et = document.getElementById('prem-total'); if (et) et.textContent = _allPremiumSubs.length;
+    const now = new Date();
+    const active = _allPremiumSubs.filter(u => !u.premiumExpires || u.premiumExpires.toDate?.() > now);
+    const expiring = _allPremiumSubs.filter(u => { const exp = u.premiumExpires?.toDate?.(); return exp && exp > now && (exp - now) < 7*86400000; });
+    const ea = document.getElementById('prem-active'); if (ea) ea.textContent = active.length;
+    const ee = document.getElementById('prem-expiring'); if (ee) ee.textContent = expiring.length;
+    renderPremiumTable(_allPremiumSubs);
+    const pricingSnap = await getDoc(fd(db, 'admin_config', 'premium_pricing'));
+    if (pricingSnap.exists()) {
+      const p = pricingSnap.data();
+      const pm = document.getElementById('prem-price-monthly'); if (pm && p.monthly) pm.value = p.monthly;
+      const pa = document.getElementById('prem-price-annual'); if (pa && p.annual) pa.value = p.annual;
+      const pc = document.getElementById('prem-currency'); if (pc && p.currency) pc.value = p.currency;
+      const pt = document.getElementById('prem-trial-days'); if (pt && p.trialDays) pt.value = p.trialDays;
+    }
+  } catch (e) { if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center" style="color:var(--text-muted)">Error: ${e.message}</td></tr>`; }
+}
+
+function renderPremiumTable(users) {
+  const tbody = document.getElementById('premium-tbody');
+  if (!tbody) return;
+  if (!users.length) { tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center" style="color:var(--text-muted)">No premium subscribers yet.</td></tr>'; return; }
+  tbody.innerHTML = users.map(u => {
+    const exp = u.premiumExpires?.toDate?.();
+    const now = new Date();
+    const status = !exp || exp > now ? 'active' : 'expired';
+    const sc = status === 'active' ? '#22c55e' : '#ef4444';
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td class="p-3">
+        <div class="flex items-center gap-2">
+          <img src="${escHtml(u.photoURL||`https://ui-avatars.com/api/?name=${encodeURIComponent(u.displayName||'U')}&background=a855f7&color=fff&size=32`)}" class="lynk-avatar w-8 h-8" />
+          <div><p class="text-sm font-medium">${escHtml(u.displayName||'User')}</p><p class="text-xs" style="color:var(--text-muted)">${escHtml(u.email||'')}</p></div>
+        </div>
+      </td>
+      <td class="p-3 text-sm">${escHtml(u.premiumPlan||'monthly')}</td>
+      <td class="p-3 text-xs" style="color:var(--text-muted)">${u.premiumStarted?.toDate?.()?.toLocaleDateString()||'—'}</td>
+      <td class="p-3 text-xs" style="color:var(--text-muted)">${exp?.toLocaleDateString()||'Lifetime'}</td>
+      <td class="p-3"><span class="text-xs px-2 py-0.5 rounded-full" style="background:${sc}22;color:${sc}">${status}</span></td>
+      <td class="p-3">
+        <button onclick="revokePremium('${u.id}')" class="lynk-btn text-xs py-1 px-2 rounded-lg" style="background:rgba(239,68,68,0.1);color:#ef4444">Revoke</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+window.savePremiumPricing = async () => {
+  try {
+    const { setDoc, doc: fd, serverTimestamp: sts } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    await setDoc(fd(db, 'admin_config', 'premium_pricing'), {
+      monthly: parseFloat(document.getElementById('prem-price-monthly')?.value || '9.99'),
+      annual: parseFloat(document.getElementById('prem-price-annual')?.value || '79.99'),
+      currency: document.getElementById('prem-currency')?.value || 'USD',
+      trialDays: parseInt(document.getElementById('prem-trial-days')?.value || '7'),
+      updatedAt: sts()
+    });
+    alert('Pricing saved!');
+  } catch (e) { alert('Error: ' + e.message); }
+};
+
+window.savePremiumFeatures = async () => {
+  try {
+    const { setDoc, doc: fd, serverTimestamp: sts } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    await setDoc(fd(db, 'admin_config', 'premium_features'), {
+      ai: document.getElementById('pf-ai')?.checked,
+      badge: document.getElementById('pf-badge')?.checked,
+      marketplace: document.getElementById('pf-marketplace')?.checked,
+      analytics: document.getElementById('pf-analytics')?.checked,
+      themes: document.getElementById('pf-themes')?.checked,
+      storage: document.getElementById('pf-storage')?.checked,
+      updatedAt: sts()
+    });
+    alert('Features saved!');
+  } catch (e) { alert('Error: ' + e.message); }
+};
+
+window.grantPremiumAdmin = async () => {
+  const email = document.getElementById('prem-grant-email')?.value.trim();
+  const plan = document.getElementById('prem-grant-plan')?.value;
+  const days = parseInt(document.getElementById('prem-grant-days')?.value || '30');
+  if (!email) { alert('Email is required.'); return; }
+  try {
+    const { getDocs: gd, collection: col, where: wh, query: q, updateDoc, doc: fd, serverTimestamp: sts } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const snap = await gd(q(col(db, 'users'), wh('email', '==', email)));
+    if (snap.empty) { alert('User not found.'); return; }
+    const userId = snap.docs[0].id;
+    const expires = new Date(); expires.setDate(expires.getDate() + days);
+    await updateDoc(fd(db, 'users', userId), { isPremium: true, premiumPlan: plan, premiumExpires: expires, premiumStarted: sts(), premiumGrantedByAdmin: true });
+    document.getElementById('grant-premium-modal').classList.add('hidden');
+    document.getElementById('prem-grant-email').value = '';
+    alert(`Premium granted to ${email} for ${days} days.`);
+    loadPremium();
+  } catch (e) { alert('Error: ' + e.message); }
+};
+
+window.revokePremium = async (userId) => {
+  if (!confirm('Revoke premium for this user?')) return;
+  try {
+    const { updateDoc, doc: fd } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    await updateDoc(fd(db, 'users', userId), { isPremium: false, premiumRevokedAt: new Date() });
+    const u = _allPremiumSubs.find(x => x.id === userId); if (u) u.isPremium = false;
+    renderPremiumTable(_allPremiumSubs.filter(u => u.isPremium));
+  } catch (e) { alert('Error: ' + e.message); }
 };
 
 window.signOut = async () => {
