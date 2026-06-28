@@ -413,9 +413,11 @@ body {
 .lynk-bottom-nav {
   display: none; position: fixed; bottom: 0; left: 0; right: 0;
   z-index: 900; background: var(--sidebar-bg);
-  border-top: 1px solid var(--border); height: 64px;
-  justify-content: space-around; align-items: center;
-  padding: 0 4px; backdrop-filter: blur(12px); overflow: hidden;
+  border-top: 1px solid var(--border);
+  height: calc(64px + env(safe-area-inset-bottom, 0px));
+  justify-content: space-around; align-items: flex-start;
+  padding: 8px 4px env(safe-area-inset-bottom, 0px) 4px;
+  backdrop-filter: blur(12px); overflow: hidden;
 }
 .lynk-bottom-nav a {
   display: flex; flex-direction: column; align-items: center;
@@ -486,7 +488,7 @@ body {
     padding-top: 24px; width: 270px;
   }
   .lynk-sidebar.drawer-open { transform: translateX(0); }
-  .main-content { margin-left: 0; padding-bottom: 68px; }
+  .main-content { margin-left: 0; padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
   .lynk-bottom-nav { display: flex; }
   #hamburger-btn { display: flex; align-items: center; }
 }
