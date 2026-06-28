@@ -1,7 +1,5 @@
 // ============================================================
 // LYNK By Legends — Firebase Cloud Messaging Service Worker
-// This file MUST be at the root of your site (same level as index.html)
-// GitHub Pages serves it correctly from the repo root.
 // ============================================================
 
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
@@ -19,35 +17,60 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Handle background push messages (when tab is closed/hidden)
+// Handle background push messages (app closed / tab hidden)
 messaging.onBackgroundMessage((payload) => {
-  const { title, body, icon, url } = payload.notification || {};
-  const notifTitle = title || 'LYNK By Legends';
+  const notif = payload.notification || {};
+  // IMPORTANT: url always lives in data payload, not notification payload
+  const data  = payload.data  || {};
+
+  const title = notif.title || 'LYNK By Legends';
+  const body  = notif.body  || 'You have a new notification';
+  const icon  = notif.icon  || '/LYNK/assets/logo.jpg';
+
+  // For DM messages, deep-link straight to the conversation
+  let url = data.url || '/LYNK/feed.html';
+  if (data.type === 'message' && data.convId) {
+    url = '/LYNK/chat.html?conv=' + data.convId;
+  } else if (data.type === 'message') {
+    url = '/LYNK/chat.html';
+  }
+
   const notifOptions = {
-    body: body || 'You have a new notification',
-    icon: icon || '/LYNK/assets/logo.jpg',
+    body,
+    icon,
     badge: '/LYNK/assets/logo.jpg',
-    data: { url: url || '/LYNK/feed.html' },
+    tag: data.type === 'message' ? 'lynk-dm-' + (data.convId || data.fromUid || '') : 'lynk-notif',
+    renotify: data.type === 'message',
+    data: { url, type: data.type || 'general', convId: data.convId || '' },
     actions: [
-      { action: 'open', title: 'Open LYNK' },
+      { action: 'open', title: data.type === 'message' ? 'Open Chat' : 'Open LYNK' },
       { action: 'dismiss', title: 'Dismiss' }
     ],
     vibrate: [200, 100, 200],
     requireInteraction: false
   };
-  self.registration.showNotification(notifTitle, notifOptions);
+
+  self.registration.showNotification(title, notifOptions);
 });
 
-// Handle notification click — open LYNK tab
+// Handle notification click — route to the correct page
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   if (event.action === 'dismiss') return;
-  const url = event.notification.data?.url || '/LYNK/feed.html';
+
+  // url was stored in data when showNotification was called
+  const url = event.notification.data?.url || '/LYNK/chat.html';
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // If a LYNK tab is already open for this conversation, focus it
       for (const client of clientList) {
-        if (client.url.includes('LYNK') && 'focus' in client) {
+        if (client.url.includes('chat.html') && event.notification.data?.type === 'message') {
+          client.postMessage({ type: 'OPEN_CONV', convId: event.notification.data?.convId });
           return client.focus();
+        }
+        if (client.url.includes('LYNK') && 'focus' in client) {
+          return client.navigate(url).then(c => c?.focus());
         }
       }
       return clients.openWindow(url);

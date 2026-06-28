@@ -491,7 +491,9 @@ window.sendMessage = async () => {
       fromName: currentUserData.displayName || 'Someone',
       fromPhoto: currentUserData.photoURL || '',
       type: 'message', message: 'sent you a message',
-      preview: content.slice(0, 80)
+      preview: content.slice(0, 80),
+      convId: activeConvId,
+      url: 'chat.html?conv=' + activeConvId
     }).catch(() => {});
   }
 

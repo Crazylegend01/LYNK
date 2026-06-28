@@ -192,13 +192,39 @@ window.markOneRead = async (notifId) => {
 };
 
 // ===== SEND NOTIFICATION =====
-export async function sendNotification({ toUid, fromUid, fromName, fromPhoto, type, message, preview }) {
+export async function sendNotification({ toUid, fromUid, fromName, fromPhoto, type, message, preview, url = '', convId = '' }) {
   if (!toUid || toUid === fromUid) return;
+
+  // Resolve the deep-link URL for DM notifications
+  const resolvedUrl = url || (type === 'message' && convId
+    ? 'chat.html?conv=' + convId
+    : type === 'message'
+      ? 'chat.html'
+      : 'notifications.html');
+
   try {
+    // Write to user's notification inbox
     await addDoc(collection(db, 'users', toUid, 'notifications'), {
       fromUid, fromName, fromPhoto, type, message, preview,
+      url: resolvedUrl, convId,
       read: false, createdAt: serverTimestamp()
     });
+
+    // For DMs: also write to pushQueue so Cloud Functions sends FCM
+    // with the correct chat URL — this is what stops DMs going to "spam"
+    if (type === 'message') {
+      await addDoc(collection(db, 'pushQueue'), {
+        toUid, fromUid, fromName, fromPhoto,
+        title: '💬 ' + fromName,
+        body: preview || 'Sent you a message',
+        icon: fromPhoto || '',
+        url: resolvedUrl,
+        type: 'message',
+        convId,
+        sent: false,
+        createdAt: serverTimestamp()
+      });
+    }
   } catch (e) { /* silent */ }
 }
 
