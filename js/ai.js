@@ -273,17 +273,28 @@ function appendBotMessage(text) {
   container.scrollTop = container.scrollHeight;
 }
 
+let _aiTimerInterval = null;
+let _aiTimerStart   = null;
+
 function showTypingIndicator() {
   const container = document.getElementById('ai-messages');
   const el = document.createElement('div');
   el.id = 'ai-typing';
   el.className = 'ai-typing-indicator fade-in';
-  el.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div><span class="text-xs ml-2" style="color:var(--text-muted)">LYNK AI is thinking...</span>';
+  el.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div><span id="ai-timer-label" class="text-xs ml-2" style="color:var(--text-muted)">LYNK AI is thinking… 0.0s</span>';
   container.appendChild(el);
   container.scrollTop = container.scrollHeight;
+  _aiTimerStart = Date.now();
+  _aiTimerInterval = setInterval(() => {
+    const label = document.getElementById('ai-timer-label');
+    if (label) label.textContent = 'LYNK AI is thinking… ' + ((Date.now() - _aiTimerStart) / 1000).toFixed(1) + 's';
+  }, 100);
 }
 
 function hideTypingIndicator() {
+  clearInterval(_aiTimerInterval);
+  _aiTimerInterval = null;
+  _aiTimerStart    = null;
   document.getElementById('ai-typing')?.remove();
 }
 
