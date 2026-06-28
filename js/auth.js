@@ -274,13 +274,18 @@ window.completeUniversityInfo = async () => {
   const user = auth.currentUser;
   if (user) {
     try {
-      await sendEmailVerification(user);
+      await sendEmailVerification(user, {
+      url: 'https://crazylegend01.github.io/LYNK/auth.html',
+      handleCodeInApp: false
+    });
     } catch (err) {
       console.warn('sendEmailVerification error:', err.code);
     }
     await firebaseSignOut(auth);
   }
   document.getElementById('verify-email-addr').textContent = pendingUserEmail || '';
+  const spamNote = document.getElementById('verify-spam-note');
+  if (spamNote) spamNote.classList.remove('hidden');
   window.switchTab('verify');
 };
 
@@ -288,13 +293,18 @@ window.skipUniversityInfo = async () => {
   const user = auth.currentUser;
   if (user) {
     try {
-      await sendEmailVerification(user);
+      await sendEmailVerification(user, {
+      url: 'https://crazylegend01.github.io/LYNK/auth.html',
+      handleCodeInApp: false
+    });
     } catch (err) {
       console.warn('sendEmailVerification error:', err.code);
     }
     await firebaseSignOut(auth);
   }
   document.getElementById('verify-email-addr').textContent = pendingUserEmail || '';
+  const spamNote2 = document.getElementById('verify-spam-note');
+  if (spamNote2) spamNote2.classList.remove('hidden');
   window.switchTab('verify');
 };
 
@@ -399,7 +409,10 @@ window.resendVerification = async () => {
   }
   try {
     const { user } = await signInWithEmailAndPassword(auth, pendingUserEmail, pendingUserPassword);
-    await sendEmailVerification(user);
+    await sendEmailVerification(user, {
+      url: 'https://crazylegend01.github.io/LYNK/auth.html',
+      handleCodeInApp: false
+    });
     await firebaseSignOut(auth);
     showAlert('✅ Verification email sent! Check your inbox and spam folder.', 'success');
   } catch (err) {
@@ -420,7 +433,10 @@ window.resendFromLogin = async () => {
   }
   try {
     const { user } = await signInWithEmailAndPassword(auth, email, password);
-    await sendEmailVerification(user);
+    await sendEmailVerification(user, {
+      url: 'https://crazylegend01.github.io/LYNK/auth.html',
+      handleCodeInApp: false
+    });
     await firebaseSignOut(auth);
     showAlert('✅ Verification email sent! Check your inbox and spam folder.', 'success');
     document.getElementById('login-resend-wrap')?.classList.add('hidden');

@@ -268,7 +268,10 @@
     <div id="form-verify" class="lynk-card p-8 fade-in hidden text-center">
       <div class="text-5xl mb-4">📧</div>
       <h2 class="text-2xl font-bold mb-2">Check your inbox</h2>
-      <p class="mb-6" style="color:var(--text-secondary)">We sent a verification email to <strong id="verify-email-addr"></strong>. Click the link to activate your account.</p>
+      <p class="mb-6" style="color:var(--text-secondary)">We sent a verification email to <strong id="verify-email-addr"></strong>
+      <div id="verify-spam-note" class="hidden mt-3 p-3 rounded-xl text-sm" style="background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.4);color:#fbbf24">
+        ⚠️ <strong>Can't find it?</strong> Check your <strong>spam or junk folder</strong> — Firebase verification emails sometimes land there. Mark it as "Not spam" so future emails reach your inbox.
+      </div>. Click the link to activate your account.</p>
       <button onclick="resendVerification()" class="lynk-btn lynk-btn-secondary w-full py-3 rounded-xl mb-3">Resend Email</button>
       <button onclick="switchTab('login')" class="lynk-btn lynk-btn-ghost w-full py-3 rounded-xl">Back to Sign In</button>
     </div>

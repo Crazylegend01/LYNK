@@ -954,3 +954,75 @@ window.signOut = async () => {
 function escHtml(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+
+// ===== PAYMENTS SECTION =====
+async function loadPaymentsSection() {
+  try {
+    const snap = await getDoc(doc(db, 'settings', 'payments'));
+    const data = snap.data() || {};
+    const pkEl = document.getElementById('fw-public-key');
+    const ccEl = document.getElementById('fw-currency');
+    if (pkEl) pkEl.value = data.flutterwavePublicKey || '';
+    if (ccEl && data.currency) ccEl.value = data.currency;
+    // Load prices
+    if (data.prices) {
+      const pw = document.getElementById('price-weekly');
+      const pm = document.getElementById('price-monthly');
+      const pq = document.getElementById('price-quarterly');
+      if (pw) pw.value = data.prices.weekly  || 1000;
+      if (pm) pm.value = data.prices.monthly || 3500;
+      if (pq) pq.value = data.prices.quarterly || 9000;
+    }
+  } catch { /* first load */ }
+  loadPaymentLogs();
+}
+
+window.saveFlutterwaveSettings = async () => {
+  const pk  = document.getElementById('fw-public-key')?.value.trim();
+  const cur = document.getElementById('fw-currency')?.value || 'NGN';
+  if (!pk) { alert('Please enter your Flutterwave Public Key.'); return; }
+  if (!pk.startsWith('FLWPUBK')) { alert('Public key should start with FLWPUBK_…'); return; }
+  try {
+    await setDoc(doc(db, 'settings', 'payments'), {
+      flutterwavePublicKey: pk,
+      fw_public_key: pk,
+      currency: cur,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    const st = document.getElementById('fw-save-status');
+    if (st) { st.classList.remove('hidden'); setTimeout(() => st.classList.add('hidden'), 4000); }
+  } catch (e) { alert('Error saving settings: ' + e.message); }
+};
+
+window.savePaymentPricing = async () => {
+  const w = Number(document.getElementById('price-weekly')?.value) || 1000;
+  const m = Number(document.getElementById('price-monthly')?.value) || 3500;
+  const q = Number(document.getElementById('price-quarterly')?.value) || 9000;
+  try {
+    await setDoc(doc(db, 'settings', 'payments'), {
+      prices: { weekly: w, monthly: m, quarterly: q },
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    alert('✅ Prices updated! Users will see the new prices immediately.');
+  } catch (e) { alert('Error: ' + e.message); }
+};
+
+async function loadPaymentLogs() {
+  const el = document.getElementById('payment-logs-list');
+  if (!el) return;
+  try {
+    const { getDocs: _gd, collection: _col, query: _q, orderBy: _ob, limit: _lim } =
+      await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const snap = await _gd(_q(_col(db, 'paymentLogs'), _ob('createdAt','desc'), _lim(20)));
+    if (snap.empty) { el.innerHTML = '<p class="text-sm text-center py-6" style="color:var(--text-muted)">No transactions yet.</p>'; return; }
+    el.innerHTML = `<table class="w-full text-sm"><thead><tr class="text-left" style="color:var(--text-muted)"><th class="pb-2">User</th><th class="pb-2">Plan</th><th class="pb-2">Amount</th><th class="pb-2">Status</th><th class="pb-2">Date</th></tr></thead><tbody id="payment-logs-tbody"></tbody></table>`;
+    const tbody = document.getElementById('payment-logs-tbody');
+    snap.forEach(d => {
+      const data = d.data();
+      const date = data.createdAt?.toDate?.()?.toLocaleDateString() || '—';
+      const statusColor = data.status === 'successful' || data.status === 'completed' ? '#22c55e' : '#f59e0b';
+      tbody.innerHTML += `<tr style="border-top:1px solid var(--border)"><td class="py-2.5">${data.userEmail || data.uid?.slice(0,8)||'—'}</td><td class="py-2.5 capitalize">${data.plan||data.planKey||'—'}</td><td class="py-2.5 font-mono">${data.currency||'NGN'} ${(data.amount||0).toLocaleString()}</td><td class="py-2.5"><span style="color:${statusColor}">${data.status||'—'}</span></td><td class="py-2.5" style="color:var(--text-muted)">${date}</td></tr>`;
+    });
+  } catch (e) { el.innerHTML = '<p class="text-sm py-4" style="color:var(--text-muted)">Could not load transactions.</p>'; }
+}

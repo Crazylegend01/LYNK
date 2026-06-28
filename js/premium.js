@@ -20,6 +20,7 @@ const PLANS = {
   monthly:   { amount: 3500,  label: 'Monthly Premium',   days: 30 },
   quarterly: { amount: 9000,  label: 'Quarterly Premium', days: 90 },
 };
+let _fwCurrency = 'NGN';
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) { window.location.href = 'auth.html'; return; }
@@ -33,7 +34,15 @@ onAuthStateChanged(auth, async (user) => {
   // Load Flutterwave key from admin settings
   try {
     const settingsSnap = await getDoc(doc(db, 'settings', 'payments'));
-    flutterwaveKey = settingsSnap.data()?.flutterwavePublicKey || settingsSnap.data()?.fw_public_key || null;
+    const pdata = settingsSnap.data() || {};
+    flutterwaveKey = pdata.flutterwavePublicKey || pdata.fw_public_key || null;
+    _fwCurrency = pdata.currency || 'NGN';
+    // Override PLANS amounts with admin-set prices if available
+    if (pdata.prices) {
+      if (pdata.prices.weekly)    PLANS.weekly.amount    = pdata.prices.weekly;
+      if (pdata.prices.monthly)   PLANS.monthly.amount   = pdata.prices.monthly;
+      if (pdata.prices.quarterly) PLANS.quarterly.amount = pdata.prices.quarterly;
+    }
   } catch { flutterwaveKey = null; }
 
   await checkCurrentStatus();
@@ -105,7 +114,7 @@ window.subscribePremium = async (planKey) => {
     public_key: flutterwaveKey,
     tx_ref: txRef,
     amount: plan.amount,
-    currency: 'NGN',
+    currency: _fwCurrency,
     payment_options: 'card,banktransfer,ussd',
     customer: {
       email: currentUser.email,
