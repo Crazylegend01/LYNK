@@ -33,11 +33,9 @@ let _baseTitleSet = false;
 // ===== INIT — call on every page after auth =====
 export async function initNotifications(uid) {
   currentUid = uid;
-  // Only inject bell on home/feed page
-  if (_isFeedPage) {
-    renderNotificationBell();
-    injectSidebarBadges();
-  }
+  // Notification bell removed from nav (did not show live data)
+  // injectSidebarBadges still runs for sidebar badge counts
+  injectSidebarBadges();
   listenForNotifications(uid);
   await setupFCM(uid);
   if (Notification.permission === 'default') {

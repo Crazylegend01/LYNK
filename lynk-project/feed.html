@@ -20,10 +20,10 @@
     <button id="hamburger-btn" onclick="openMobileNav()" aria-label="Open menu">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
-    <a href="index.html" class="flex flex-col leading-none">
+    <span class="flex flex-col leading-none">
       <span class="logo-text">LYNK</span>
       <span class="logo-sub">By Legends</span>
-    </a>
+    </span>
   </div>
 
   <!-- Center: search bar -->
@@ -38,7 +38,6 @@
   <!-- Right: desktop icons + avatar. Mobile: notification bell (left of +), + upload btn -->
   <div class="flex items-center gap-2 flex-shrink-0">
     <!-- Mobile ONLY: notification bell (moved to left of +) — notifications.js injects bell into nav-right-icons on desktop -->
-    <div id="mobile-bell-slot" class="md:hidden"></div>
 
     <!-- Desktop: theme toggle -->
     <button id="theme-toggle" class="lynk-icon-btn hidden md:inline-flex" aria-label="Toggle theme" onclick="quickTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark')">
