@@ -478,7 +478,7 @@ body {
 }
 .explore-fab-overlay.open { display: block; }
 @media (max-width: 768px) {
-  .explore-fab { display: flex; }
+  .explore-fab { display: none; }
   .explore-dropdown { display: grid; }
 }
 

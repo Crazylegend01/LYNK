@@ -846,7 +846,12 @@ window.saveAiKeys = async(provider)=>{
     if(statusEl){statusEl.textContent='✓ Saved';statusEl.style.color='#22c55e';}
     for(let i=1;i<=5;i++){const el=document.getElementById('ai-'+provider+'-key-'+i);if(el)el.value='';}
     setTimeout(()=>{if(statusEl){statusEl.textContent='';statusEl.style.color='';}},3000);
-  } catch(e){if(statusEl){statusEl.textContent='✗ '+e.message;statusEl.style.color='#ef4444';}}
+  } catch(e){
+    const msg = (e.code === 'permission-denied')
+      ? '✗ Permission denied — add Firestore rules allowing admin writes to admin_config collection'
+      : '✗ ' + e.message;
+    if(statusEl){statusEl.textContent=msg;statusEl.style.color='#ef4444';}
+  }
 };
 window.saveAllAiKeys = async()=>{for(const p of AI_PROVIDERS) await saveAiKeys(p); await saveAiSettings();};
 window.testAiKey = async(provider)=>{
@@ -1008,7 +1013,13 @@ window.saveFlutterwaveSettings = async () => {
     }, { merge: true });
     const st = document.getElementById('fw-save-status');
     if (st) { st.classList.remove('hidden'); setTimeout(() => st.classList.add('hidden'), 4000); }
-  } catch (e) { alert('Error saving settings: ' + e.message); }
+  } catch (e) {
+    if (e.code === 'permission-denied') {
+      alert('Permission denied — update Firestore Security Rules to allow admin writes to the "settings" collection.');
+    } else {
+      alert('Error saving settings: ' + e.message);
+    }
+  }
 };
 
 window.savePaymentPricing = async () => {

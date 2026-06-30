@@ -9,8 +9,8 @@
   overlay.id = 'lynk-page-loader';
   overlay.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
-      <div style="width:72px;height:72px;border-radius:50%;overflow:hidden;box-shadow:0 0 30px #a855f750;animation:loaderPop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards">
-        <img src="assets/logo.jpg" alt="LYNK" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\'background:linear-gradient(135deg,#a855f7,#06b6d4,#3b82f6);width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;color:white;font-family:Inter,sans-serif\'>LYNK</div>'" />
+      <div style="width:72px;height:72px;border-radius:50%;box-shadow:0 0 30px #a855f750;animation:loaderPop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;background:linear-gradient(135deg,#a855f7,#06b6d4,#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;color:#fff;font-family:Inter,sans-serif;letter-spacing:-1px">
+        LYNK
       </div>
       <div style="width:120px;height:3px;background:rgba(255,255,255,0.08);border-radius:999px;overflow:hidden">
         <div id="lynk-loader-bar" style="height:100%;background:linear-gradient(90deg,#a855f7,#06b6d4,#3b82f6);border-radius:999px;width:0%;transition:width 2s ease"></div>

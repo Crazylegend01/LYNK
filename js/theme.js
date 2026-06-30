@@ -66,7 +66,7 @@ export const ThemeManager = {
   },
 
   loadGradient() {
-    const theme = localStorage.getItem('lynk-theme') || 'dark';
+    const theme = localStorage.getItem('lynk-theme') || 'system';
     const hasCustom = localStorage.getItem('lynk-custom-gradient');
     let s1, s2, s3;
     if (hasCustom) {
