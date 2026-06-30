@@ -604,10 +604,9 @@
             <input type="text" id="fw-public-key" class="lynk-input text-sm font-mono" placeholder="FLWPUBK_TEST-xxxxxxxxxxxxxxxxxxxxxxxx-X or FLWPUBK-xxxxxxxxxxxxxxxxxxxxxxxx-X" />
             <p class="text-xs mt-1" style="color:var(--text-muted)">Starts with <code>FLWPUBK_TEST-</code> (sandbox) or <code>FLWPUBK-</code> (live)</p>
           </div>
-          <div>
-            <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Secret Key (stored server-side only)</label>
-            <input type="password" id="fw-secret-key" class="lynk-input text-sm font-mono" placeholder="FLWSECK_TEST-xxxxxxxxxxxxxxxxxxxxxxxx-X" autocomplete="new-password" />
-            <p class="text-xs mt-1" style="color:var(--text-muted)">Starts with <code>FLWSECK_TEST-</code> (sandbox) or <code>FLWSECK-</code> (live)</p>
+          <div class="p-3 rounded-xl text-xs" style="background:rgba(245,158,11,0.1);color:#f59e0b;border:1px solid rgba(245,158,11,0.2)">
+            <p class="font-semibold mb-0.5">⚠️ Secret Key Security Note</p>
+            <p>Your Flutterwave <strong>Secret Key</strong> must never be stored in the browser or client-side database. Add it to your server environment variables (e.g. Firebase Cloud Functions) only. The Public Key above is safe to store for client-side payments.</p>
           </div>
           <div>
             <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Currency</label>

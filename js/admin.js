@@ -363,8 +363,8 @@ async function loadReports() {
   if (!list) return;
   list.innerHTML = '<div class="text-sm" style="color:var(--text-muted)">Loading reports...</div>';
   try {
-    // Use simple query (no orderBy) to avoid composite index requirement; sort in JS
-    const snap = await getDocs(query(collection(db, 'reports'), where('status','==','open'), limit(50)));
+    // Use simple query (no orderBy) to avoid composite index requirement; sort all in JS
+    const snap = await getDocs(query(collection(db, 'reports'), where('status','==','open')));
     const sortedDocs = snap.docs.sort((a, b) => {
       const ta = a.data().createdAt?.toMillis?.() || 0;
       const tb = b.data().createdAt?.toMillis?.() || 0;
