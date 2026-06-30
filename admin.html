@@ -381,10 +381,16 @@ service cloud.firestore {
             After publishing rules, also set the <code style="background:rgba(168,85,247,0.15);padding:1px 5px;border-radius:4px">admin: true</code> custom claim on your account via
             <strong>Firebase Admin SDK</strong> or a Cloud Function — this is what grants you write access to restricted collections.
           </p>
-          <a href="https://console.firebase.google.com" target="_blank" rel="noopener"
-             class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 self-start rounded-lg">
-            Open Firebase Console →
-          </a>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="(function(){const el=this.previousSibling;const pre=this.closest('.flex').parentElement.querySelector('pre');navigator.clipboard.writeText(pre.textContent).then(()=>{this.textContent='✓ Copied!';this.style.color='#22c55e';setTimeout(()=>{this.textContent='Copy Rules';this.style.color='';},2000);});}).call(this)"
+              class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-lg">
+              Copy Rules
+            </button>
+            <a href="https://console.firebase.google.com" target="_blank" rel="noopener"
+               class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-lg">
+              Open Firebase Console →
+            </a>
+          </div>
         </div>
       </details>
     </div>
