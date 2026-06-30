@@ -101,6 +101,12 @@ service cloud.firestore {
         allow delete: if isSignedIn() && (request.auth.uid == memberId || isAdmin());
       }
     }
+    // Flat communityMembers collection used by communities.js
+    match /communityMembers/{memberId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isNotSuspended();
+      allow delete: if isSignedIn() && (request.auth.uid == resource.data.uid || isAdmin());
+    }
 
     // ===== EVENTS =====
     match /events/{eventId} {
@@ -108,6 +114,11 @@ service cloud.firestore {
       allow create: if isSignedIn() && isNotSuspended();
       allow update: if isSignedIn() && (resource.data.createdBy == request.auth.uid || isAdmin());
       allow delete: if isSignedIn() && (resource.data.createdBy == request.auth.uid || isAdmin());
+    }
+    match /eventRsvps/{rsvpId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.uid == request.auth.uid;
     }
 
     // ===== CLUBS =====
@@ -117,13 +128,52 @@ service cloud.firestore {
       allow update: if isSignedIn() && (resource.data.createdBy == request.auth.uid || isAdmin());
       allow delete: if isSignedIn() && (resource.data.createdBy == request.auth.uid || isAdmin());
     }
+    match /clubMembers/{memberId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isNotSuspended();
+      allow delete: if isSignedIn() && (request.auth.uid == resource.data.uid || isAdmin());
+    }
+    match /clubPosts/{postId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isNotSuspended();
+      allow update: if isSignedIn() && (resource.data.authorId == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && (resource.data.authorId == request.auth.uid || isAdmin());
+    }
 
     // ===== MARKETPLACE =====
+    // Original alias (kept for backward compatibility)
     match /listings/{listingId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && isNotSuspended();
       allow update: if isSignedIn() && (resource.data.sellerId == request.auth.uid || isAdmin());
       allow delete: if isSignedIn() && (resource.data.sellerId == request.auth.uid || isAdmin());
+    }
+    // Actual collection used by marketplace.js
+    match /marketplaceListings/{listingId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isNotSuspended();
+      allow update: if isSignedIn() && (resource.data.sellerId == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && (resource.data.sellerId == request.auth.uid || isAdmin());
+    }
+    // Saved/bookmarked listings — per user
+    match /savedListings/{savedId} {
+      allow read: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    // ===== PUSH QUEUE (FCM) =====
+    match /pushQueue/{docId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ===== SPONSORED POSTS =====
+    match /sponsoredPosts/{postId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isNotSuspended();
+      allow update: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
     }
 
     // ===== ANNOUNCEMENTS =====
