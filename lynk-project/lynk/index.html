@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LYNK By Legends — Connect · Learn · Grow</title>
+  <meta name="description" content="The premier university social network. Connect with peers, discover communities, and grow together." />
+  <link rel="icon" href="assets/logo.jpg" type="image/jpeg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/custom.css" />
+</head>
+<body>
+
+<!-- ===== NAVBAR ===== -->
+<nav class="lynk-nav h-16 flex items-center px-6 justify-between">
+  <a href="index.html" class="flex flex-col leading-none">
+    <span class="logo-text">LYNK</span>
+    <span class="logo-sub">By Legends</span>
+  </a>
+  <div class="flex items-center gap-3">
+    <button id="theme-toggle" class="lynk-btn lynk-btn-ghost p-2 rounded-full" aria-label="Toggle theme">
+      <span id="theme-icon">☀️</span>
+    </button>
+    <a href="auth.html" class="lynk-btn lynk-btn-secondary text-sm">Sign In</a>
+    <a href="auth.html?mode=signup" class="lynk-btn lynk-btn-primary text-sm">Join Free</a>
+  </div>
+</nav>
+
+<!-- ===== HERO ===== -->
+<section class="relative overflow-hidden min-h-screen flex items-center justify-center px-6">
+  <!-- Animated background blobs -->
+  <div class="absolute inset-0 pointer-events-none overflow-hidden">
+    <div class="absolute w-[600px] h-[600px] rounded-full opacity-10 blur-3xl" style="background:var(--grad-1);top:-100px;left:-100px;animation:spin 20s linear infinite"></div>
+    <div class="absolute w-[500px] h-[500px] rounded-full opacity-10 blur-3xl" style="background:var(--grad-2);bottom:-100px;right:-80px;animation:spin 25s linear infinite reverse"></div>
+    <div class="absolute w-[400px] h-[400px] rounded-full opacity-8 blur-3xl" style="background:var(--grad-3);top:40%;left:40%;animation:spin 30s linear infinite"></div>
+  </div>
+
+  <div class="relative max-w-4xl mx-auto text-center fade-in">
+    <!-- Logo -->
+    <div class="inline-block mb-8">
+      <img src="assets/logo.jpg" alt="LYNK Logo" class="w-24 h-24 rounded-3xl mx-auto shadow-2xl mb-4" style="box-shadow:0 0 40px rgba(168,85,247,0.4)" />
+      <h1 class="text-6xl md:text-8xl font-black logo-text mb-1">LYNK</h1>
+      <p class="text-sm tracking-[0.3em] uppercase" style="color:var(--text-muted)">By Legends</p>
+    </div>
+
+    <p class="text-xl md:text-3xl font-semibold mt-6 mb-4" style="color:var(--text-primary)">
+      The University Social Network Built <br class="hidden md:block" />
+      for <span class="lynk-gradient-text">Real Connections</span>
+    </p>
+    <p class="text-base md:text-lg mb-10 max-w-xl mx-auto" style="color:var(--text-secondary)">
+      Connect with peers in your faculty, join department communities, share ideas, and grow together — all in one powerful platform.
+    </p>
+
+    <div class="flex flex-wrap gap-4 justify-center mb-12">
+      <a href="auth.html?mode=signup" class="lynk-btn lynk-btn-primary px-8 py-4 text-base rounded-2xl">
+        🚀 Get Started Free
+      </a>
+      <a href="auth.html" class="lynk-btn lynk-btn-secondary px-8 py-4 text-base rounded-2xl">
+        Sign In
+      </a>
+    </div>
+
+    <!-- Stats row -->
+    <div class="grid grid-cols-3 gap-6 max-w-md mx-auto">
+      <div class="lynk-card p-4">
+        <div class="text-2xl font-bold lynk-gradient-text">10K+</div>
+        <div class="text-xs mt-1" style="color:var(--text-muted)">Students</div>
+      </div>
+      <div class="lynk-card p-4">
+        <div class="text-2xl font-bold lynk-gradient-text">50+</div>
+        <div class="text-xs mt-1" style="color:var(--text-muted)">Universities</div>
+      </div>
+      <div class="lynk-card p-4">
+        <div class="text-2xl font-bold lynk-gradient-text">500+</div>
+        <div class="text-xs mt-1" style="color:var(--text-muted)">Communities</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FEATURES ===== -->
+<section class="py-24 px-6">
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-3xl md:text-4xl font-bold text-center mb-4" style="color:var(--text-primary)">Everything you need to <span class="lynk-gradient-text">thrive</span></h2>
+    <p class="text-center mb-14" style="color:var(--text-secondary)">Built for university life — from freshman orientation to postgraduate networking.</p>
+    <div class="grid md:grid-cols-3 gap-6">
+      <div class="lynk-card p-6 fade-in">
+        <div class="text-3xl mb-3">📡</div>
+        <h3 class="font-bold text-lg mb-2">Social Feed</h3>
+        <p style="color:var(--text-secondary);font-size:0.9rem">Share posts, images, videos, and polls with your university community. React, comment, and go viral on campus.</p>
+      </div>
+      <div class="lynk-card p-6 fade-in" style="animation-delay:0.1s">
+        <div class="text-3xl mb-3">💬</div>
+        <h3 class="font-bold text-lg mb-2">Real-time Chat</h3>
+        <p style="color:var(--text-secondary);font-size:0.9rem">Instant messaging with typing indicators and online status. Stay connected with your study group 24/7.</p>
+      </div>
+      <div class="lynk-card p-6 fade-in" style="animation-delay:0.2s">
+        <div class="text-3xl mb-3">🏛️</div>
+        <h3 class="font-bold text-lg mb-2">Communities</h3>
+        <p style="color:var(--text-secondary);font-size:0.9rem">Auto-join your Faculty and Department groups. Connect with your exact academic circle from day one.</p>
+      </div>
+      <div class="lynk-card p-6 fade-in" style="animation-delay:0.3s">
+        <div class="text-3xl mb-3">🤝</div>
+        <h3 class="font-bold text-lg mb-2">Friend Network</h3>
+        <p style="color:var(--text-secondary);font-size:0.9rem">Send requests, build your network, and see mutual connections. Real friendships, built on shared experiences.</p>
+      </div>
+      <div class="lynk-card p-6 fade-in" style="animation-delay:0.4s">
+        <div class="text-3xl mb-3">🔐</div>
+        <h3 class="font-bold text-lg mb-2">Secure Auth</h3>
+        <p style="color:var(--text-secondary);font-size:0.9rem">Email verification, 2FA, and university-gated access. Your data stays safe with enterprise-grade security.</p>
+      </div>
+      <div class="lynk-card p-6 fade-in" style="animation-delay:0.5s">
+        <div class="text-3xl mb-3">🎨</div>
+        <h3 class="font-bold text-lg mb-2">Personalize It</h3>
+        <p style="color:var(--text-secondary);font-size:0.9rem">Dark or light mode, custom brand gradients — make LYNK yours. Express yourself down to the interface.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CTA ===== -->
+<section class="py-20 px-6">
+  <div class="max-w-2xl mx-auto lynk-card p-12 text-center relative overflow-hidden">
+    <div class="absolute inset-0 lynk-gradient opacity-5 pointer-events-none"></div>
+    <h2 class="text-3xl font-bold mb-4 relative">Ready to connect with your campus?</h2>
+    <p class="mb-8 relative" style="color:var(--text-secondary)">Join thousands of students already on LYNK. It's free, fast, and built for you.</p>
+    <a href="auth.html?mode=signup" class="lynk-btn lynk-btn-primary px-10 py-4 text-base rounded-2xl relative">
+      Create Your Account →
+    </a>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="py-8 px-6 border-t" style="border-color:var(--border)">
+  <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+    <div class="flex flex-col items-center md:items-start">
+      <span class="logo-text text-xl">LYNK</span>
+      <span class="logo-sub">By Legends</span>
+    </div>
+    <p style="color:var(--text-muted);font-size:0.8rem">© 2026 LYNK By Legends. All rights reserved.</p>
+    <div class="flex gap-4" style="color:var(--text-muted);font-size:0.8rem">
+      <span>Connect · Learn · Grow</span>
+    </div>
+  </div>
+</footer>
+
+<script type="module">
+  import { ThemeManager } from './js/theme.js';
+  ThemeManager.init();
+</script>
+</body>
+</html>

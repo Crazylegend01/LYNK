@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile — LYNK By Legends</title>
+  <link rel="icon" href="assets/logo.jpg" type="image/jpeg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/custom.css" />
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="lynk-nav h-16 flex items-center px-6 justify-between">
+  <a href="index.html" class="flex flex-col leading-none">
+    <span class="logo-text">LYNK</span>
+    <span class="logo-sub">By Legends</span>
+  </a>
+  <div class="flex items-center gap-3">
+    <button id="theme-toggle" class="lynk-btn lynk-btn-ghost p-2 rounded-full"><span id="theme-icon">☀️</span></button>
+    <a href="feed.html" class="lynk-btn lynk-btn-secondary text-sm">← Feed</a>
+  </div>
+</nav>
+
+<!-- SIDEBAR -->
+<aside class="lynk-sidebar pt-4 pb-20">
+  <nav class="flex flex-col gap-0.5">
+    <a href="feed.html" class="lynk-sidebar-link">🏠 <span>Home Feed</span></a>
+    <a href="profile.html" class="lynk-sidebar-link active">👤 <span>My Profile</span></a>
+    <a href="chat.html" class="lynk-sidebar-link">💬 <span>Messages</span></a>
+    <a href="notifications.html" class="lynk-sidebar-link">🔔 <span>Notifications</span></a>
+    <div class="px-4 mt-4 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Communities</div>
+    <a href="#" class="lynk-sidebar-link">🏛️ <span id="faculty-link">My Faculty</span></a>
+    <a href="#" class="lynk-sidebar-link">📚 <span id="dept-link">My Department</span></a>
+    <div class="px-4 mt-4 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Settings</div>
+    <a href="#" onclick="signOut()" class="lynk-sidebar-link" style="color:#ef4444">🚪 <span>Sign Out</span></a>
+  </nav>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+  <div class="max-w-3xl mx-auto px-4 py-6">
+
+    <!-- Incomplete profile banner -->
+    <div id="incomplete-banner" class="hidden lynk-card p-4 mb-5 border" style="border-color:#f59e0b;background:#f59e0b10">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">⚠️</span>
+        <div class="flex-1">
+          <p class="font-semibold text-sm">Complete your profile</p>
+          <p class="text-xs mt-0.5" style="color:var(--text-secondary)">Add your university, faculty and department so classmates can find you.</p>
+        </div>
+        <button onclick="openEditModal()" class="lynk-btn lynk-btn-primary text-xs py-2 px-3 rounded-xl flex-shrink-0">Complete Now</button>
+      </div>
+    </div>
+
+    <!-- Profile Card -->
+    <div class="lynk-card overflow-hidden mb-5 fade-in">
+      <!-- Cover -->
+      <div class="h-36 relative lynk-gradient" id="cover-container">
+        <div class="absolute inset-0 opacity-30" style="background:repeating-linear-gradient(45deg,transparent,transparent 20px,rgba(255,255,255,0.05) 20px,rgba(255,255,255,0.05) 40px)"></div>
+        <!-- Cover edit — hidden by default, shown via JS for own profile -->
+        <label id="cover-edit" style="display:none;position:absolute;top:12px;right:12px;cursor:pointer"
+               class="lynk-btn lynk-btn-secondary text-xs py-1 px-3">
+          📷 Edit Cover
+          <input type="file" accept="image/*" class="hidden" onchange="updateCover(this)" />
+        </label>
+      </div>
+
+      <!-- Avatar + Info -->
+      <div class="px-6 pb-6">
+        <div class="flex items-end justify-between -mt-12 mb-4">
+          <div class="relative group">
+            <img id="profile-avatar"
+                 src="https://ui-avatars.com/api/?name=User&background=a855f7&color=fff&size=96"
+                 class="lynk-avatar w-24 h-24 ring-4 flex-shrink-0"
+                 style="--tw-ring-color:var(--bg-card)" alt="Avatar" />
+            <!-- Avatar edit overlay — hidden by default, shown via JS for own profile -->
+            <label id="avatar-edit"
+                   style="display:none;position:absolute;inset:0;border-radius:9999px;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;color:white;font-size:1.2rem;cursor:pointer">
+              📷
+              <input type="file" accept="image/*" class="hidden" id="avatar-file-input" onchange="updateAvatar(this)" />
+            </label>
+            <span id="online-indicator" class="online-dot"></span>
+          </div>
+          <div class="flex gap-2 mt-14 flex-wrap justify-end">
+            <button id="btn-edit-profile" onclick="openEditModal()" class="lynk-btn lynk-btn-secondary text-sm py-2 px-4 rounded-xl hidden">✏️ Edit Profile</button>
+            <button id="btn-friend-action" onclick="handleFriendAction()" class="lynk-btn lynk-btn-primary text-sm py-2 px-4 rounded-xl hidden">+ Add Friend</button>
+            <a id="btn-message" href="chat.html" class="lynk-btn lynk-btn-secondary text-sm py-2 px-4 rounded-xl hidden">💬 Message</a>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 flex-wrap mb-0.5">
+          <h1 id="profile-name" class="text-2xl font-bold">Loading...</h1>
+          <span id="staff-badge" class="hidden lynk-badge text-xs" style="background:#0ea5e920;color:#38bdf8">👨‍🏫 Staff</span>
+        </div>
+        <p id="profile-handle" class="text-sm mb-1" style="color:var(--text-muted)">@handle</p>
+        <p id="profile-position" class="hidden text-sm mb-2 font-medium" style="color:var(--grad-2)"></p>
+        <p id="profile-bio" class="text-sm mb-4 max-w-lg" style="color:var(--text-secondary)"></p>
+
+        <div class="flex flex-wrap gap-3 text-sm mb-4" style="color:var(--text-secondary)">
+          <span id="profile-university">🎓 University</span>
+          <span id="profile-faculty">🏛️ Faculty</span>
+          <span id="profile-dept">📚 Department</span>
+          <span id="profile-joined">📅 Joined</span>
+        </div>
+
+        <!-- Stats -->
+        <div class="flex gap-6 text-sm border-t pt-4" style="border-color:var(--border)">
+          <div class="text-center cursor-pointer" onclick="setProfileTab('friends', null)">
+            <div class="font-bold text-lg" id="friends-count">0</div>
+            <div style="color:var(--text-muted)">Friends</div>
+          </div>
+          <div class="text-center">
+            <div class="font-bold text-lg" id="posts-count">0</div>
+            <div style="color:var(--text-muted)">Posts</div>
+          </div>
+          <div class="text-center">
+            <div class="font-bold text-lg" id="communities-count">0</div>
+            <div style="color:var(--text-muted)">Communities</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-1 mb-5 p-1 rounded-xl" style="background:var(--bg-card)">
+      <button id="tab-btn-posts" class="lynk-tab active flex-1 text-sm" onclick="setProfileTab('posts', this)">Posts</button>
+      <button id="tab-btn-friends" class="lynk-tab flex-1 text-sm" onclick="setProfileTab('friends', this)">Friends</button>
+      <button id="tab-btn-about" class="lynk-tab flex-1 text-sm" onclick="setProfileTab('about', this)">About</button>
+    </div>
+
+    <!-- POSTS TAB -->
+    <div id="tab-posts" class="flex flex-col gap-4">
+      <div class="lynk-card p-5 animate-pulse">
+        <div class="h-4 rounded w-3/4 mb-3" style="background:var(--border)"></div>
+        <div class="h-4 rounded w-1/2" style="background:var(--border)"></div>
+      </div>
+    </div>
+
+    <!-- FRIENDS TAB -->
+    <div id="tab-friends" class="hidden">
+      <div id="friend-requests-section" class="hidden mb-5">
+        <h3 class="font-semibold mb-3">Friend Requests (<span id="requests-count">0</span>)</h3>
+        <div id="friend-requests-list" class="grid grid-cols-2 gap-3"></div>
+      </div>
+      <h3 class="font-semibold mb-3">Friends (<span id="friends-list-count">0</span>)</h3>
+      <div id="friends-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div class="lynk-card p-4 animate-pulse">
+          <div class="w-12 h-12 rounded-full mx-auto mb-2" style="background:var(--border)"></div>
+          <div class="h-3 rounded w-3/4 mx-auto" style="background:var(--border)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABOUT TAB -->
+    <div id="tab-about" class="hidden">
+      <div class="lynk-card p-6">
+        <h3 class="font-semibold mb-4">About</h3>
+        <div class="flex flex-col gap-0 text-sm divide-y" style="--tw-divide-opacity:1;border-color:var(--border)">
+          <div class="flex justify-between items-center py-3"><span style="color:var(--text-muted)">Full Name</span><span id="about-name" class="font-medium">—</span></div>
+          <div class="flex justify-between items-center py-3"><span style="color:var(--text-muted)">Username</span><span id="about-username" class="font-medium lynk-gradient-text">—</span></div>
+          <div class="flex justify-between items-center py-3"><span style="color:var(--text-muted)">Account Type</span><span id="about-type" class="font-medium">—</span></div>
+          <div id="about-position-row" class="hidden flex justify-between items-center py-3"><span style="color:var(--text-muted)">Position / Rank</span><span id="about-position" class="font-medium">—</span></div>
+          <div class="flex justify-between items-center py-3"><span style="color:var(--text-muted)">University</span><span id="about-university" class="font-medium">—</span></div>
+          <div class="flex justify-between items-center py-3"><span style="color:var(--text-muted)">Faculty</span><span id="about-faculty" class="font-medium">—</span></div>
+          <div class="flex justify-between items-center py-3"><span style="color:var(--text-muted)">Department</span><span id="about-dept" class="font-medium">—</span></div>
+          <div class="flex justify-between items-center py-3"><span style="color:var(--text-muted)">Member Since</span><span id="about-joined" class="font-medium">—</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- EDIT PROFILE MODAL -->
+<div id="edit-modal" class="lynk-modal-overlay hidden">
+  <div class="lynk-card p-6 w-full max-w-lg mx-4" style="max-height:90vh;overflow-y:auto">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-bold text-lg">Edit Profile</h3>
+      <button onclick="closeEditModal()" class="lynk-btn lynk-btn-ghost p-1">✕</button>
+    </div>
+    <div class="flex flex-col gap-4">
+      <div>
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Full Name</label>
+        <input id="edit-name" type="text" class="lynk-input" placeholder="Your full name" />
+      </div>
+      <div>
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Username
+          <span class="font-normal text-xs" style="color:var(--text-muted)"> (your @handle)</span>
+        </label>
+        <div class="relative">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 font-semibold" style="color:var(--text-muted)">@</span>
+          <input id="edit-username" type="text" class="lynk-input pl-7" placeholder="yourhandle" oninput="checkEditUsername(this.value)" />
+        </div>
+        <p id="edit-username-status" class="text-xs mt-1" style="color:var(--text-muted)"></p>
+      </div>
+      <div>
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Bio</label>
+        <textarea id="edit-bio" class="lynk-input resize-none" rows="3" placeholder="Tell your campus about yourself..."></textarea>
+      </div>
+      <div id="edit-position-wrapper">
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Position / Rank <span class="font-normal text-xs" style="color:var(--text-muted)">(staff only)</span></label>
+        <input id="edit-position" type="text" class="lynk-input" placeholder="e.g. Sub-dean, Lecturer I, Professor" />
+      </div>
+      <div>
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">University</label>
+        <select id="edit-university-select" class="lynk-input" onchange="loadEditFaculties(this.value)">
+          <option value="">-- Select or type below --</option>
+        </select>
+        <input id="edit-university" type="text" class="lynk-input mt-2" placeholder="Or type your university name" />
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Faculty</label>
+          <select id="edit-faculty-select" class="lynk-input mb-1" onchange="loadEditDepartments(this.value)">
+            <option value="">-- Select --</option>
+          </select>
+          <input id="edit-faculty" type="text" class="lynk-input" placeholder="Or type faculty" />
+        </div>
+        <div>
+          <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Department</label>
+          <select id="edit-dept-select" class="lynk-input mb-1">
+            <option value="">-- Select --</option>
+          </select>
+          <input id="edit-dept" type="text" class="lynk-input" placeholder="Or type department" />
+        </div>
+      </div>
+      <div class="flex gap-3 mt-2">
+        <button onclick="saveProfile()" class="lynk-btn lynk-btn-primary flex-1 py-3 rounded-xl">Save Changes</button>
+        <button onclick="closeEditModal()" class="lynk-btn lynk-btn-secondary flex-1 py-3 rounded-xl">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function setProfileTab(tab, btn) {
+    ['posts','friends','about'].forEach(t => {
+      document.getElementById(`tab-${t}`)?.classList.add('hidden');
+      document.getElementById(`tab-btn-${t}`)?.classList.remove('active');
+    });
+    document.getElementById(`tab-${tab}`)?.classList.remove('hidden');
+    if (btn) btn.classList.add('active');
+    else document.getElementById(`tab-btn-${tab}`)?.classList.add('active');
+  }
+  function openEditModal() { document.getElementById('edit-modal').classList.remove('hidden'); }
+  function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); }
+</script>
+<script type="module" src="js/profile.js"></script>
+</body>
+</html>
