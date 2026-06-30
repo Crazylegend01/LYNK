@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "tbf9qEb1yMBKlJB77PrLi"
+uri = "file://lynk-project-fixed.tar.gz"
+type = "unspecified"
+title = "LYNK By Legends — Fixed Project"
