@@ -932,3 +932,90 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 }
 .integration-status-dot.active { background: #22c55e; }
 .integration-status-dot.inactive { background: var(--text-muted); }
+
+/* ===== PAGE LOADER OVERLAY ===== */
+#page-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #0a0a0f;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  transition: opacity 0.4s ease;
+}
+[data-theme="light"] #page-loader { background: #f8fafc; }
+
+#page-loader .pl-ring {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  margin-bottom: 20px;
+}
+#page-loader .pl-ring svg.pl-spin {
+  position: absolute;
+  inset: 0;
+  animation: spin 2.4s linear infinite;
+}
+#page-loader .pl-ring-img {
+  position: absolute;
+  inset: 11px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 0 24px #a855f750;
+}
+#page-loader .pl-ring-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+#page-loader .pl-wordmark {
+  font-family: 'Inter', sans-serif;
+  font-size: 1.9rem;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  background: linear-gradient(135deg, #a855f7, #06b6d4, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+}
+#page-loader .pl-sub {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  margin-top: 3px;
+  text-align: center;
+}
+[data-theme="light"] #page-loader .pl-sub { color: rgba(0,0,0,0.3); }
+
+#page-loader .pl-bar-wrap {
+  margin-top: 32px;
+  width: 120px;
+  height: 2px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+[data-theme="light"] #page-loader .pl-bar-wrap { background: rgba(0,0,0,0.08); }
+#page-loader .pl-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #a855f7, #06b6d4, #3b82f6);
+  border-radius: 999px;
+  animation: plFill 1.8s ease forwards;
+}
+@keyframes plFill {
+  0%   { width: 0%; }
+  60%  { width: 65%; }
+  100% { width: 95%; }
+}
+#page-loader.pl-done {
+  opacity: 0;
+  pointer-events: none;
+}

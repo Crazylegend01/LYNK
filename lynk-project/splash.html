@@ -87,17 +87,19 @@
 
     .logo-ring-inner {
       position: absolute;
-      inset: 12px;
+      inset: 10px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #a855f7, #06b6d4, #3b82f6);
+      overflow: hidden;
+      box-shadow: 0 0 30px #a855f750;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 900;
-      font-size: 22px;
-      letter-spacing: -0.05em;
-      color: white;
-      box-shadow: 0 0 30px #a855f750;
+    }
+    .logo-ring-inner img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
     }
 
     /* Wordmark */
@@ -217,7 +219,9 @@
           </linearGradient>
         </defs>
       </svg>
-      <div class="logo-ring-inner">L</div>
+      <div class="logo-ring-inner">
+        <img src="assets/logo.jpg" alt="LYNK" />
+      </div>
     </div>
 
     <!-- Wordmark -->

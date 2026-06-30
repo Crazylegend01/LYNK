@@ -12,6 +12,24 @@
   <script src="js/mobile-nav.js" defer></script>
 </head>
 <body>
+<div id="page-loader">
+  <div class="pl-ring">
+    <svg class="pl-spin" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="44" cy="44" r="40" stroke="url(#plGrad)" stroke-width="2" stroke-dasharray="10 7" stroke-linecap="round"/>
+      <defs>
+        <linearGradient id="plGrad" x1="0" y1="0" x2="88" y2="88" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#a855f7"/>
+          <stop offset="50%" stop-color="#06b6d4"/>
+          <stop offset="100%" stop-color="#3b82f6"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <div class="pl-ring-img"><img src="assets/logo.jpg" alt="LYNK" /></div>
+  </div>
+  <div class="pl-wordmark">LYNK</div>
+  <div class="pl-sub">By Legends</div>
+  <div class="pl-bar-wrap"><div class="pl-bar"></div></div>
+</div>
 <nav class="lynk-nav h-16 flex items-center px-4 justify-between gap-2">
   <div class="flex items-center gap-2 flex-shrink-0">
     <button id="hamburger-btn" onclick="openMobileNav()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
@@ -127,5 +145,8 @@
   <a href="ai.html"><div class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><span>AI</span></a>
 </nav>
 <script type="module" src="js/clubs.js"></script>
+<script>
+window.addEventListener('load',function(){var l=document.getElementById('page-loader');if(l){l.classList.add('pl-done');setTimeout(function(){l.remove()},450);}});
+</script>
 </body>
 </html>
