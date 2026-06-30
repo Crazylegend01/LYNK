@@ -321,7 +321,73 @@
         Save All Keys
       </button>
     </div>
-    <p class="text-sm mb-6" style="color:var(--text-secondary)">Configure API keys for each AI provider. Up to 5 keys per provider are used in rotation for load balancing and fallback. Keys are stored securely in Firestore and never exposed to users.</p>
+    <p class="text-sm mb-4" style="color:var(--text-secondary)">Configure API keys for each AI provider. Up to 5 keys per provider are used in rotation for load balancing and fallback. Keys are stored securely in Firestore and never exposed to users.</p>
+
+    <!-- Firestore Rules Setup Banner -->
+    <div class="lynk-card p-4 mb-6" style="border-color:rgba(245,158,11,0.4);background:rgba(245,158,11,0.06)">
+      <details>
+        <summary class="flex items-center gap-2 cursor-pointer text-sm font-semibold" style="color:#f59e0b;list-style:none">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          ⚠️ Getting "Permission Denied" errors when saving keys? — Click to see the fix
+        </summary>
+        <div class="mt-3 flex flex-col gap-3">
+          <p class="text-xs" style="color:var(--text-secondary)">
+            Firestore Security Rules block writes to <code style="background:rgba(168,85,247,0.15);padding:1px 5px;border-radius:4px">admin_config</code> by default.
+            Paste the rules below into your <strong>Firebase Console → Firestore → Rules</strong> tab, then click <strong>Publish</strong>.
+          </p>
+          <pre class="text-xs p-3 rounded-xl overflow-x-auto" style="background:rgba(0,0,0,0.3);color:#e2e8f0;font-family:monospace;line-height:1.6">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Public reads for posts, users, communities
+    match /{document=**} {
+      allow read: if request.auth != null;
+    }
+
+    // Admin-only writes (admin_config, settings)
+    match /admin_config/{doc} {
+      allow read, write: if request.auth != null
+        &amp;&amp; request.auth.token.admin == true;
+    }
+    match /settings/{doc} {
+      allow read, write: if request.auth != null
+        &amp;&amp; request.auth.token.admin == true;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow write: if request.auth != null
+        &amp;&amp; (request.auth.uid == userId
+            || request.auth.token.admin == true);
+    }
+
+    // Posts, reports, communities, marketplace
+    match /posts/{postId} {
+      allow write: if request.auth != null;
+    }
+    match /reports/{reportId} {
+      allow read, write: if request.auth != null
+        &amp;&amp; request.auth.token.admin == true;
+    }
+    match /communities/{doc} {
+      allow read, write: if request.auth != null;
+    }
+    match /marketplace/{doc} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}</pre>
+          <p class="text-xs" style="color:var(--text-muted)">
+            After publishing rules, also set the <code style="background:rgba(168,85,247,0.15);padding:1px 5px;border-radius:4px">admin: true</code> custom claim on your account via
+            <strong>Firebase Admin SDK</strong> or a Cloud Function — this is what grants you write access to restricted collections.
+          </p>
+          <a href="https://console.firebase.google.com" target="_blank" rel="noopener"
+             class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 self-start rounded-lg">
+            Open Firebase Console →
+          </a>
+        </div>
+      </details>
+    </div>
 
     <!-- OpenAI -->
     <div class="lynk-card p-6 mb-4">
@@ -590,7 +656,17 @@
 
   <!-- PAYMENTS -->
   <section id="section-payments" class="hidden">
-    <h1 class="text-2xl font-bold mb-6">Payments & Billing</h1>
+    <h1 class="text-2xl font-bold mb-4">Payments & Billing</h1>
+
+    <!-- Firestore Rules reminder for payments section -->
+    <div class="lynk-card p-3 mb-6 flex items-start gap-3" style="border-color:rgba(245,158,11,0.4);background:rgba(245,158,11,0.06)">
+      <svg class="flex-shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <p class="text-xs" style="color:#f59e0b">
+        If saving the Flutterwave key shows "Permission Denied", update your Firestore Security Rules to allow admin writes to the <code style="background:rgba(245,158,11,0.15);padding:1px 4px;border-radius:3px">settings</code> collection.
+        See the <strong style="cursor:pointer;text-decoration:underline" onclick="showSection('ai')">LYNK AI section</strong> for the full rules snippet.
+      </p>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
       <!-- Flutterwave Settings -->
       <div class="lynk-card p-6">
