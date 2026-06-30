@@ -43,11 +43,11 @@ async function initDashboard() {
   loadUsersTable();
   loadContentList();
   loadSecurityLogs();
-  loadReports();
   loadCommunities();
   loadAdminsList();
   loadSchools();
   loadAnnouncementsAdmin();
+  // Reports and payments load on-demand via showSection
 }
 
 // ===== SECTION SWITCHER =====
@@ -60,6 +60,8 @@ window.showSection = (id, el) => {
   if (id === 'ai') loadAiKeys();
   if (id === 'premium') loadPremium();
   if (id === 'communities') loadCommunities();
+  if (id === 'payments') loadPaymentsSection();
+  if (id === 'reports') loadReports();
 };
 
 // ===== STATS — real data =====
@@ -361,13 +363,19 @@ async function loadReports() {
   if (!list) return;
   list.innerHTML = '<div class="text-sm" style="color:var(--text-muted)">Loading reports...</div>';
   try {
-    const snap = await getDocs(query(collection(db, 'reports'), where('status','==','open'), orderBy('createdAt','desc'), limit(25)));
+    // Use simple query (no orderBy) to avoid composite index requirement; sort in JS
+    const snap = await getDocs(query(collection(db, 'reports'), where('status','==','open'), limit(50)));
+    const sortedDocs = snap.docs.sort((a, b) => {
+      const ta = a.data().createdAt?.toMillis?.() || 0;
+      const tb = b.data().createdAt?.toMillis?.() || 0;
+      return tb - ta;
+    });
     list.innerHTML = '';
-    if (snap.empty) {
+    if (sortedDocs.length === 0) {
       list.innerHTML = '<div class="lynk-card p-6 text-center text-sm" style="color:var(--text-secondary)">No open reports. All clear!</div>';
       return;
     }
-    for (const d of snap.docs) {
+    for (const d of sortedDocs) {
       const r = d.data();
       const ts = r.createdAt?.toDate?.()?.toLocaleDateString() || '';
       // Fetch the reported post content if possible
@@ -407,7 +415,15 @@ async function loadReports() {
         </div>`);
     }
   } catch (e) {
-    list.innerHTML = `<div class="lynk-card p-4 text-sm" style="color:var(--text-muted)">Error loading reports: ${e.message}</div>`;
+    if (e.message && e.message.includes('index')) {
+      list.innerHTML = `<div class="lynk-card p-4 text-sm" style="color:var(--text-muted)">
+        <p class="font-medium mb-1">⚠️ Firestore index required</p>
+        <p>Please create a composite index for the <code>reports</code> collection: <code>status</code> (Ascending) + <code>createdAt</code> (Descending) in your Firebase Console.</p>
+        <p class="mt-2" style="color:var(--text-muted)">Error: ${e.message}</p>
+      </div>`;
+    } else {
+      list.innerHTML = `<div class="lynk-card p-4 text-sm" style="color:var(--text-muted)">Error loading reports: ${e.message}</div>`;
+    }
   }
 }
 
@@ -957,7 +973,7 @@ function escHtml(s) {
 
 
 // ===== PAYMENTS SECTION =====
-async function loadPaymentsSection() {
+window.loadPaymentsSection = async function loadPaymentsSection() {
   try {
     const snap = await getDoc(doc(db, 'settings', 'payments'));
     const data = snap.data() || {};
@@ -976,7 +992,7 @@ async function loadPaymentsSection() {
     }
   } catch { /* first load */ }
   loadPaymentLogs();
-}
+};
 
 window.saveFlutterwaveSettings = async () => {
   const pk  = document.getElementById('fw-public-key')?.value.trim();

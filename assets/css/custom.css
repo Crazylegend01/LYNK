@@ -932,3 +932,17 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 }
 .integration-status-dot.active { background: #22c55e; }
 .integration-status-dot.inactive { background: var(--text-muted); }
+
+/* System Theme Swatch */
+.theme-swatch-system {
+  background: linear-gradient(135deg, #020817 50%, #f8fafc 50%);
+  border: 2px solid var(--border);
+}
+.theme-swatch-system.selected {
+  box-shadow: 0 0 0 3px var(--grad-1);
+}
+
+/* Page loader - ensure it applies correct theme bg */
+[data-theme="light"] #lynk-page-loader {
+  background: #f8fafc;
+}

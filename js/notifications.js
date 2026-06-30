@@ -33,11 +33,8 @@ let _baseTitleSet = false;
 // ===== INIT — call on every page after auth =====
 export async function initNotifications(uid) {
   currentUid = uid;
-  // Only inject bell on home/feed page
-  if (_isFeedPage) {
-    renderNotificationBell();
-    injectSidebarBadges();
-  }
+  renderNotificationBell();
+  injectSidebarBadges();
   listenForNotifications(uid);
   await setupFCM(uid);
   if (Notification.permission === 'default') {
@@ -75,12 +72,16 @@ function renderNotificationBell() {
       </div>
     </div>`;
 
-  // Insert before avatar (last child of right icons section)
-  const navRight = nav.querySelector('.flex.items-center.gap-2');
-  if (navRight) {
-    navRight.insertBefore(bellWrapper, navRight.firstChild);
+  // Inject into mobile-bell-slot on mobile, or the last flex group on desktop
+  const mobileBellSlot = document.getElementById('mobile-bell-slot');
+  if (mobileBellSlot) {
+    mobileBellSlot.appendChild(bellWrapper);
   } else {
-    nav.appendChild(bellWrapper);
+    // Fallback: inject into the last flex-shrink-0 group in the nav
+    const navGroups = nav.querySelectorAll('.flex.items-center.gap-2.flex-shrink-0');
+    const navRight = navGroups[navGroups.length - 1] || nav.querySelector('.flex.items-center.gap-2');
+    if (navRight) navRight.insertBefore(bellWrapper, navRight.firstChild);
+    else nav.appendChild(bellWrapper);
   }
 
   document.addEventListener('click', (e) => {

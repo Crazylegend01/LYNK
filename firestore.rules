@@ -28,9 +28,6 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if true;
       allow create: if isOwner(userId);
-      // Only super admins may promote/demote (change role or adminRole).
-      // Any admin can update other user fields (suspend, badge, etc.).
-      // Users can update their own non-admin fields.
       allow update: if
         isSuperAdmin() ||
         (isOwner(userId) && !isChangingAdminFields()) ||
@@ -80,53 +77,29 @@ service cloud.firestore {
     match /notifications/{notifId} {
       allow read: if isSignedIn() && resource.data.toUid == request.auth.uid;
       allow create: if isSignedIn() && isNotSuspended();
-      allow update: if isSignedIn() && (resource.data.toUid == request.auth.uid || isAdmin());
+      allow update: if isSignedIn() && resource.data.toUid == request.auth.uid;
       allow delete: if isSignedIn() && (resource.data.toUid == request.auth.uid || isAdmin());
     }
 
-    // ===== FCM TOKENS =====
-    match /fcmTokens/{uid} {
-      allow read: if isAdmin() || isOwner(uid);
-      allow write: if isOwner(uid);
-    }
-
-    // ===== PUSH NOTIFICATION QUEUE =====
-    match /pushQueue/{docId} {
+    // ===== USER NOTIFICATIONS (subcollection) =====
+    match /users/{userId}/notifications/{notifId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
       allow create: if isSignedIn();
-      allow read, update, delete: if isAdmin();
-    }
-
-    // ===== SCHOOLS =====
-    match /schools/{schoolId} {
-      allow read: if true;
-      allow create, update: if isAdmin();
-      allow delete: if isSuperAdmin();
+      allow update: if isSignedIn() && request.auth.uid == userId;
+      allow delete: if isSignedIn() && request.auth.uid == userId;
     }
 
     // ===== COMMUNITIES =====
-    match /communities/{communityId} {
+    match /communities/{commId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && isNotSuspended();
-      allow update: if isSignedIn();
-      allow delete: if isSuperAdmin();
-    }
-
-    match /communityMembers/{docId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn();
-    }
-
-    // ===== MARKETPLACE =====
-    match /marketplaceListings/{listingId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && isNotSuspended();
-      allow update: if isSignedIn() && (resource.data.sellerId == request.auth.uid || isAdmin());
-      allow delete: if isSignedIn() && (resource.data.sellerId == request.auth.uid || isAdmin());
-    }
-
-    match /savedListings/{docId} {
-      allow create: if isSignedIn();
-      allow read, write: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow update: if isSignedIn() && (resource.data.createdBy == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && (resource.data.createdBy == request.auth.uid || isAdmin());
+      match /members/{memberId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn();
+        allow delete: if isSignedIn() && (request.auth.uid == memberId || isAdmin());
+      }
     }
 
     // ===== EVENTS =====
@@ -137,11 +110,6 @@ service cloud.firestore {
       allow delete: if isSignedIn() && (resource.data.createdBy == request.auth.uid || isAdmin());
     }
 
-    match /eventRsvps/{docId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn();
-    }
-
     // ===== CLUBS =====
     match /clubs/{clubId} {
       allow read: if isSignedIn();
@@ -150,15 +118,39 @@ service cloud.firestore {
       allow delete: if isSignedIn() && (resource.data.createdBy == request.auth.uid || isAdmin());
     }
 
-    match /clubMembers/{docId} {
+    // ===== MARKETPLACE =====
+    match /listings/{listingId} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn();
+      allow create: if isSignedIn() && isNotSuspended();
+      allow update: if isSignedIn() && (resource.data.sellerId == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && (resource.data.sellerId == request.auth.uid || isAdmin());
     }
 
-    // ===== PREMIUM SUBSCRIPTIONS =====
-    match /premiumSubscriptions/{uid} {
-      allow read: if isOwner(uid) || isAdmin();
-      allow write: if isSuperAdmin();
+    // ===== ANNOUNCEMENTS =====
+    match /announcements/{annId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ===== SCHOOLS =====
+    match /schools/{schoolId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ===== PAYMENT LOGS =====
+    match /paymentLogs/{logId} {
+      allow read: if isAdmin() || resource.data.uid == request.auth.uid;
+      allow create: if isSignedIn();
+      allow update, delete: if isSuperAdmin();
+    }
+
+    // ===== PREMIUM =====
+    match /premium/{docId} {
+      allow read: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow write: if isAdmin();
     }
 
     // ===== AI USAGE =====
@@ -171,10 +163,10 @@ service cloud.firestore {
       allow read: if isAdmin();
     }
 
-    // ===== SETTINGS (AI keys, payment keys) =====
+    // ===== SETTINGS (AI keys, payment keys) — any admin can read/write =====
     match /settings/{docId} {
       allow read: if isSignedIn();
-      allow write: if isSuperAdmin();
+      allow write: if isAdmin();
     }
 
     // ===== REPORTS =====
@@ -194,15 +186,7 @@ service cloud.firestore {
 
     // ===== ADMIN CONFIG =====
     match /adminConfig/{docId} {
-      allow read, write: if isSuperAdmin();
-    }
-
-    // ===== ANNOUNCEMENTS =====
-    match /announcements/{annId} {
-      allow read: if isSignedIn();
-      allow create: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow read, write: if isAdmin();
     }
 
     // ===== BLOCKS =====

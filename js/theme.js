@@ -16,10 +16,11 @@ export const ThemeManager = {
     ocean:    { g1: '#06b6d4', g2: '#0ea5e9', g3: '#6366f1' },
     forest:   { g1: '#22c55e', g2: '#10b981', g3: '#06b6d4' },
     midnight: { g1: '#818cf8', g2: '#c084fc', g3: '#f472b6' },
+  system:   { g1: '#a855f7', g2: '#06b6d4', g3: '#3b82f6' },
   },
 
   init() {
-    const saved = localStorage.getItem('lynk-theme') || 'dark';
+    const saved = localStorage.getItem('lynk-theme') || 'system';
     this.apply(saved);
     this.loadGradient();
     this.bindToggle();
@@ -27,11 +28,17 @@ export const ThemeManager = {
   },
 
   apply(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('lynk-theme', theme);
+    let resolved = theme;
+    if (theme === 'system') {
+      resolved = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    }
+    document.documentElement.setAttribute('data-theme', resolved);
+    document.documentElement.setAttribute('data-theme-pref', theme);
     // Apply theme gradient colors
-    if (this.themes[theme]) {
-      const t = this.themes[theme];
+    const effectiveTheme = this.themes[theme] ? theme : resolved;
+    if (this.themes[effectiveTheme]) {
+      const t = this.themes[effectiveTheme];
       // Only auto-set gradient if user hasn't customized
       const hasCustom = localStorage.getItem('lynk-custom-gradient');
       if (!hasCustom) {
@@ -49,8 +56,13 @@ export const ThemeManager = {
   },
 
   toggle() {
-    const current = localStorage.getItem('lynk-theme') || 'dark';
-    this.apply(current === 'dark' ? 'light' : 'dark');
+    const current = localStorage.getItem('lynk-theme') || 'system';
+    if (current === 'system') {
+      const resolved = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      this.apply(resolved === 'dark' ? 'light' : 'dark');
+    } else {
+      this.apply(current === 'dark' ? 'light' : 'dark');
+    }
   },
 
   loadGradient() {

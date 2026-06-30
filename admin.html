@@ -19,10 +19,7 @@
     <button id="hamburger-btn" onclick="openMobileNav()" aria-label="Open menu">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
-    <a href="feed.html" class="flex flex-col leading-none">
-      <span class="logo-text">LYNK</span>
-      <span class="logo-sub">By Legends</span>
-    </a>
+    <span class="flex flex-col leading-none cursor-default"><span class="logo-text">LYNK</span><span class="logo-sub">By Legends</span></span>
   </div>
   <div class="flex items-center gap-3">
     <span id="admin-role-badge" class="lynk-badge lynk-gradient text-white text-xs">Admin</span>
@@ -586,6 +583,85 @@
             <tr><td colspan="6" class="p-8 text-center" style="color:var(--text-muted)">Loading subscribers…</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- PAYMENTS -->
+  <section id="section-payments" class="hidden">
+    <h1 class="text-2xl font-bold mb-6">Payments & Billing</h1>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <!-- Flutterwave Settings -->
+      <div class="lynk-card p-6">
+        <h3 class="font-semibold mb-4 flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--grad-2)"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          Flutterwave Gateway
+        </h3>
+        <div class="flex flex-col gap-3">
+          <div>
+            <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Public Key</label>
+            <input type="text" id="fw-public-key" class="lynk-input text-sm font-mono" placeholder="FLWPUBK_TEST-xxxxxxxxxxxxxxxxxxxxxxxx-X or FLWPUBK-xxxxxxxxxxxxxxxxxxxxxxxx-X" />
+            <p class="text-xs mt-1" style="color:var(--text-muted)">Starts with <code>FLWPUBK_TEST-</code> (sandbox) or <code>FLWPUBK-</code> (live)</p>
+          </div>
+          <div>
+            <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Secret Key (stored server-side only)</label>
+            <input type="password" id="fw-secret-key" class="lynk-input text-sm font-mono" placeholder="FLWSECK_TEST-xxxxxxxxxxxxxxxxxxxxxxxx-X" autocomplete="new-password" />
+            <p class="text-xs mt-1" style="color:var(--text-muted)">Starts with <code>FLWSECK_TEST-</code> (sandbox) or <code>FLWSECK-</code> (live)</p>
+          </div>
+          <div>
+            <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Currency</label>
+            <select id="fw-currency" class="lynk-input text-sm">
+              <option value="NGN">NGN — Nigerian Naira (₦)</option>
+              <option value="GHS">GHS — Ghanaian Cedi (₵)</option>
+              <option value="USD">USD — US Dollar ($)</option>
+              <option value="KES">KES — Kenyan Shilling</option>
+              <option value="ZAR">ZAR — South African Rand</option>
+              <option value="TZS">TZS — Tanzanian Shilling</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-3">
+            <button onclick="saveFlutterwaveSettings()" class="lynk-btn lynk-btn-primary text-sm py-2.5 rounded-xl flex-1">Save Keys</button>
+            <span id="fw-save-status" class="hidden text-xs text-green-500 font-medium">✅ Saved!</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pricing -->
+      <div class="lynk-card p-6">
+        <h3 class="font-semibold mb-4 flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--grad-1)"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Premium Pricing
+        </h3>
+        <div class="flex flex-col gap-3">
+          <div>
+            <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Weekly Price</label>
+            <input type="number" id="price-weekly" class="lynk-input text-sm" placeholder="e.g. 1000 (NGN)" value="1000" />
+          </div>
+          <div>
+            <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Monthly Price</label>
+            <input type="number" id="price-monthly" class="lynk-input text-sm" placeholder="e.g. 3500 (NGN)" value="3500" />
+          </div>
+          <div>
+            <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Quarterly Price</label>
+            <input type="number" id="price-quarterly" class="lynk-input text-sm" placeholder="e.g. 9000 (NGN)" value="9000" />
+          </div>
+          <button onclick="savePaymentPricing()" class="lynk-btn lynk-btn-primary text-sm py-2.5 rounded-xl">Update Prices</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transaction Logs -->
+    <div class="lynk-card p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--grad-3)"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Transaction Logs
+        </h3>
+        <button onclick="loadPaymentLogs()" class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-lg">Refresh</button>
+      </div>
+      <div id="payment-logs-list">
+        <p class="text-sm text-center py-6" style="color:var(--text-muted)">Loading transactions...</p>
       </div>
     </div>
   </section>
