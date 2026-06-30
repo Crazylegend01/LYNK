@@ -659,12 +659,23 @@ async function loadSuggestions() {
   const mobList = document.getElementById('mobile-suggestions');
   if (!deskList && !mobList) return;
 
+  // Build a set of UIDs to exclude: self + existing friends + pending requests
+  const excludeUids = new Set([currentUser.uid]);
+  try {
+    const [fromSnap, toSnap] = await Promise.all([
+      getDocs(query(collection(db, 'friends'), where('from', '==', currentUser.uid))),
+      getDocs(query(collection(db, 'friends'), where('to',   '==', currentUser.uid))),
+    ]);
+    fromSnap.docs.forEach(d => excludeUids.add(d.data().to));
+    toSnap.docs.forEach(d => excludeUids.add(d.data().from));
+  } catch (_) {}
+
   const snap = await getDocs(query(
     collection(db, 'users'),
     where('university', '==', currentUserData.university || ''),
-    limit(10)
+    limit(20)
   ));
-  const users = snap.docs.filter(d => d.id !== currentUser.uid).slice(0, 6);
+  const users = snap.docs.filter(d => !excludeUids.has(d.id)).slice(0, 6);
   if (users.length === 0) return;
 
   [deskList, mobList].forEach(list => {

@@ -184,8 +184,12 @@ service cloud.firestore {
       allow update, delete: if isSuperAdmin();
     }
 
-    // ===== ADMIN CONFIG =====
+    // ===== ADMIN CONFIG (both naming conventions) =====
     match /adminConfig/{docId} {
+      allow read, write: if isAdmin();
+    }
+    // snake_case alias used by admin.js (admin_config collection)
+    match /admin_config/{docId} {
       allow read, write: if isAdmin();
     }
 

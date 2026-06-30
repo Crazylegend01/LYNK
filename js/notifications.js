@@ -118,6 +118,12 @@ function listenForNotifications(uid) {
     updateBadges(count);
     renderNotifList(snap.docs);
     updateTabTitle(count);
+  }, (err) => {
+    // Query failed (e.g. missing composite index) — clear the loading state
+    const list = document.getElementById('notif-list');
+    if (list && list.textContent.trim() === 'Loading...') {
+      list.innerHTML = '<div class="p-6 text-center text-sm" style="color:var(--text-muted)">No new notifications</div>';
+    }
   });
 }
 
