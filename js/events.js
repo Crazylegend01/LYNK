@@ -50,13 +50,19 @@ async function loadEvents() {
       const snaps = await Promise.all(ids.map(id => getDoc(doc(db, 'events', id))));
       allEvents = snaps.filter(s => s.exists()).map(s => ({ id: s.id, ...s.data() }));
     } else if (currentFilter === 'created') {
-      q = query(collection(db, 'events'), where('createdBy', '==', currentUser.uid), orderBy('date', 'desc'), limit(20));
+      q = query(collection(db, 'events'), where('createdBy', '==', currentUser.uid), limit(20));
       const snap = await getDocs(q);
-      allEvents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      allEvents = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (b.date?.toMillis?.() || 0) - (a.date?.toMillis?.() || 0));
     } else if (currentFilter === 'past') {
-      q = query(collection(db, 'events'), where('university', '==', currentUserData.university || ''), where('date', '<', Timestamp.fromDate(now)), orderBy('date', 'desc'), limit(20));
+      // Remove university where-clause to avoid needing composite index; filter client-side
+      q = query(collection(db, 'events'), where('date', '<', Timestamp.fromDate(now)), orderBy('date', 'desc'), limit(20));
       const snap = await getDocs(q);
-      allEvents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const uni = currentUserData.university || '';
+      allEvents = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(e => !uni || e.university === uni);
     } else {
       // upcoming — global (no date filter to avoid composite index)
       q = query(collection(db, 'events'), orderBy('date', 'asc'), limit(40));
