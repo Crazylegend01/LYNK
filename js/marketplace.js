@@ -57,7 +57,7 @@ async function loadListings() {
   try {
     let q;
     if (currentMarketTab === 'mine') {
-      q = query(collection(db, 'marketplaceListings'), where('sellerId', '==', currentUser.uid), orderBy('createdAt', 'desc'), limit(30));
+      q = query(collection(db, 'marketplaceListings'), where('sellerId', '==', currentUser.uid), limit(30));
     } else if (currentMarketTab === 'saved') {
       const savedSnap = await getDocs(query(collection(db, 'savedListings'), where('uid', '==', currentUser.uid), limit(20)));
       const ids = savedSnap.docs.map(d => d.data().listingId);
@@ -67,11 +67,13 @@ async function loadListings() {
       renderListings(filterByCat(allListings));
       return;
     } else {
-      q = query(collection(db, 'marketplaceListings'), where('status', '==', 'active'), orderBy('createdAt', 'desc'), limit(50));
+      q = query(collection(db, 'marketplaceListings'), where('status', '==', 'active'), limit(50));
     }
 
     const snap = await getDocs(q);
-    allListings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allListings = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
     renderListings(filterByCat(allListings));
   } catch (err) {
     console.warn('Listings error:', err.message);
