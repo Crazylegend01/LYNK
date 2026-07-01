@@ -208,3 +208,33 @@ window.signOut = async () => {
 };
 
 function getCheck(id) { return document.getElementById(id)?.checked ?? false; }
+
+// ===== MISSING WINDOW ALIASES (functions called from settings.html) =====
+
+// Tab switching — HTML calls showSettingsTab(), JS defines showSection()
+window.showSettingsTab = window.showSection;
+
+// Also expose saveProfile and saveNotifPrefs aliases
+window.saveProfile = window.saveProfileSettings;
+window.savePrivacy = window.savePrivacySettings;
+window.saveNotifPrefs = window.saveNotificationSettings;
+
+// Theme functions — ThemeManager is imported above
+window.applySettingsTheme = (theme) => ThemeManager.apply(theme);
+window.resetGradient = () => ThemeManager.resetGradient();
+
+window.saveCustomGradient = () => {
+  const s1 = document.getElementById('picker-g1')?.value || ThemeManager.defaults.g1;
+  const s2 = document.getElementById('picker-g2')?.value || ThemeManager.defaults.g2;
+  const s3 = document.getElementById('picker-g3')?.value || ThemeManager.defaults.g3;
+  ThemeManager.applyGradient(s1, s2, s3, true);
+  showToast('Gradient Applied! 🎨', 'Your custom gradient has been saved.', '');
+};
+
+window.setFontSize = (size) => {
+  const map = { small: '13px', normal: '15px', large: '18px' };
+  document.documentElement.style.setProperty('--base-font-size', map[size] || '15px');
+  localStorage.setItem('lynk-font-size', size);
+  document.querySelectorAll('[data-font-btn]').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-font-btn="${size}"]`)?.classList.add('active');
+};
