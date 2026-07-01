@@ -320,14 +320,16 @@ window.loadEditDepartments = (faculty) => {
 async function loadProfilePosts() {
   const container = document.getElementById('tab-posts');
   container.innerHTML = `<div class="lynk-card p-5 animate-pulse"><div class="h-4 rounded w-3/4 mb-2" style="background:var(--border)"></div><div class="h-4 rounded w-1/2" style="background:var(--border)"></div></div>`;
-  const q = query(collection(db, 'posts'), where('authorId','==',profileUid), orderBy('createdAt','desc'), limit(20));
+  try {
+  const q = query(collection(db, 'posts'), where('authorId','==',profileUid), limit(20));
   const snap = await getDocs(q);
+  const docs = [...snap.docs].sort((a,b) => (b.data().createdAt?.toMillis?.() || 0) - (a.data().createdAt?.toMillis?.() || 0));
   if (snap.empty) {
     container.innerHTML = `<div class="lynk-card p-8 text-center"><div class="text-4xl mb-3">📭</div><p style="color:var(--text-secondary);font-size:0.875rem">${isOwnProfile ? "You haven't posted anything yet." : "No posts yet."}</p></div>`;
     return;
   }
   container.innerHTML = '';
-  snap.docs.forEach(d => {
+  docs.forEach(d => {
     const data = d.data();
     const ts = data.createdAt?.toDate?.()?.toLocaleString() || '';
     container.insertAdjacentHTML('beforeend', `
@@ -341,6 +343,9 @@ async function loadProfilePosts() {
         </div>
       </div>`);
   });
+  } catch (err) {
+    container.innerHTML = `<div class="lynk-card p-8 text-center"><p style="color:var(--text-muted);font-size:0.875rem">Error loading posts. Try again.</p></div>`;
+  }
 }
 
 // ===== FRIENDS =====
