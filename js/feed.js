@@ -100,7 +100,8 @@ async function loadFeed(reset = true) {
   let q;
 
   if (currentFilter === 'faculty' && currentUserData.faculty) {
-    q = query(postsRef, where('faculty', '==', currentUserData.faculty), orderBy('createdAt', 'desc'), limit(50));
+    // Simple where-only query; sort client-side to avoid needing a composite index
+    q = query(postsRef, where('faculty', '==', currentUserData.faculty), limit(50));
   } else if (currentFilter === 'trending') {
     q = query(postsRef, orderBy('likesCount', 'desc'), limit(50));
   } else if (!reset && lastPostDoc) {
