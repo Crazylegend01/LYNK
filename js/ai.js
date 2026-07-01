@@ -243,7 +243,11 @@ function generateLocalResponse(message, mode) {
   };
 
   const modeResponses = responses[mode] || responses.chat;
-  return modeResponses[Math.floor(Math.random() * modeResponses.length)];
+  // If it's an array, pick randomly; if it's a string, return it directly
+  if (Array.isArray(modeResponses)) {
+    return modeResponses[Math.floor(Math.random() * modeResponses.length)];
+  }
+  return modeResponses;
 }
 
 // ===== UI HELPERS =====
@@ -340,7 +344,8 @@ window.switchAIMode = (mode) => {
   if (subtitle) subtitle.textContent = config.subtitle;
 
   // Show/hide panels
-  const views = ['flashcards-view', 'quiz-view', 'career-view', 'studyplan-view', 'chat-view'];
+  // chat-view is never hidden — it holds the input textarea and ai-messages
+  const views = ['flashcards-view', 'quiz-view', 'career-view', 'studyplan-view'];
   views.forEach(v => document.getElementById(v)?.classList.add('hidden'));
   document.getElementById('ai-upload-panel')?.classList.add('hidden');
 

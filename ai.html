@@ -139,13 +139,23 @@
     </div>
 
     <!-- FLASHCARDS VIEW -->
-    <div id="flashcards-view" class="hidden flex-1 overflow-y-auto">
-      <div id="flashcards-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4"></div>
+    <div id="flashcards-view" class="hidden overflow-y-auto">
+      <div class="lynk-card p-4 mb-3 text-center" style="border-style:dashed">
+        <p class="text-sm font-semibold mb-1">📄 Upload your notes above, then tap Generate</p>
+        <p class="text-xs mb-3" style="color:var(--text-muted)">Or type a topic in the box below and tap send</p>
+        <button onclick="sendQuickPrompt('Generate 10 flashcards from the uploaded document or topic I mentioned. Format each as FRONT: [question] | BACK: [answer]')" class="lynk-btn lynk-btn-primary text-sm py-2 px-5">⚡ Generate Flashcards</button>
+      </div>
+      <div id="flashcards-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2"></div>
     </div>
 
     <!-- QUIZ VIEW -->
-    <div id="quiz-view" class="hidden flex-1 overflow-y-auto">
-      <div id="quiz-container" class="py-4"></div>
+    <div id="quiz-view" class="hidden overflow-y-auto">
+      <div class="lynk-card p-4 mb-3 text-center" style="border-style:dashed">
+        <p class="text-sm font-semibold mb-1">📄 Upload your notes above, then tap Generate</p>
+        <p class="text-xs mb-3" style="color:var(--text-muted)">Or type a topic in the box below and tap send</p>
+        <button onclick="sendQuickPrompt('Generate 10 multiple choice quiz questions from the uploaded document or topic I mentioned')" class="lynk-btn lynk-btn-primary text-sm py-2 px-5">⚡ Generate Quiz</button>
+      </div>
+      <div id="quiz-container" class="py-2"></div>
     </div>
 
     <!-- CAREER VIEW -->
