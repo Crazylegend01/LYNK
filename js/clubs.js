@@ -123,7 +123,8 @@ window.openClub = async (clubId) => {
 
   const isMember = (await getDoc(doc(db, 'clubMembers', `${clubId}_${currentUser.uid}`))).exists();
   const membersSnap = await getDocs(query(collection(db, 'clubMembers'), where('clubId', '==', clubId), limit(20)));
-  const postsSnap = await getDocs(query(collection(db, 'clubPosts'), where('clubId', '==', clubId), orderBy('createdAt', 'desc'), limit(10)));
+  const postsSnap = await getDocs(query(collection(db, 'clubPosts'), where('clubId', '==', clubId), limit(10)));
+  postsSnap.docs.sort((a, b) => (b.data().createdAt?.toMillis?.() || 0) - (a.data().createdAt?.toMillis?.() || 0));
 
   const membersHtml = membersSnap.docs.map(d => {
     const m = d.data();
