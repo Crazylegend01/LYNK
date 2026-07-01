@@ -562,3 +562,14 @@ window.confirmDeleteAccount = async () => {
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ===== PROFILE TAB SWITCHING (called from HTML as setProfileTab) =====
+window.setProfileTab = (tab, btn) => {
+  ['posts', 'friends', 'about'].forEach(t => {
+    document.getElementById(`tab-${t}`)?.classList.add('hidden');
+    document.getElementById(`tab-btn-${t}`)?.classList.remove('active');
+  });
+  document.getElementById(`tab-${tab}`)?.classList.remove('hidden');
+  if (btn) btn.classList.add('active');
+  else document.getElementById(`tab-btn-${tab}`)?.classList.add('active');
+};
