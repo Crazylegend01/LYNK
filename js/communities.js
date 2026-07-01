@@ -95,18 +95,20 @@ async function loadCommunities(tab) {
       const snap = await getDocs(query(
         collection(db, 'communities'),
         where('type', 'in', ['group', 'club', 'study', 'private']),
-        orderBy('memberCount', 'desc'),
         limit(30)
       ));
-      communities = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      communities = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (b.memberCount || 0) - (a.memberCount || 0));
 
     } else {
       const snap = await getDocs(query(
         collection(db, 'communities'),
-        orderBy('memberCount', 'desc'),
         limit(50)
       ));
-      communities = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      communities = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (b.memberCount || 0) - (a.memberCount || 0));
     }
 
     allCommunities = communities;
@@ -296,9 +298,9 @@ async function loadCommunityAnnouncements(container) {
   const snap = await getDocs(query(
     collection(db, 'communities', activeCommunityId, 'posts'),
     where('type', '==', 'announcement'),
-    orderBy('createdAt', 'desc'),
     limit(20)
   ));
+  snap.docs.sort((a, b) => (b.data().createdAt?.toMillis?.() || 0) - (a.data().createdAt?.toMillis?.() || 0));
   if (snap.empty) { container.innerHTML = '<div class="text-center py-10" style="color:var(--text-muted)">No announcements yet.</div>'; return; }
   container.innerHTML = '';
   snap.docs.forEach(d => {
@@ -349,9 +351,13 @@ async function loadCommunityEvents(container) {
   const snap = await getDocs(query(
     collection(db, 'events'),
     where('communityId', '==', activeCommunityId),
-    orderBy('date', 'asc'),
     limit(10)
   ));
+  snap.docs.sort((a, b) => {
+    const aDate = a.data().date?.toMillis?.() || 0;
+    const bDate = b.data().date?.toMillis?.() || 0;
+    return aDate - bDate;
+  });
   if (snap.empty) { container.innerHTML = '<div class="text-center py-10" style="color:var(--text-muted)">No events for this community yet.</div>'; return; }
   container.innerHTML = '';
   snap.docs.forEach(d => {
