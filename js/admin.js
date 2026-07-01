@@ -1035,7 +1035,7 @@ window.savePaymentPricing = async () => {
   } catch (e) { alert('Error: ' + e.message); }
 };
 
-async function loadPaymentLogs() {
+window.loadPaymentLogs = async function loadPaymentLogs() {
   const el = document.getElementById('payment-logs-list');
   if (!el) return;
   try {
