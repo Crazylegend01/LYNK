@@ -182,14 +182,16 @@
   });
 
   function listenNotifications(uid) {
+    // Simple where-only query to avoid needing a composite index; sort client-side
     const q = query(
       collection(db, 'notifications'),
       where('toUid', '==', uid),
-      orderBy('createdAt', 'desc'),
       limit(100)
     );
     onSnapshot(q, (snap) => {
-      allNotifications = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      allNotifications = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
       renderFull(allNotifications, currentFilter);
     });
   }
