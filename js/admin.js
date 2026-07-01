@@ -780,7 +780,7 @@ async function loadMarketplace() {
   if(!tbody) return;
   tbody.innerHTML='<tr><td colspan="6" class="p-8 text-center" style="color:var(--text-muted)">Loading…</td></tr>';
   try {
-    const snap = await getDocs(query(collection(db,'marketplace'),orderBy('createdAt','desc')));
+    const snap = await getDocs(query(collection(db,'marketplaceListings'),orderBy('createdAt','desc')));
     _allListings = snap.docs.map(d=>({id:d.id,...d.data()}));
     const el=document.getElementById('mkt-total');   if(el) el.textContent=_allListings.length;
     const ep=document.getElementById('mkt-pending'); if(ep) ep.textContent=_allListings.filter(l=>l.status==='pending').length;
