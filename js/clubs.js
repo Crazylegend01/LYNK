@@ -53,9 +53,11 @@ async function loadClubs() {
       const snap = await getDocs(q);
       allClubs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     } else {
-      q = query(collection(db, 'clubs'), where('category', '==', currentFilter), orderBy('memberCount', 'desc'), limit(30));
+      q = query(collection(db, 'clubs'), where('category', '==', currentFilter), limit(30));
       const snap = await getDocs(q);
-      allClubs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      allClubs = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (b.memberCount || 0) - (a.memberCount || 0));
     }
 
     renderClubs(allClubs);
