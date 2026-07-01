@@ -18,6 +18,9 @@ const _firestoreFns = { collection, query, where, getDocs };
 
 ThemeManager.init();
 
+// Expose quickTheme globally so onclick="quickTheme(...)" in feed.html works
+window.quickTheme = (theme) => ThemeManager.apply(theme);
+
 let currentUser = null;
 let currentUserData = null;
 let lastPostDoc = null;
