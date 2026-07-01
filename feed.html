@@ -47,11 +47,10 @@
       <input type="file" class="hidden" accept="*/*" onchange="pickPostMedia(this);document.getElementById('post-content').focus();" />
     </label>
 
-    <!-- Mobile ONLY: + upload button -->
-    <label class="lynk-plus-btn md:hidden cursor-pointer" title="Add Photo/Video" aria-label="Upload media">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      <input type="file" class="hidden" accept="*/*" onchange="pickPostMedia(this);document.getElementById('post-content').focus();" />
-    </label>
+    <!-- Mobile ONLY: Explore compass button (swapped with bottom-nav centre) -->
+    <button class="lynk-plus-btn md:hidden cursor-pointer" onclick="toggleExploreFab()" title="Explore" aria-label="Explore">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+    </button>
 
     <a href="profile.html" class="relative flex-shrink-0">
       <img id="nav-avatar" src="https://ui-avatars.com/api/?name=User&background=a855f7&color=fff" class="lynk-avatar w-9 h-9 cursor-pointer" alt="Profile" />
@@ -388,13 +387,14 @@
     <span class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
     Search
   </a>
-  <!-- Centre compass/explore button -->
-  <button style="background:none;border:none;color:inherit;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;flex:1;padding:6px 0;border-radius:8px" onclick="toggleExploreFab()">
+  <!-- Centre + create post button (swapped with top-nav explore) -->
+  <label style="background:none;border:none;color:inherit;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;flex:1;padding:6px 0;border-radius:8px">
     <span class="bnav-plus">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </span>
-    <span style="font-size:0.6rem;color:var(--text-muted)">Explore</span>
-  </button>
+    <span style="font-size:0.6rem;color:var(--text-muted)">Create</span>
+    <input type="file" class="hidden" accept="*/*" onchange="pickPostMedia(this);document.getElementById('post-content')?.focus();" />
+  </label>
   <a href="chat.html">
     <span class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
     Chat
