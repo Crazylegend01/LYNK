@@ -238,3 +238,13 @@ window.setFontSize = (size) => {
   document.querySelectorAll('[data-font-btn]').forEach(b => b.classList.remove('active'));
   document.querySelector(`[data-font-btn="${size}"]`)?.classList.add('active');
 };
+
+window.previewAvatar = (input) => {
+  const file = input.files?.[0];
+  if (!file) return;
+  const preview = document.getElementById('profile-avatar-preview');
+  if (!preview) return;
+  const reader = new FileReader();
+  reader.onload = (e) => { preview.src = e.target.result; };
+  reader.readAsDataURL(file);
+};
