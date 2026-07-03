@@ -621,6 +621,23 @@ body {
   0%, 100% { transform: scale(1); }
   50%       { transform: scale(0.92); }
 }
+/* AI message copy button */
+.ai-bot-wrapper {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+}
+.ai-msg-actions {
+  display: flex; gap: 6px; padding-left: 4px;
+}
+.ai-copy-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.7rem; color: var(--text-muted);
+  background: none; border: none; cursor: pointer; padding: 2px 6px;
+  border-radius: 6px; transition: color 0.15s, background 0.15s;
+}
+.ai-copy-btn:hover {
+  color: var(--grad-1);
+  background: rgba(168,85,247,0.08);
+}
 .ai-tool-chip {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 8px 16px; border-radius: 20px; cursor: pointer;

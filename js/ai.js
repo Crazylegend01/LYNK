@@ -362,20 +362,43 @@ function appendUserMessage(text) {
 
 function appendBotMessage(text) {
   const container = document.getElementById('ai-messages');
-  const el = document.createElement('div');
-  el.className = 'ai-message-bot fade-in';
+  const wrapper = document.createElement('div');
+  wrapper.className = 'ai-bot-wrapper fade-in';
 
-  // Format markdown-like text
   const formatted = text
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/`(.+?)`/g, '<code>$1</code>')
     .replace(/\n/g, '<br>');
 
-  el.innerHTML = formatted;
-  container.appendChild(el);
+  wrapper.innerHTML = `
+    <div class="ai-message-bot">${formatted}</div>
+    <div class="ai-msg-actions">
+      <button class="ai-copy-btn" title="Copy response" onclick="copyAIMessage(this, ${JSON.stringify(text)})">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        Copy
+      </button>
+    </div>`;
+
+  container.appendChild(wrapper);
   container.scrollTop = container.scrollHeight;
 }
+
+window.copyAIMessage = (btn, text) => {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+    btn.style.color = '#22c55e';
+    setTimeout(() => {
+      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy`;
+      btn.style.color = '';
+    }, 2000);
+  }).catch(() => {
+    btn.textContent = 'Failed';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+  });
+};
 
 let _aiTimerInterval = null;
 let _aiTimerStart   = null;
