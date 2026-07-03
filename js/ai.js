@@ -20,8 +20,10 @@ let chatHistory = [];
 let aiSettings = null;
 let uploadedFileContent = '';
 let isPremium = false;
-let usageToday = 0;
-const FREE_LIMIT_MINUTES = 30;
+let userCredits = 0;
+let flutterwaveKey = null;
+const NEW_USER_CREDITS = 1000;
+const DAILY_REFILL_CREDITS = 100;
 
 const MODE_CONFIG = {
   chat: { title: 'Ask Anything', subtitle: 'Your AI-powered study assistant', icon: '🤖' },
@@ -48,9 +50,14 @@ onAuthStateChanged(auth, async (user) => {
 
   await checkPremiumStatus();
   await loadAISettings();
-  await loadUsageToday();
+  await loadCredits();
   updateUsageUI();
   initFCM(user.uid).catch(() => {});
+  try {
+    const fwSnap = await getDoc(doc(db, 'settings', 'payments'));
+    const fwData = fwSnap.data() || {};
+    flutterwaveKey = fwData.flutterwavePublicKey || fwData.fw_public_key || null;
+  } catch {}
 });
 
 async function checkPremiumStatus() {
@@ -102,68 +109,89 @@ async function loadAISettings() {
   } catch { aiSettings = {}; }
 }
 
-async function loadUsageToday() {
+async function loadCredits() {
   const today = new Date().toISOString().slice(0, 10);
-  const usageRef = doc(db, 'aiUsage', `${currentUser.uid}_${today}`);
-  const snap = await getDoc(usageRef);
-  usageToday = snap.exists() ? (snap.data().minutes || 0) : 0;
+  const userRef = doc(db, 'users', currentUser.uid);
+  const snap = await getDoc(userRef);
+  const data = snap.data() || {};
+
+  let credits = data.aiCredits ?? null;
+  const lastRefill = data.aiCreditsLastRefill || null;
+
+  if (credits === null || !data.aiCreditsEverReceived) {
+    // First-time user — award 1,000 welcome credits
+    credits = NEW_USER_CREDITS;
+    await updateDoc(userRef, {
+      aiCredits: NEW_USER_CREDITS,
+      aiCreditsLastRefill: today,
+      aiCreditsEverReceived: true,
+    });
+  } else if (lastRefill !== today) {
+    // Daily top-up — add 100 credits
+    credits = Math.max(credits, 0) + DAILY_REFILL_CREDITS;
+    await updateDoc(userRef, { aiCredits: credits, aiCreditsLastRefill: today });
+  }
+
+  userCredits = credits;
 }
 
 function updateUsageUI() {
-  const bar = document.getElementById('ai-usage-bar');
-  const text = document.getElementById('ai-usage-text');
-  const badge = document.getElementById('ai-usage-badge');
-  const status = document.getElementById('ai-sidebar-status');
+  const bar     = document.getElementById('ai-usage-bar');
+  const text    = document.getElementById('ai-usage-text');
+  const badge   = document.getElementById('ai-usage-badge');
+  const status  = document.getElementById('ai-sidebar-status');
   const paywall = document.getElementById('ai-paywall');
+  const input   = document.getElementById('ai-input');
+  const sendBtn = document.getElementById('ai-send-btn');
 
   if (isPremium) {
-    if (bar) bar.style.width = '100%';
-    if (bar) bar.style.background = 'linear-gradient(135deg,#22c55e,#10b981)';
-    if (text) text.textContent = 'Unlimited queries';
-    if (badge) badge.textContent = '⭐ Premium — Unlimited';
+    if (bar) { bar.style.width = '100%'; bar.style.background = 'linear-gradient(135deg,#22c55e,#10b981)'; }
+    if (text)   text.textContent  = 'Unlimited queries';
+    if (badge)  badge.textContent = '⭐ Premium — Unlimited';
     if (status) status.textContent = '⭐ Premium Active';
     if (paywall) paywall.classList.add('hidden');
+    if (input)   input.disabled   = false;
+    if (sendBtn) sendBtn.disabled = false;
   } else {
-    const pct = Math.min(100, (usageToday / FREE_LIMIT_MINUTES) * 100);
-    if (bar) bar.style.width = pct + '%';
-    if (text) text.textContent = `${Math.max(0, FREE_LIMIT_MINUTES - usageToday)} min left today`;
-    if (badge) badge.textContent = `Free: ${usageToday}/${FREE_LIMIT_MINUTES} min`;
-    if (status) status.textContent = `Free tier: ${usageToday}/${FREE_LIMIT_MINUTES} min used today`;
+    const pct = Math.min(100, (userCredits / NEW_USER_CREDITS) * 100);
+    if (bar) { bar.style.width = pct + '%'; bar.style.background = ''; }
+    if (text)   text.textContent  = `${userCredits.toLocaleString()} credits remaining`;
+    if (badge)  badge.textContent = `💳 ${userCredits.toLocaleString()} credits`;
+    if (status) status.textContent = `${userCredits.toLocaleString()} AI credits left`;
 
-    if (usageToday >= FREE_LIMIT_MINUTES) {
+    if (userCredits <= 0) {
       if (paywall) paywall.classList.remove('hidden');
-      const input = document.getElementById('ai-input');
-      const sendBtn = document.getElementById('ai-send-btn');
-      if (input) input.disabled = true;
+      if (input)   input.disabled   = true;
       if (sendBtn) sendBtn.disabled = true;
-      // Notify user their limit is reached (shows toast + queues push)
-      if (usageToday === FREE_LIMIT_MINUTES && currentUser) {
-        notifyAILimitReached({ toUid: currentUser.uid }).catch(() => {});
-      }
+      notifyAILimitReached({ toUid: currentUser.uid }).catch(() => {});
+    } else {
+      if (paywall) paywall.classList.add('hidden');
+      if (input)   input.disabled   = false;
+      if (sendBtn) sendBtn.disabled = false;
     }
   }
 }
 
-async function trackUsage() {
-  const today = new Date().toISOString().slice(0, 10);
-  const usageRef = doc(db, 'aiUsage', `${currentUser.uid}_${today}`);
-  await setDoc(usageRef, {
-    uid: currentUser.uid,
-    date: today,
-    minutes: increment(1)
-  }, { merge: true });
-  usageToday = Math.min(usageToday + 1, FREE_LIMIT_MINUTES + 1);
+async function deductCredits(wordCount) {
+  const cost = Math.max(1, wordCount);
+  userCredits = Math.max(0, userCredits - cost);
+  await updateDoc(doc(db, 'users', currentUser.uid), { aiCredits: userCredits });
   updateUsageUI();
 }
 
 // ===== SEND AI MESSAGE =====
 window.sendAIMessage = async () => {
-  if (!isPremium && usageToday >= FREE_LIMIT_MINUTES) return;
-
-  const input = document.getElementById('ai-input');
+  const input   = document.getElementById('ai-input');
   const sendBtn = document.getElementById('ai-send-btn');
   const message = input?.value.trim();
   if (!message && !uploadedFileContent) return;
+
+  // Credit check (free users only)
+  const wordCount = (message || '').split(/\s+/).filter(Boolean).length || 1;
+  if (!isPremium) {
+    if (userCredits <= 0) { showCreditWarning(wordCount, 0); return; }
+    if (wordCount > userCredits) { showCreditWarning(wordCount, userCredits); return; }
+  }
 
   const fullMessage = uploadedFileContent
     ? `${message}\n\n--- UPLOADED DOCUMENT ---\n${uploadedFileContent.slice(0, 8000)}`
@@ -171,6 +199,8 @@ window.sendAIMessage = async () => {
 
   input.value = '';
   autoResizeAI(input);
+  clearCreditWarning();
+  updateLiveWordCount(input);
   uploadedFileContent = '';
   if (sendBtn) sendBtn.classList.add('loading');
 
@@ -184,7 +214,7 @@ window.sendAIMessage = async () => {
   appendBotMessage(response);
   chatHistory.push({ role: 'assistant', content: response });
 
-  if (!isPremium) await trackUsage();
+  if (!isPremium) await deductCredits(wordCount);
 
   await addDoc(collection(db, 'aiUsageLogs'), {
     uid: currentUser.uid,
@@ -429,6 +459,115 @@ function hideTypingIndicator() {
   _aiTimerStart    = null;
   document.getElementById('ai-typing')?.remove();
 }
+
+// ===== CREDIT HELPERS =====
+function showCreditWarning(wordCount, remaining) {
+  const el = document.getElementById('ai-credit-warning');
+  if (!el) return;
+  if (remaining <= 0) {
+    el.textContent = '⚠️ You have no credits left. Buy more credits to keep chatting.';
+  } else {
+    el.textContent = `⚠️ Your message uses ${wordCount} credit${wordCount !== 1 ? 's' : ''} but you only have ${remaining} left. Shorten it, or buy more credits.`;
+  }
+  el.classList.remove('hidden');
+}
+
+function clearCreditWarning() {
+  document.getElementById('ai-credit-warning')?.classList.add('hidden');
+}
+
+window.updateLiveWordCount = (el) => {
+  const words = (el.value.trim().split(/\s+/).filter(Boolean)).length;
+  const counter  = document.getElementById('ai-word-counter');
+  const credDisp = document.getElementById('ai-credits-display');
+  if (counter) counter.textContent = words > 0 ? `${words} word${words !== 1 ? 's' : ''}` : '';
+  if (credDisp && !isPremium) {
+    if (words > userCredits && userCredits > 0) {
+      credDisp.style.color = '#ef4444';
+      credDisp.textContent = `⚠️ ${words} words > ${userCredits} credits`;
+    } else if (words > 0 && userCredits > 0) {
+      credDisp.style.color = 'var(--text-muted)';
+      credDisp.textContent = `${(userCredits - words).toLocaleString()} left after send`;
+    } else if (userCredits > 0) {
+      credDisp.style.color = 'var(--text-muted)';
+      credDisp.textContent = `${userCredits.toLocaleString()} credits`;
+    }
+  }
+};
+
+// ===== BUY CREDITS =====
+window.openBuyCredits = () => {
+  document.getElementById('buy-credits-modal')?.classList.remove('hidden');
+};
+
+window.closeBuyCredits = (e) => {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('buy-credits-modal')?.classList.add('hidden');
+};
+
+window.updateCreditPreview = () => {
+  const amt = Math.max(200, parseInt(document.getElementById('buy-credits-amount')?.value) || 200);
+  const el = document.getElementById('credits-preview');
+  if (el) el.textContent = amt.toLocaleString();
+};
+
+window.processBuyCredits = async () => {
+  const amountEl = document.getElementById('buy-credits-amount');
+  const amount = Math.max(200, parseInt(amountEl?.value) || 200);
+
+  if (!flutterwaveKey) {
+    alert('Payment gateway not configured. Please ask the admin to set up Flutterwave.');
+    return;
+  }
+
+  const txRef = `LYNK_CREDITS_${currentUser.uid}_${Date.now()}`;
+
+  FlutterwaveCheckout({
+    public_key: flutterwaveKey,
+    tx_ref: txRef,
+    amount,
+    currency: 'NGN',
+    payment_options: 'card,banktransfer,ussd',
+    customer: {
+      email: currentUser.email,
+      name: currentUserData.displayName || 'LYNK User',
+    },
+    customizations: {
+      title: 'LYNK AI Credits',
+      description: `${amount.toLocaleString()} AI Credits`,
+      logo: window.location.origin + '/assets/logo.jpg',
+    },
+    callback: async (response) => {
+      if (response.status === 'successful' || response.status === 'completed') {
+        const newCredits = (userCredits || 0) + amount;
+        await updateDoc(doc(db, 'users', currentUser.uid), { aiCredits: newCredits });
+        await addDoc(collection(db, 'paymentLogs'), {
+          uid: currentUser.uid,
+          type: 'ai_credits',
+          amount,
+          credits: amount,
+          currency: 'NGN',
+          txRef,
+          transactionId: response.transaction_id,
+          status: 'success',
+          createdAt: serverTimestamp(),
+        });
+        userCredits = newCredits;
+        updateUsageUI();
+        document.getElementById('buy-credits-modal')?.classList.add('hidden');
+        clearCreditWarning();
+        const input   = document.getElementById('ai-input');
+        const sendBtn = document.getElementById('ai-send-btn');
+        if (input)   input.disabled   = false;
+        if (sendBtn) sendBtn.disabled = false;
+        alert(`🎉 ${amount.toLocaleString()} credits added! You now have ${newCredits.toLocaleString()} credits.`);
+      } else {
+        alert('Payment was not completed. Please try again.');
+      }
+    },
+    onclose: () => {},
+  });
+};
 
 window.clearChat = () => {
   chatHistory = [];
