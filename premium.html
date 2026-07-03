@@ -158,12 +158,94 @@
     </div>
 
     <!-- FREE TIER INFO -->
-    <div class="lynk-card p-5 text-center" style="background:rgba(71,85,105,0.1)">
+    <div class="lynk-card p-5 text-center mb-6" style="background:rgba(71,85,105,0.1)">
       <p class="font-semibold mb-1">Free Tier</p>
-      <p class="text-sm" style="color:var(--text-muted)">All users get <strong>30 minutes of AI per day</strong> for free. Upgrade for unlimited access and premium features.</p>
+      <p class="text-sm" style="color:var(--text-muted)">New users get <strong>1,000 free AI credits</strong> and <strong>100 credits every day</strong>. 1 word = 1 credit. Upgrade for unlimited access.</p>
     </div>
+
+    <!-- AI CREDITS SECTION -->
+    <div class="lynk-card p-6 mb-6" style="border-color:rgba(168,85,247,0.3)">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold text-lg">💳 AI Credits</h3>
+        <button onclick="openBuyCreditsModal()" class="lynk-btn lynk-btn-primary text-sm py-2 px-4">Buy Credits</button>
+      </div>
+
+      <!-- Balance + bar -->
+      <div class="lynk-card p-4 mb-4" style="background:rgba(168,85,247,0.06)">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm" style="color:var(--text-muted)">Current Balance</span>
+          <span id="credit-balance-badge" class="text-xs px-2 py-0.5 rounded-full" style="background:rgba(168,85,247,0.15);color:var(--grad-1)">Loading…</span>
+        </div>
+        <div class="text-4xl font-black lynk-gradient-text mb-1" id="credit-balance-display">—</div>
+        <p class="text-xs" style="color:var(--text-muted)" id="credit-refill-status">Loading refill status…</p>
+        <div class="lynk-progress mt-3">
+          <div class="lynk-progress-bar" id="credit-bar" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- How it works row -->
+      <div class="grid grid-cols-3 gap-3 mb-4 text-center">
+        <div class="lynk-card p-3">
+          <div class="text-xl font-bold lynk-gradient-text">1,000</div>
+          <div class="text-xs mt-1" style="color:var(--text-muted)">Welcome credits</div>
+        </div>
+        <div class="lynk-card p-3">
+          <div class="text-xl font-bold lynk-gradient-text">+100</div>
+          <div class="text-xs mt-1" style="color:var(--text-muted)">Every day free</div>
+        </div>
+        <div class="lynk-card p-3">
+          <div class="text-xl font-bold" style="color:#22c55e">₦1=1</div>
+          <div class="text-xs mt-1" style="color:var(--text-muted)">Credit top-up rate</div>
+        </div>
+      </div>
+
+      <!-- Buy amounts quick picker -->
+      <div class="mb-4">
+        <p class="text-xs font-semibold mb-2" style="color:var(--text-muted)">QUICK TOP-UP</p>
+        <div class="grid grid-cols-4 gap-2">
+          <button onclick="startCreditPurchase(200)"  class="lynk-btn lynk-btn-ghost text-sm py-2.5">₦200<br/><span class="text-xs opacity-60">200 cr</span></button>
+          <button onclick="startCreditPurchase(500)"  class="lynk-btn lynk-btn-ghost text-sm py-2.5">₦500<br/><span class="text-xs opacity-60">500 cr</span></button>
+          <button onclick="startCreditPurchase(1000)" class="lynk-btn lynk-btn-ghost text-sm py-2.5">₦1k<br/><span class="text-xs opacity-60">1,000 cr</span></button>
+          <button onclick="startCreditPurchase(2000)" class="lynk-btn lynk-btn-ghost text-sm py-2.5">₦2k<br/><span class="text-xs opacity-60">2,000 cr</span></button>
+        </div>
+      </div>
+
+      <!-- Purchase history -->
+      <div>
+        <p class="text-xs font-semibold mb-2" style="color:var(--text-muted)">PURCHASE HISTORY</p>
+        <div id="credit-history-list">
+          <p class="text-xs text-center py-4" style="color:var(--text-muted)">Loading history…</p>
+        </div>
+      </div>
+    </div>
+
   </div>
 </main>
+
+<!-- BUY CREDITS MODAL -->
+<div id="buy-credits-modal-prem" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.75)" onclick="closeBuyCreditsModal(event)">
+  <div class="lynk-card p-6 w-full max-w-sm" onclick="event.stopPropagation()">
+    <h3 class="font-bold text-lg mb-1">Buy AI Credits</h3>
+    <p class="text-sm mb-4" style="color:var(--text-muted)">₦1 = 1 credit &nbsp;·&nbsp; Minimum ₦200</p>
+    <div class="mb-4">
+      <label class="text-sm font-medium block mb-2">Amount in Naira (₦)</label>
+      <input id="prem-credits-amount" type="number" min="200" step="100" value="500"
+        class="lynk-input w-full text-lg font-bold" placeholder="e.g. 500"
+        oninput="updatePremCreditPreview()" />
+      <p class="text-xs mt-2" style="color:var(--text-muted)">You will get <strong id="prem-credits-preview" style="color:var(--grad-1)">500</strong> credits</p>
+    </div>
+    <div class="grid grid-cols-4 gap-2 mb-5">
+      <button onclick="document.getElementById('prem-credits-amount').value=200;updatePremCreditPreview()" class="lynk-btn lynk-btn-ghost text-xs py-2">₦200</button>
+      <button onclick="document.getElementById('prem-credits-amount').value=500;updatePremCreditPreview()" class="lynk-btn lynk-btn-ghost text-xs py-2">₦500</button>
+      <button onclick="document.getElementById('prem-credits-amount').value=1000;updatePremCreditPreview()" class="lynk-btn lynk-btn-ghost text-xs py-2">₦1k</button>
+      <button onclick="document.getElementById('prem-credits-amount').value=2000;updatePremCreditPreview()" class="lynk-btn lynk-btn-ghost text-xs py-2">₦2k</button>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="closeBuyCreditsModal()" class="lynk-btn lynk-btn-ghost flex-1">Cancel</button>
+      <button onclick="processPremCredits()" class="lynk-btn lynk-btn-primary flex-1">Pay with Flutterwave</button>
+    </div>
+  </div>
+</div>
 
 <!-- SPONSORED POST CREATION MODAL -->
 <div id="sponsored-post-modal" class="lynk-modal-overlay hidden" onclick="closeSponsoredModal(event)">

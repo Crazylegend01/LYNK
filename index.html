@@ -9,8 +9,25 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/custom.css" />
-  <!-- Redirect to splash screen on first visit -->
-  <script>window.location.replace('splash.html');</script>
+  <script type="module">
+    // If arriving from splash (landing=1), just show the page.
+    // If already logged in, skip landing and go straight to the feed.
+    // Otherwise send to splash first so users see the intro animation.
+    const fromSplash = new URLSearchParams(location.search).has('landing');
+    if (!fromSplash) {
+      // Check auth quickly — if logged in, jump to feed; else show splash
+      import('./js/firebase-config.js').then(({ auth }) => {
+        import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js').then(({ onAuthStateChanged }) => {
+          const unsub = onAuthStateChanged(auth, (user) => {
+            unsub();
+            window.location.replace(user ? 'feed.html' : 'splash.html');
+          });
+          // Safety timeout if Firebase stalls
+          setTimeout(() => window.location.replace('splash.html'), 3000);
+        });
+      });
+    }
+  </script>
 </head>
 <body>
 

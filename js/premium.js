@@ -5,7 +5,8 @@
 import { auth, db } from './firebase-config.js';
 import { ThemeManager } from './theme.js';
 import {
-  doc, getDoc, setDoc, addDoc, collection, serverTimestamp, updateDoc
+  doc, getDoc, setDoc, addDoc, collection, serverTimestamp, updateDoc,
+  query, where, orderBy, limit, getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
@@ -46,7 +47,150 @@ onAuthStateChanged(auth, async (user) => {
   } catch { flutterwaveKey = null; }
 
   await checkCurrentStatus();
+  await loadCreditSection();
 });
+
+// ===== AI CREDITS SECTION =====
+async function loadCreditSection() {
+  if (currentUserData.role === 'admin' || currentUserData.adminRole) {
+    document.getElementById('credit-balance-display')?.replaceWith(
+      Object.assign(document.createElement('p'), { className: 'text-sm', textContent: 'Admins have unlimited AI — credits do not apply.' })
+    );
+    return;
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const userData = (await getDoc(doc(db, 'users', currentUser.uid))).data() || {};
+  const credits  = userData.aiCredits ?? 0;
+  const lastRefill = userData.aiCreditsLastRefill || null;
+
+  // Balance display
+  const balEl    = document.getElementById('credit-balance-display');
+  const badgeEl  = document.getElementById('credit-balance-badge');
+  const barEl    = document.getElementById('credit-bar');
+  const refillEl = document.getElementById('credit-refill-status');
+
+  if (balEl)   balEl.textContent   = credits.toLocaleString() + ' credits';
+  if (badgeEl) badgeEl.textContent = credits > 0 ? '✓ Active' : '⚠️ Empty';
+  if (barEl)   barEl.style.width   = Math.min(100, (credits / 1000) * 100) + '%';
+  if (refillEl) {
+    if (lastRefill === today) {
+      refillEl.textContent = '✓ Daily 100 credits already added today. Next refill tomorrow.';
+    } else {
+      refillEl.textContent = 'Daily 100 credits will be added next time you open LYNK AI.';
+    }
+  }
+
+  // Purchase history
+  const listEl = document.getElementById('credit-history-list');
+  if (!listEl) return;
+  try {
+    const q = query(
+      collection(db, 'paymentLogs'),
+      where('uid', '==', currentUser.uid),
+      where('type', '==', 'ai_credits'),
+      orderBy('createdAt', 'desc'),
+      limit(10)
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      listEl.innerHTML = '<p class="text-xs text-center py-3" style="color:var(--text-muted)">No purchases yet.</p>';
+      return;
+    }
+    listEl.innerHTML = snap.docs.map(d => {
+      const data = d.data();
+      const date = data.createdAt?.toDate?.()?.toLocaleDateString() || '—';
+      return `<div class="flex items-center justify-between py-2 border-b" style="border-color:var(--border)">
+        <div>
+          <p class="text-sm font-medium">+${(data.credits || data.amount || 0).toLocaleString()} credits</p>
+          <p class="text-xs" style="color:var(--text-muted)">${date}</p>
+        </div>
+        <div class="text-right">
+          <p class="text-sm font-bold" style="color:#22c55e">₦${(data.amount || 0).toLocaleString()}</p>
+          <p class="text-xs" style="color:var(--text-muted)">Paid</p>
+        </div>
+      </div>`;
+    }).join('');
+  } catch {
+    listEl.innerHTML = '<p class="text-xs text-center py-3" style="color:var(--text-muted)">Could not load history.</p>';
+  }
+}
+
+window.openBuyCreditsModal = () => {
+  document.getElementById('buy-credits-modal-prem')?.classList.remove('hidden');
+};
+
+window.closeBuyCreditsModal = (e) => {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('buy-credits-modal-prem')?.classList.add('hidden');
+};
+
+window.updatePremCreditPreview = () => {
+  const amt = Math.max(200, parseInt(document.getElementById('prem-credits-amount')?.value) || 200);
+  const el = document.getElementById('prem-credits-preview');
+  if (el) el.textContent = amt.toLocaleString();
+};
+
+window.startCreditPurchase = (amount) => {
+  const inp = document.getElementById('prem-credits-amount');
+  if (inp) { inp.value = amount; updatePremCreditPreview(); }
+  openBuyCreditsModal();
+};
+
+window.processPremCredits = async () => {
+  const amountEl = document.getElementById('prem-credits-amount');
+  const amount = Math.max(200, parseInt(amountEl?.value) || 200);
+
+  if (!flutterwaveKey) {
+    alert('Payment gateway not configured. Please ask the admin to set up Flutterwave.');
+    return;
+  }
+
+  const txRef = `LYNK_CREDITS_${currentUser.uid}_${Date.now()}`;
+
+  FlutterwaveCheckout({
+    public_key: flutterwaveKey,
+    tx_ref: txRef,
+    amount,
+    currency: _fwCurrency || 'NGN',
+    payment_options: 'card,banktransfer,ussd',
+    customer: {
+      email: currentUser.email,
+      name: currentUserData.displayName || 'LYNK User',
+    },
+    customizations: {
+      title: 'LYNK AI Credits',
+      description: `${amount.toLocaleString()} AI Credits`,
+      logo: window.location.origin + '/assets/logo.jpg',
+    },
+    callback: async (response) => {
+      if (response.status === 'successful' || response.status === 'completed') {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const snap = await getDoc(userRef);
+        const current = snap.data()?.aiCredits || 0;
+        const newCredits = current + amount;
+        await updateDoc(userRef, { aiCredits: newCredits });
+        await addDoc(collection(db, 'paymentLogs'), {
+          uid: currentUser.uid,
+          type: 'ai_credits',
+          amount,
+          credits: amount,
+          currency: 'NGN',
+          txRef,
+          transactionId: response.transaction_id,
+          status: 'success',
+          createdAt: serverTimestamp(),
+        });
+        document.getElementById('buy-credits-modal-prem')?.classList.add('hidden');
+        alert(`🎉 ${amount.toLocaleString()} credits added! Your new balance: ${newCredits.toLocaleString()} credits.`);
+        loadCreditSection(); // refresh display
+      } else {
+        alert('Payment was not completed. Please try again.');
+      }
+    },
+    onclose: () => {},
+  });
+};
 
 async function checkCurrentStatus() {
   const statusEl = document.getElementById('current-status');
@@ -87,7 +231,7 @@ async function checkCurrentStatus() {
     }
   }
 
-  if (statusText) statusText.textContent = 'Free tier — 30 min AI per day';
+  if (statusText) statusText.textContent = 'Free tier — 1,000 welcome credits + 100/day';
 
   // Check verified seller status
   if (currentUserData.verifiedSeller) {
