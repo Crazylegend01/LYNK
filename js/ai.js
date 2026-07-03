@@ -161,6 +161,7 @@ window.sendAIMessage = async () => {
   if (!isPremium && usageToday >= FREE_LIMIT_MINUTES) return;
 
   const input = document.getElementById('ai-input');
+  const sendBtn = document.getElementById('ai-send-btn');
   const message = input?.value.trim();
   if (!message && !uploadedFileContent) return;
 
@@ -171,6 +172,7 @@ window.sendAIMessage = async () => {
   input.value = '';
   autoResizeAI(input);
   uploadedFileContent = '';
+  if (sendBtn) sendBtn.classList.add('loading');
 
   appendUserMessage(message);
   chatHistory.push({ role: 'user', content: fullMessage });
@@ -178,6 +180,7 @@ window.sendAIMessage = async () => {
 
   const response = await callAI(fullMessage, currentMode);
   hideTypingIndicator();
+  if (sendBtn) sendBtn.classList.remove('loading');
   appendBotMessage(response);
   chatHistory.push({ role: 'assistant', content: response });
 
@@ -382,13 +385,18 @@ function showTypingIndicator() {
   const el = document.createElement('div');
   el.id = 'ai-typing';
   el.className = 'ai-typing-indicator fade-in';
-  el.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div><span id="ai-timer-label" class="text-xs ml-2" style="color:var(--text-muted)">LYNK AI is thinking… 0.0s</span>';
+  el.innerHTML = `
+    <div class="typing-dot"></div>
+    <div class="typing-dot"></div>
+    <div class="typing-dot"></div>
+    <span id="ai-timer-label" class="ai-typing-label">LYNK AI is thinking…</span>`;
   container.appendChild(el);
   container.scrollTop = container.scrollHeight;
   _aiTimerStart = Date.now();
   _aiTimerInterval = setInterval(() => {
     const label = document.getElementById('ai-timer-label');
-    if (label) label.textContent = 'LYNK AI is thinking… ' + ((Date.now() - _aiTimerStart) / 1000).toFixed(1) + 's';
+    const secs = ((Date.now() - _aiTimerStart) / 1000).toFixed(1);
+    if (label) label.textContent = `LYNK AI is thinking… ${secs}s`;
   }, 100);
 }
 
