@@ -21,20 +21,18 @@
     [data-theme="sunset"],
     [data-theme="ocean"],
     [data-theme="forest"] {
-      --bg:     #0a0a0f;
-      --muted:  rgba(255, 255, 255, 0.13);
+      --bg: #0a0a0f;
     }
     [data-theme="light"] {
-      --bg:     #f4f5f7;
-      --muted:  rgba(0, 0, 0, 0.12);
+      --bg: #f4f5f7;
     }
 
     /* Fallback via OS preference (before JS runs) */
     @media (prefers-color-scheme: light) {
-      :root { --bg: #f4f5f7; --muted: rgba(0,0,0,0.12); }
+      :root { --bg: #f4f5f7; }
     }
     @media (prefers-color-scheme: dark) {
-      :root { --bg: #0a0a0f; --muted: rgba(255,255,255,0.13); }
+      :root { --bg: #0a0a0f; }
     }
 
     html, body {
@@ -56,71 +54,52 @@
     }
 
     /* ── LYNK wordmark ── */
-    .wordmark-wrap {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
     .wordmark {
+      display: flex;
+      align-items: center;
+      gap: 0.02em;
       font-size: clamp(4.5rem, 20vw, 9rem);
       font-weight: 900;
       letter-spacing: -0.04em;
       line-height: 1;
       user-select: none;
+    }
 
-      /*
-        Two-zone horizontal gradient:
-          left zone  → vivid LYNK gradient colours
-          right zone → muted (the "unpainted" state)
-        We make the background 210% wide, then animate
-        background-position from 100% → 0% so the gradient
-        sweeps from left to right across the letters.
-      */
-      background: linear-gradient(90deg,
-        var(--g1) 0%,
-        var(--g2) 28%,
-        var(--g3) 48%,
-        var(--muted) 56%,
-        var(--muted) 100%
-      );
-      background-size: 210% 100%;
-      background-position: 100% 0;   /* starts fully muted */
+    /* Each letter animates in independently */
+    .letter {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--g1) 0%, var(--g2) 50%, var(--g3) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
 
-      /* Phase 1 — sweep in */
-      animation: paintSweep 1.3s cubic-bezier(0.45, 0, 0.25, 1) 0.25s forwards;
+      opacity: 0;
+      transform: translateY(0.2em) scale(0.78);
+      animation: letterPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     }
 
-    @keyframes paintSweep {
-      from { background-position: 100% 0; }
-      to   { background-position:   0% 0; }
+    /* Stagger: L → Y → N → K */
+    .letter:nth-child(1) { animation-delay: 0.08s; }
+    .letter:nth-child(2) { animation-delay: 0.20s; }
+    .letter:nth-child(3) { animation-delay: 0.32s; }
+    .letter:nth-child(4) { animation-delay: 0.44s; }
+
+    @keyframes letterPop {
+      0%   { opacity: 0; transform: translateY(0.2em) scale(0.78); }
+      100% { opacity: 1; transform: translateY(0)     scale(1);    }
     }
 
-    /* Phase 2 — after sweep, shimmer loops to show it's still alive */
-    .wordmark.shimmering {
-      background: linear-gradient(90deg,
-        var(--g1) 0%,
-        var(--g2) 30%,
-        var(--g3) 55%,
-        var(--g1) 70%,
-        var(--g2) 85%,
-        var(--g3) 100%
-      );
-      background-size: 300% 100%;
-      background-position: 0% 0;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: shimmerLoop 2s linear infinite;
+    /* Gentle pulse while auth check runs */
+    .wordmark.pulsing .letter {
+      animation: wordPulse 1.8s ease-in-out infinite;
     }
+    .wordmark.pulsing .letter:nth-child(2) { animation-delay: 0.1s; }
+    .wordmark.pulsing .letter:nth-child(3) { animation-delay: 0.2s; }
+    .wordmark.pulsing .letter:nth-child(4) { animation-delay: 0.3s; }
 
-    @keyframes shimmerLoop {
-      0%   { background-position: 0%   0; }
-      100% { background-position: 100% 0; }
+    @keyframes wordPulse {
+      0%, 100% { opacity: 1;   transform: translateY(0) scale(1);    }
+      50%       { opacity: 0.6; transform: translateY(0) scale(0.97); }
     }
 
     /* ── Page-level fade-out on redirect ── */
@@ -132,8 +111,11 @@
 </head>
 <body>
   <div class="splash">
-    <div class="wordmark-wrap">
-      <div class="wordmark" id="wm">LYNK</div>
+    <div class="wordmark" id="wm">
+      <span class="letter">L</span>
+      <span class="letter">Y</span>
+      <span class="letter">N</span>
+      <span class="letter">K</span>
     </div>
   </div>
 
@@ -156,11 +138,10 @@
 
     const wm = document.getElementById('wm');
 
-    /* After the sweep animation finishes, switch to the shimmer loop */
-    const SWEEP_MS = 1550; /* 0.25s delay + 1.3s animation */
+    /* After all letters have popped in (~0.95s total), switch to gentle pulse */
     setTimeout(() => {
-      wm.classList.add('shimmering');
-    }, SWEEP_MS);
+      wm.classList.add('pulsing');
+    }, 960);
 
     /* Redirect after splash (total 2.6 s) */
     const SPLASH_MS = 2600;

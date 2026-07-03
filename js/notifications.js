@@ -42,8 +42,9 @@ export async function initNotifications(uid) {
   }
 }
 
-// ===== NAVBAR BELL (dropdown) — only on feed page =====
+// ===== NAVBAR BELL (dropdown) — only on feed/home page =====
 function renderNotificationBell() {
+  if (!_isFeedPage) return;
   const nav = document.querySelector('nav');
   if (!nav || document.getElementById('notif-bell')) return;
 
@@ -51,45 +52,25 @@ function renderNotificationBell() {
   bellWrapper.className = 'relative';
   bellWrapper.id = 'notif-bell-wrapper';
   bellWrapper.innerHTML = `
-    <button id="notif-bell" onclick="toggleNotifDropdown()"
-            class="lynk-icon-btn relative" aria-label="Notifications">
+    <a href="notifications.html" id="notif-bell"
+       class="lynk-icon-btn relative" aria-label="Notifications"
+       style="display:inline-flex;align-items:center;justify-content:center;position:relative">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-      <span id="notif-bell-badge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full
-            text-white text-[10px] font-bold flex items-center justify-center lynk-gradient px-1">0</span>
-    </button>
-    <div id="notif-dropdown"
-         class="hidden absolute right-0 top-12 w-80 lynk-card shadow-2xl z-50 overflow-hidden"
-         style="max-height:420px">
-      <div class="flex items-center justify-between px-4 py-3 border-b" style="border-color:var(--border)">
-        <h3 class="font-semibold text-sm">Notifications</h3>
-        <button onclick="markAllRead()" class="text-xs lynk-gradient-text font-medium">Mark all read</button>
-      </div>
-      <div id="notif-list" class="overflow-y-auto" style="max-height:340px">
-        <div class="p-6 text-center text-sm" style="color:var(--text-muted)">Loading...</div>
-      </div>
-      <div class="px-4 py-2 border-t text-center" style="border-color:var(--border)">
-        <a href="notifications.html" class="text-xs lynk-gradient-text font-medium">View all notifications</a>
-      </div>
-    </div>`;
+      <span id="notif-bell-badge"
+            class="hidden"
+            style="position:absolute;top:-3px;right:-3px;width:10px;height:10px;background:#ef4444;border-radius:50%;border:2px solid var(--bg)"></span>
+    </a>`;
 
   // Inject into mobile-bell-slot on mobile, or the last flex group on desktop
   const mobileBellSlot = document.getElementById('mobile-bell-slot');
   if (mobileBellSlot) {
     mobileBellSlot.appendChild(bellWrapper);
   } else {
-    // Fallback: inject into the last flex-shrink-0 group in the nav
     const navGroups = nav.querySelectorAll('.flex.items-center.gap-2.flex-shrink-0');
     const navRight = navGroups[navGroups.length - 1] || nav.querySelector('.flex.items-center.gap-2');
     if (navRight) navRight.insertBefore(bellWrapper, navRight.firstChild);
     else nav.appendChild(bellWrapper);
   }
-
-  document.addEventListener('click', (e) => {
-    const wrapper = document.getElementById('notif-bell-wrapper');
-    if (wrapper && !wrapper.contains(e.target)) {
-      document.getElementById('notif-dropdown')?.classList.add('hidden');
-    }
-  });
 }
 
 // ===== SIDEBAR BADGE =====
@@ -128,9 +109,9 @@ function listenForNotifications(uid) {
 }
 
 function updateBadges(count) {
+  // Red dot — no number, just show/hide
   const badge = document.getElementById('notif-bell-badge');
   if (badge) {
-    badge.textContent = count > 99 ? '99+' : count;
     badge.classList.toggle('hidden', count === 0);
   }
   const oldBadge = document.getElementById('notif-badge');

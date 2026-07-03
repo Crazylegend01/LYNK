@@ -68,8 +68,37 @@ async function checkPremiumStatus() {
 
 async function loadAISettings() {
   try {
-    const snap = await getDoc(doc(db, 'settings', 'ai'));
-    aiSettings = snap.data() || {};
+    // Admin saves keys to admin_config/ai_{provider} with fields key1..key5
+    // Read the default-provider setting first, then fall back to checking all providers
+    const settingSnap = await getDoc(doc(db, 'admin_config', 'ai_settings'));
+    const settingData = settingSnap.exists() ? settingSnap.data() : {};
+    const defaultProvider = settingData.defaultProvider || 'openai';
+
+    // Load keys for each provider in priority order
+    const providers = [defaultProvider, ...['openai','gemini','claude','grok'].filter(p => p !== defaultProvider)];
+    aiSettings = {};
+
+    for (const provider of providers) {
+      try {
+        const snap = await getDoc(doc(db, 'admin_config', 'ai_' + provider));
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.enabled === false) continue;
+          // Find first non-empty key
+          const key = data.key1 || data.key2 || data.key3 || data.key4 || data.key5 || null;
+          if (!key) continue;
+          if (provider === 'openai') { aiSettings.openaiKey = key; break; }
+          if (provider === 'gemini') { aiSettings.geminiKey = key; break; }
+          if (provider === 'claude') { aiSettings.claudeKey = key; break; }
+          if (provider === 'grok') {
+            // 'grok' slot accepts both Groq (gsk_…) and xAI Grok (xai-…) keys
+            if (key.startsWith('gsk_'))  { aiSettings.groqKey    = key; }
+            else                          { aiSettings.grokXAIKey = key; }
+            break;
+          }
+        }
+      } catch { /* skip this provider */ }
+    }
   } catch { aiSettings = {}; }
 }
 
@@ -174,19 +203,35 @@ async function callAI(message, mode) {
     writing: `You are LYNK AI Writing Assistant. Help students improve their academic writing — essays, reports, research papers, and emails. Check grammar, suggest improvements, and provide examples.`,
   };
 
+  const systemPrompt = systemPrompts[mode] || systemPrompts.chat;
+
   try {
-    // Try OpenAI first, then Gemini, then fallback
-    const apiKey = aiSettings?.openaiKey || aiSettings?.openai_key;
-    if (apiKey && apiKey.startsWith('sk-')) {
-      return await callOpenAI(message, mode, systemPrompts[mode] || systemPrompts.chat, apiKey);
+    // Try each provider in priority order based on what keys are loaded
+    const openaiKey = aiSettings?.openaiKey;
+    if (openaiKey && openaiKey.startsWith('sk-')) {
+      return await callOpenAI(message, systemPrompt, openaiKey);
     }
 
-    const geminiKey = aiSettings?.geminiKey || aiSettings?.gemini_key;
+    const groqKey = aiSettings?.grokKey;
+    if (groqKey && groqKey.startsWith('gsk_')) {
+      return await callGroq(message, systemPrompt, groqKey);
+    }
+
+    const geminiKey = aiSettings?.geminiKey;
     if (geminiKey) {
-      return await callGemini(message, mode, systemPrompts[mode] || systemPrompts.chat, geminiKey);
+      return await callGemini(message, systemPrompt, geminiKey);
     }
 
-    // Fallback: Smart local responses
+    const claudeKey = aiSettings?.claudeKey;
+    if (claudeKey && claudeKey.startsWith('sk-ant-')) {
+      return await callClaude(message, systemPrompt, claudeKey);
+    }
+
+    const grokKey = aiSettings?.grokXAIKey;
+    if (grokKey && grokKey.startsWith('xai-')) {
+      return await callGrokXAI(message, systemPrompt, grokKey);
+    }
+
     return generateLocalResponse(message, mode);
   } catch (err) {
     console.warn('AI API error:', err.message);
@@ -194,37 +239,89 @@ async function callAI(message, mode) {
   }
 }
 
-async function callOpenAI(message, mode, systemPrompt, apiKey) {
+async function callOpenAI(message, systemPrompt, apiKey) {
   const messages = [
     { role: 'system', content: systemPrompt },
     ...chatHistory.slice(-6),
     { role: 'user', content: message }
   ];
-
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
     body: JSON.stringify({ model: 'gpt-3.5-turbo', messages, max_tokens: 1500, temperature: 0.7 })
   });
-
-  if (!res.ok) throw new Error(`OpenAI error: ${res.status}`);
+  if (!res.ok) throw new Error(`OpenAI ${res.status}`);
   const data = await res.json();
   return data.choices[0].message.content;
 }
 
-async function callGemini(message, mode, systemPrompt, apiKey) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
-  const fullPrompt = `${systemPrompt}\n\nUser: ${message}`;
+async function callGroq(message, systemPrompt, apiKey) {
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    ...chatHistory.slice(-6),
+    { role: 'user', content: message }
+  ];
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+    body: JSON.stringify({ model: 'llama3-8b-8192', messages, max_tokens: 1500, temperature: 0.7 })
+  });
+  if (!res.ok) throw new Error(`Groq ${res.status}`);
+  const data = await res.json();
+  return data.choices[0].message.content;
+}
 
+async function callGemini(message, systemPrompt, apiKey) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const fullPrompt = `${systemPrompt}\n\nUser: ${message}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }] })
   });
-
-  if (!res.ok) throw new Error(`Gemini error: ${res.status}`);
+  if (!res.ok) throw new Error(`Gemini ${res.status}`);
   const data = await res.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated.';
+}
+
+async function callClaude(message, systemPrompt, apiKey) {
+  const messages = [
+    ...chatHistory.slice(-6),
+    { role: 'user', content: message }
+  ];
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-3-haiku-20240307',
+      system: systemPrompt,
+      messages,
+      max_tokens: 1500
+    })
+  });
+  if (!res.ok) throw new Error(`Claude ${res.status}`);
+  const data = await res.json();
+  return data.content?.[0]?.text || 'No response generated.';
+}
+
+async function callGrokXAI(message, systemPrompt, apiKey) {
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    ...chatHistory.slice(-6),
+    { role: 'user', content: message }
+  ];
+  const res = await fetch('https://api.x.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+    body: JSON.stringify({ model: 'grok-beta', messages, max_tokens: 1500, temperature: 0.7 })
+  });
+  if (!res.ok) throw new Error(`Grok ${res.status}`);
+  const data = await res.json();
+  return data.choices[0].message.content;
 }
 
 function generateLocalResponse(message, mode) {

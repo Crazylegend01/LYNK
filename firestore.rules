@@ -213,9 +213,11 @@ service cloud.firestore {
       allow read: if isAdmin();
     }
 
-    // ===== SETTINGS (AI keys, payment keys) — admin-only read AND write =====
+    // ===== SETTINGS =====
+    // Payment key must be readable by any signed-in user so checkout works.
+    // AI keys and other settings remain admin-only.
     match /settings/{docId} {
-      allow read: if isAdmin();
+      allow read: if isAdmin() || (isSignedIn() && docId == 'payments');
       allow write: if isAdmin();
     }
 
