@@ -836,6 +836,23 @@ async function loadAiKeys(){
     }
   } catch(e){console.warn('loadAiKeys:',e.message);}
 }
+// Sync active AI keys to settings/ai_keys (user-readable path) so all users can call the AI
+async function syncAiKeysToPublic(){
+  try {
+    const publicData = { updatedAt: serverTimestamp() };
+    for(const p of AI_PROVIDERS){
+      try {
+        const snap = await getDoc(doc(db,'admin_config','ai_'+p));
+        if(!snap.exists()) continue;
+        const d = snap.data();
+        if(d.enabled === false) continue;
+        for(let i=1;i<=5;i++){ if(d['key'+i]){ publicData[p+'_key']=d['key'+i]; break; } }
+      } catch {}
+    }
+    await setDoc(doc(db,'settings','ai_keys'), publicData, {merge:true});
+  } catch(e){ console.warn('syncAiKeysToPublic:', e.message); }
+}
+
 window.saveAiKeys = async(provider)=>{
   const statusEl=document.getElementById('ai-'+provider+'-status');
   if(statusEl) statusEl.textContent='Saving…';
@@ -843,6 +860,7 @@ window.saveAiKeys = async(provider)=>{
     const data={enabled:document.getElementById('ai-'+provider+'-enabled')?.checked??true,updatedAt:serverTimestamp()};
     for(let i=1;i<=5;i++){const el=document.getElementById('ai-'+provider+'-key-'+i);if(el&&el.value.trim())data['key'+i]=el.value.trim();}
     await setDoc(doc(db,'admin_config','ai_'+provider),data,{merge:true});
+    await syncAiKeysToPublic();
     if(statusEl){statusEl.textContent='✓ Saved';statusEl.style.color='#22c55e';}
     for(let i=1;i<=5;i++){const el=document.getElementById('ai-'+provider+'-key-'+i);if(el)el.value='';}
     setTimeout(()=>{if(statusEl){statusEl.textContent='';statusEl.style.color='';}},3000);

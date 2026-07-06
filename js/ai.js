@@ -74,39 +74,49 @@ async function checkPremiumStatus() {
 }
 
 async function loadAISettings() {
-  try {
-    // Admin saves keys to admin_config/ai_{provider} with fields key1..key5
-    // Read the default-provider setting first, then fall back to checking all providers
-    const settingSnap = await getDoc(doc(db, 'admin_config', 'ai_settings'));
-    const settingData = settingSnap.exists() ? settingSnap.data() : {};
-    const defaultProvider = settingData.defaultProvider || 'openai';
+  aiSettings = {};
 
-    // Load keys for each provider in priority order
+  // PRIMARY: read from settings/ai_keys — synced by admin panel, readable by all auth users
+  try {
+    const pubSnap = await getDoc(doc(db, 'settings', 'ai_keys'));
+    if (pubSnap.exists()) {
+      const d = pubSnap.data();
+      if (d.openai_key) aiSettings.openaiKey = d.openai_key;
+      if (d.gemini_key) aiSettings.geminiKey = d.gemini_key;
+      if (d.claude_key) aiSettings.claudeKey = d.claude_key;
+      if (d.grok_key) {
+        if (d.grok_key.startsWith('gsk_')) aiSettings.groqKey    = d.grok_key;
+        else                               aiSettings.grokXAIKey = d.grok_key;
+      }
+      if (Object.keys(aiSettings).length > 0) return; // loaded successfully
+    }
+  } catch (e) { console.warn('AI public key read:', e.message); }
+
+  // FALLBACK: try admin_config directly (works if Firestore rules allow user reads)
+  try {
+    const settingSnap = await getDoc(doc(db, 'admin_config', 'ai_settings'));
+    const defaultProvider = settingSnap.exists() ? (settingSnap.data().defaultProvider || 'openai') : 'openai';
     const providers = [defaultProvider, ...['openai','gemini','claude','grok'].filter(p => p !== defaultProvider)];
-    aiSettings = {};
 
     for (const provider of providers) {
       try {
         const snap = await getDoc(doc(db, 'admin_config', 'ai_' + provider));
-        if (snap.exists()) {
-          const data = snap.data();
-          if (data.enabled === false) continue;
-          // Find first non-empty key
-          const key = data.key1 || data.key2 || data.key3 || data.key4 || data.key5 || null;
-          if (!key) continue;
-          if (provider === 'openai') { aiSettings.openaiKey = key; break; }
-          if (provider === 'gemini') { aiSettings.geminiKey = key; break; }
-          if (provider === 'claude') { aiSettings.claudeKey = key; break; }
-          if (provider === 'grok') {
-            // 'grok' slot accepts both Groq (gsk_…) and xAI Grok (xai-…) keys
-            if (key.startsWith('gsk_'))  { aiSettings.groqKey    = key; }
-            else                          { aiSettings.grokXAIKey = key; }
-            break;
-          }
+        if (!snap.exists()) continue;
+        const data = snap.data();
+        if (data.enabled === false) continue;
+        const key = data.key1 || data.key2 || data.key3 || data.key4 || data.key5 || null;
+        if (!key) continue;
+        if (provider === 'openai') { aiSettings.openaiKey  = key; break; }
+        if (provider === 'gemini') { aiSettings.geminiKey  = key; break; }
+        if (provider === 'claude') { aiSettings.claudeKey  = key; break; }
+        if (provider === 'grok') {
+          if (key.startsWith('gsk_')) aiSettings.groqKey    = key;
+          else                        aiSettings.grokXAIKey = key;
+          break;
         }
-      } catch { /* skip this provider */ }
+      } catch (e) { console.warn('AI provider fallback read failed:', provider, e.message); }
     }
-  } catch { aiSettings = {}; }
+  } catch (e) { console.warn('AI settings fallback failed:', e.message); }
 }
 
 async function loadCredits() {
