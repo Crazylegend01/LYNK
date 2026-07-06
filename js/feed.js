@@ -285,7 +285,7 @@ window.submitPost = async () => {
         (pct) => { btn.textContent = `Uploading ${pct}%`; }
       );
     } catch (e) {
-      showToast('Upload Failed', 'Could not upload media. Try a smaller file or check your connection.', '');
+      showToast('Error', 'Error', '');
       btn.disabled = false; btn.textContent = 'Post';
       return;
     }

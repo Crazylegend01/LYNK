@@ -142,7 +142,7 @@ window.processPremCredits = async () => {
   const amount = Math.max(200, parseInt(amountEl?.value) || 200);
 
   if (!flutterwaveKey) {
-    alert('Payment gateway not configured. Please ask the admin to set up Flutterwave.');
+    alert('Error');
     return;
   }
 
@@ -248,7 +248,7 @@ window.subscribePremium = async (planKey) => {
   if (!plan) return;
 
   if (!flutterwaveKey) {
-    alert('Payment gateway not configured. Please contact admin to set up Flutterwave integration.');
+    alert('Error');
     return;
   }
 
@@ -316,7 +316,7 @@ async function activatePremium(planKey, txRef, transactionId, days) {
 // ===== VERIFIED SELLER =====
 window.purchaseVerifiedSeller = async () => {
   if (!flutterwaveKey) {
-    alert('Payment gateway not configured. Please contact admin.');
+    alert('Error');
     return;
   }
 
@@ -404,7 +404,7 @@ window.submitSponsoredPost = async () => {
 
 // ===== PAY FOR APPROVED SPONSORED POST (called when admin approves) =====
 window.payForSponsoredPost = (postId, amount) => {
-  if (!flutterwaveKey) { alert('Payment not configured.'); return; }
+  if (!flutterwaveKey) { alert('Error'); return; }
 
   const txRef = `LYNK_SPONSORED_${currentUser.uid}_${Date.now()}`;
 

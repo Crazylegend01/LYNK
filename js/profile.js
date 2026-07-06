@@ -496,7 +496,7 @@ window.updateAvatar = async (input) => {
     document.getElementById('profile-avatar').src = url;
     showToast('Photo Updated!', 'Your profile picture has been changed.', url);
   } catch (e) {
-    showToast('Upload Failed', 'Could not upload photo. Check your Cloudinary preset.', '');
+    showToast('Error', 'Error', '');
   }
 };
 
@@ -511,7 +511,7 @@ window.updateCover = async (input) => {
     document.getElementById('cover-container').style.background = `url(${url}) center/cover`;
     showToast('Cover Updated!', 'Your cover photo has been changed.', url);
   } catch (e) {
-    showToast('Upload Failed', 'Could not upload cover. Check your Cloudinary preset.', '');
+    showToast('Error', 'Error', '');
   }
 };
 

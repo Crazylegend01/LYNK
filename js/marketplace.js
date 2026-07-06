@@ -303,7 +303,7 @@ window.submitListing = async () => {
     closeCreateListing();
     loadListings();
   } catch (err) {
-    alert('Error creating listing: ' + err.message);
+    alert('Error');
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Publish Listing'; }
   }
