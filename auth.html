@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="assets/css/custom.css" />
 </head>
 <body class="min-h-screen flex">
+<div class="lynk-orb-wrap"><div class="lynk-orb lynk-orb-1"></div><div class="lynk-orb lynk-orb-2"></div><div class="lynk-orb lynk-orb-3"></div></div>
 
 <!-- Left Panel — Branding -->
 <div class="hidden lg:flex flex-col justify-between w-[45%] relative overflow-hidden p-10" style="background:var(--bg-card)">
@@ -214,6 +215,12 @@
           <label for="terms-check">I agree to the <span class="lynk-gradient-text cursor-pointer">Terms of Service</span> and <span class="lynk-gradient-text cursor-pointer">Privacy Policy</span></label>
         </div>
 
+        <!-- Optional referral code -->
+        <div>
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Referral Code <span class="font-normal text-xs" style="color:var(--text-muted)">(optional)</span></label>
+          <input id="signup-refcode" type="text" class="lynk-input" placeholder="e.g. LNK1A2B3C" autocomplete="off" oninput="this.value=this.value.toUpperCase()" />
+        </div>
+
         <button type="submit" id="btn-signup" class="lynk-btn lynk-btn-primary w-full py-3 rounded-xl text-base mt-1">
           Continue →
         </button>
@@ -340,6 +347,18 @@
   // Check URL param
   const params = new URLSearchParams(window.location.search);
   if (params.get('mode') === 'signup') switchTab('signup');
+
+  // Pre-fill referral code from URL (?ref=CODE) or localStorage
+  const refParam = params.get('ref');
+  if (refParam) {
+    localStorage.setItem('lynk_ref_code', refParam.toUpperCase());
+    switchTab('signup');
+  }
+  const savedRef = localStorage.getItem('lynk_ref_code');
+  if (savedRef) {
+    const refEl = document.getElementById('signup-refcode');
+    if (refEl) refEl.value = savedRef;
+  }
 
   // Password strength
   document.getElementById('signup-password')?.addEventListener('input', function() {

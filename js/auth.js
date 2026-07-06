@@ -15,7 +15,7 @@ import {
   signOut as firebaseSignOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  doc, setDoc, getDoc, getDocs, collection, query, where, limit, serverTimestamp
+  doc, setDoc, getDoc, getDocs, updateDoc, collection, query, where, limit, serverTimestamp, increment as fsIncrement
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 ThemeManager.init();
@@ -201,6 +201,13 @@ document.getElementById('form-signup')?.addEventListener('submit', async (e) => 
     pendingUserEmail = email;
     pendingUserPassword = password;
 
+    // Generate unique referral code for this user
+    const referralCode = 'LNK' + user.uid.slice(0, 7).toUpperCase();
+
+    // Check if a referral code was provided
+    const enteredRef = (document.getElementById('signup-refcode')?.value || '').trim().toUpperCase()
+      || localStorage.getItem('lynk_ref_code') || '';
+
     await setDoc(doc(db, 'users', user.uid), {
       uid: user.uid,
       email,
@@ -226,8 +233,29 @@ document.getElementById('form-signup')?.addEventListener('submit', async (e) => 
       createdAt: serverTimestamp(),
       lastSeen: serverTimestamp(),
       friendsCount: 0,
-      postsCount: 0
+      postsCount: 0,
+      referralCode,
+      referredBy: enteredRef || null,
+      referralCount: 0
     });
+
+    // Credit the referrer if a valid code was entered
+    if (enteredRef && enteredRef !== referralCode) {
+      try {
+        const refSnap = await getDocs(query(collection(db, 'users'), where('referralCode', '==', enteredRef), limit(1)));
+        if (!refSnap.empty) {
+          const referrerDoc = refSnap.docs[0];
+          const referrerId = referrerDoc.id;
+          if (referrerId !== user.uid) {
+              await updateDoc(doc(db, 'users', referrerId), {
+              aiCredits: fsIncrement(10),
+              referralCount: fsIncrement(1)
+            });
+          }
+        }
+      } catch { /* referral optional — don't block signup */ }
+    }
+    try { localStorage.removeItem('lynk_ref_code'); } catch {}
 
     setLoading('btn-signup', false, 'Continue →');
     window.switchTab('university');

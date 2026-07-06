@@ -165,5 +165,12 @@
   import { ThemeManager } from './js/theme.js';
   ThemeManager.init();
 </script>
+<script>
+  // Save referral code from ?ref=CODE so auth page can pick it up
+  (function () {
+    const ref = new URLSearchParams(location.search).get('ref');
+    if (ref) localStorage.setItem('lynk_ref_code', ref.toUpperCase());
+  })();
+</script>
 </body>
 </html>

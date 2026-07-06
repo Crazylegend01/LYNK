@@ -992,6 +992,17 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
   background: #f8fafc;
 }
 
+/* ===== Ambient glassmorphism orbs (injected by mobile-nav.js + inline on auth) ===== */
+.lynk-orb-wrap { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.lynk-orb { position: absolute; border-radius: 50%; }
+.lynk-orb-1 { width: 520px; height: 520px; background: var(--grad-1); opacity: 0.055; top: -160px; left: -130px; filter: blur(100px); animation: orbDrift 24s linear infinite; }
+.lynk-orb-2 { width: 440px; height: 440px; background: var(--grad-2); opacity: 0.045; bottom: -130px; right: -110px; filter: blur(90px); animation: orbDrift 30s linear infinite reverse; }
+.lynk-orb-3 { width: 360px; height: 360px; background: var(--grad-3); opacity: 0.04; top: 35%; left: 42%; filter: blur(110px); animation: orbDrift 20s linear infinite 4s; }
+[data-theme="light"] .lynk-orb-1 { opacity: 0.035; }
+[data-theme="light"] .lynk-orb-2 { opacity: 0.03; }
+[data-theme="light"] .lynk-orb-3 { opacity: 0.025; }
+@keyframes orbDrift { to { transform: rotate(360deg); } }
+
 /* ===== AI low-credit warning badge dot ===== */
 .lynk-bottom-nav a[href="ai.html"] .bnav-icon,
 .lynk-bottom-nav a[href="ai.html"] div.bnav-icon { position: relative; display: inline-flex; }

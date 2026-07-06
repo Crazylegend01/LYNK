@@ -153,6 +153,19 @@ async function loadProfile() {
   document.getElementById('about-faculty').textContent = d.faculty || '—';
   document.getElementById('about-dept').textContent = d.department || '—';
   document.getElementById('about-joined').textContent = joined || '—';
+
+  // Referral card (own profile only)
+  if (isOwnProfile && d.referralCode) {
+    const card = document.getElementById('referral-card');
+    const codeEl = document.getElementById('referral-code-display');
+    const linkEl = document.getElementById('referral-link-input');
+    const countEl = document.getElementById('referral-count-display');
+    if (card) card.classList.remove('hidden');
+    if (codeEl) codeEl.textContent = d.referralCode;
+    const baseUrl = location.origin + location.pathname.replace('profile.html', '');
+    if (linkEl) linkEl.value = `${baseUrl}index.html?ref=${d.referralCode}`;
+    if (countEl && d.referralCount) countEl.textContent = `${d.referralCount} friend${d.referralCount === 1 ? '' : 's'} referred`;
+  }
   if (d.skills?.length) {
     const row = document.getElementById('about-skills-row');
     const list = document.getElementById('about-skills');
@@ -524,6 +537,15 @@ window.signOut = async () => {
 
 window.closeEditModal = () => document.getElementById('edit-modal')?.classList.add('hidden');
 window.openEditModal  = () => document.getElementById('edit-modal')?.classList.remove('hidden');
+
+window.copyReferralLink = () => {
+  const el = document.getElementById('referral-link-input');
+  if (!el) return;
+  navigator.clipboard.writeText(el.value).then(() => {
+    const btn = el.nextElementSibling;
+    if (btn) { const orig = btn.textContent; btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = orig, 2000); }
+  }).catch(() => { el.select(); document.execCommand('copy'); });
+};
 
 // ===== DELETE ACCOUNT =====
 window.openDeleteModal  = () => { document.getElementById('delete-password').value = ''; document.getElementById('delete-error').classList.add('hidden'); document.getElementById('delete-modal')?.classList.remove('hidden'); };

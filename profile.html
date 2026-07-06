@@ -240,6 +240,24 @@
 
     <!-- ABOUT TAB -->
     <div id="tab-about" class="hidden">
+
+      <!-- Referral card — own profile only -->
+      <div id="referral-card" class="lynk-card p-5 mb-4 hidden">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-lg">🎁</span>
+          <h3 class="font-semibold text-sm">Refer Friends, Earn Credits</h3>
+        </div>
+        <p class="text-xs mb-3" style="color:var(--text-muted)">Share your link — when a friend signs up using it, you get <strong style="color:var(--grad-1)">+10 AI credits</strong> instantly.</p>
+        <div class="flex gap-2 mb-3">
+          <input id="referral-link-input" readonly class="lynk-input text-xs flex-1 py-2" style="color:var(--text-secondary)" />
+          <button onclick="copyReferralLink()" class="lynk-btn lynk-btn-primary text-xs py-2 px-4 rounded-xl flex-shrink-0">Copy</button>
+        </div>
+        <div class="flex items-center justify-between text-xs" style="color:var(--text-muted)">
+          <span>Your code: <strong id="referral-code-display" class="lynk-gradient-text"></strong></span>
+          <span id="referral-count-display"></span>
+        </div>
+      </div>
+
       <div class="lynk-card p-6">
         <h3 class="font-semibold mb-4">About</h3>
         <div class="flex flex-col gap-0 text-sm divide-y" style="--tw-divide-opacity:1;border-color:var(--border)">
@@ -256,6 +274,7 @@
           <div class="flex justify-between items-center py-3"><span style="color:var(--text-muted)">Member Since</span><span id="about-joined" class="font-medium">—</span></div>
         </div>
       </div>
+
     </div>
 
   </div>

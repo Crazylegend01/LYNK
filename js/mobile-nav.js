@@ -74,6 +74,14 @@ function closeMobileNav() {
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMobileNav(); });
 
+// ─── Ambient glassmorphism orbs ──────────────────────────────────────────────
+(function () {
+  const wrap = document.createElement('div');
+  wrap.className = 'lynk-orb-wrap';
+  wrap.innerHTML = '<div class="lynk-orb lynk-orb-1"></div><div class="lynk-orb lynk-orb-2"></div><div class="lynk-orb lynk-orb-3"></div>';
+  document.body.insertBefore(wrap, document.body.firstChild);
+})();
+
 // ─── AI low-credit badge ──────────────────────────────────────────────────────
 (function () {
   function applyAiBadge() {
