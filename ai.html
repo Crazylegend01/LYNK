@@ -238,17 +238,25 @@
         </div>
       </div>
 
-      <!-- Credits paywall -->
+      <!-- Credits paywall (zero credits) -->
       <div id="ai-paywall" class="hidden flex-shrink-0 mb-2">
         <div class="lynk-card p-4" style="border-color:var(--grad-1);background:rgba(168,85,247,0.05)">
           <div class="flex items-center gap-3">
             <span class="text-2xl">💳</span>
             <div class="flex-1">
               <p class="font-semibold text-sm">You're out of credits</p>
-              <p class="text-xs" style="color:var(--text-muted)">Buy more or wait for your 100 daily credits tomorrow</p>
+              <p class="text-xs" style="color:var(--text-muted)">Buy more or wait for your 15-day refill</p>
             </div>
             <button onclick="openBuyCredits()" class="lynk-btn lynk-btn-primary text-xs py-2 px-3 flex-shrink-0">Buy Credits</button>
           </div>
+        </div>
+      </div>
+      <!-- Low-credit warning banner (≤50 credits, still has some left) -->
+      <div id="ai-low-credit-banner" class="hidden flex-shrink-0 mb-2">
+        <div class="rounded-xl p-3 flex items-center gap-3" style="background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.3)">
+          <span class="text-lg flex-shrink-0">⚠️</span>
+          <p id="ai-low-credit-text" class="text-xs flex-1" style="color:#f97316">Credits running low</p>
+          <a href="premium.html#credits" class="lynk-btn text-xs py-1.5 px-3 rounded-lg flex-shrink-0 font-semibold" style="background:rgba(249,115,22,0.2);color:#f97316;border:1px solid rgba(249,115,22,0.4)">Top Up</a>
         </div>
       </div>
       <!-- Per-message credit warning -->

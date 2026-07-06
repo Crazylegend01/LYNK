@@ -157,18 +157,22 @@ function updateUsageUI() {
   const text    = document.getElementById('ai-usage-text');
   const badge   = document.getElementById('ai-usage-badge');
   const status  = document.getElementById('ai-sidebar-status');
-  const paywall = document.getElementById('ai-paywall');
-  const input   = document.getElementById('ai-input');
-  const sendBtn = document.getElementById('ai-send-btn');
+  const paywall   = document.getElementById('ai-paywall');
+  const lowBanner = document.getElementById('ai-low-credit-banner');
+  const lowText   = document.getElementById('ai-low-credit-text');
+  const input     = document.getElementById('ai-input');
+  const sendBtn   = document.getElementById('ai-send-btn');
+
+  try { localStorage.setItem('lynk_ai_premium', isPremium ? '1' : '0'); } catch {}
 
   if (isPremium) {
     if (bar) { bar.style.width = '100%'; bar.style.background = 'linear-gradient(135deg,#22c55e,#10b981)'; }
     if (text)   text.textContent  = 'Unlimited queries';
     if (badge)  badge.textContent = '⭐ Premium — Unlimited';
     if (status) status.textContent = '⭐ Premium Active';
-    if (paywall) paywall.classList.add('hidden');
+    if (paywall)   paywall.classList.add('hidden');
+    if (lowBanner) lowBanner.classList.add('hidden');
     if (input)   input.disabled   = false;
-    try { localStorage.setItem('lynk_ai_premium', isPremium ? '1' : '0'); } catch {}
     if (sendBtn) sendBtn.disabled = false;
   } else {
     const pct = Math.min(100, (userCredits / NEW_USER_CREDITS) * 100);
@@ -178,12 +182,20 @@ function updateUsageUI() {
     if (status) status.textContent = `${userCredits.toLocaleString()} AI credits left`;
 
     if (userCredits <= 0) {
-      if (paywall) paywall.classList.remove('hidden');
+      if (paywall)   paywall.classList.remove('hidden');
+      if (lowBanner) lowBanner.classList.add('hidden');
       if (input)   input.disabled   = true;
       if (sendBtn) sendBtn.disabled = true;
       notifyAILimitReached({ toUid: currentUser.uid }).catch(() => {});
+    } else if (userCredits <= 50) {
+      if (paywall)   paywall.classList.add('hidden');
+      if (lowBanner) lowBanner.classList.remove('hidden');
+      if (lowText)   lowText.textContent = `Only ${userCredits} credit${userCredits === 1 ? '' : 's'} left — top up to keep chatting`;
+      if (input)   input.disabled   = false;
+      if (sendBtn) sendBtn.disabled = false;
     } else {
-      if (paywall) paywall.classList.add('hidden');
+      if (paywall)   paywall.classList.add('hidden');
+      if (lowBanner) lowBanner.classList.add('hidden');
       if (input)   input.disabled   = false;
       if (sendBtn) sendBtn.disabled = false;
     }
