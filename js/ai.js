@@ -148,6 +148,8 @@ async function loadCredits() {
   }
 
   userCredits = credits;
+  // Persist credit count so other pages can show the low-credit badge
+  try { localStorage.setItem('lynk_ai_credits', credits); } catch {}
 }
 
 function updateUsageUI() {
@@ -166,6 +168,7 @@ function updateUsageUI() {
     if (status) status.textContent = '⭐ Premium Active';
     if (paywall) paywall.classList.add('hidden');
     if (input)   input.disabled   = false;
+    try { localStorage.setItem('lynk_ai_premium', isPremium ? '1' : '0'); } catch {}
     if (sendBtn) sendBtn.disabled = false;
   } else {
     const pct = Math.min(100, (userCredits / NEW_USER_CREDITS) * 100);

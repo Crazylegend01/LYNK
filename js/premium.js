@@ -44,7 +44,7 @@ onAuthStateChanged(auth, async (user) => {
       if (pdata.prices.monthly)   PLANS.monthly.amount   = pdata.prices.monthly;
       if (pdata.prices.quarterly) PLANS.quarterly.amount = pdata.prices.quarterly;
     }
-  } catch { flutterwaveKey = null; }
+  } catch (e) { console.warn('Flutterwave key load:', e.message); flutterwaveKey = null; }
 
   await checkCurrentStatus();
   await loadCreditSection();

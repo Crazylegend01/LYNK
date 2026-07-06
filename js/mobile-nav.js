@@ -73,3 +73,21 @@ function closeMobileNav() {
 }
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMobileNav(); });
+
+// ─── AI low-credit badge ──────────────────────────────────────────────────────
+(function () {
+  function applyAiBadge() {
+    const credits  = parseInt(localStorage.getItem('lynk_ai_credits') || '-1', 10);
+    const premium  = localStorage.getItem('lynk_ai_premium') === '1';
+    const isLow    = !premium && credits >= 0 && credits <= 50;
+    document.querySelectorAll('.lynk-bottom-nav a[href="ai.html"]').forEach(link => {
+      link.classList.toggle('ai-low-credit', isLow);
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyAiBadge);
+  } else {
+    applyAiBadge();
+  }
+  window.addEventListener('storage', applyAiBadge);
+})();
