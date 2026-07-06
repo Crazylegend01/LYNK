@@ -126,10 +126,15 @@ async function loadCredits() {
       aiCreditsLastRefill: today,
       aiCreditsEverReceived: true,
     });
-  } else if (lastRefill !== today) {
-    // Daily top-up — add 100 credits
-    credits = Math.max(credits, 0) + DAILY_REFILL_CREDITS;
-    await updateDoc(userRef, { aiCredits: credits, aiCreditsLastRefill: today });
+  } else {
+    // Refill every 15 days
+    const daysSince = lastRefill
+      ? Math.floor((Date.now() - new Date(lastRefill).getTime()) / 86400000)
+      : 999;
+    if (daysSince >= 15) {
+      credits = Math.max(credits, 0) + DAILY_REFILL_CREDITS;
+      await updateDoc(userRef, { aiCredits: credits, aiCreditsLastRefill: today });
+    }
   }
 
   userCredits = credits;
@@ -358,11 +363,18 @@ async function callGrokXAI(message, systemPrompt, apiKey) {
 }
 
 function generateLocalResponse(message, mode) {
+  // Extract a short topic label from the user's message
+  const words = message.trim().split(/\s+/);
+  const significantWords = words.filter(w => w.length > 3 && !/^(what|when|where|which|that|this|with|have|from|about|how|does|can|will|should|would|could|please|help|tell|explain|give|show|make)$/i.test(w));
+  const topic = significantWords.slice(0, 4).join(' ') || message.slice(0, 40) || 'this topic';
+
   const responses = {
     chat: [
-      "That's a great academic question! To give you the best answer, I'd recommend breaking this topic down into key concepts first. Could you share more context about which course or subject this is for?",
-      "Excellent question! This topic connects several important ideas. Let me explain it step by step: \n\n1. First, understand the foundational concept\n2. Then apply it to practical examples\n3. Finally, test your understanding with practice questions\n\nWould you like me to dive deeper into any of these steps?",
-      "I can help you with that! Based on academic best practices, here's what you should know about this topic. Remember, the key to mastering any subject is consistent practice and understanding the core principles.",
+      `**Regarding "${topic}":**\n\nThis is an important concept worth breaking down carefully:\n\n📌 **Core idea:** Focus on the fundamental principles — what it is, how it works, and why it matters.\n📚 **For your studies:** Look for this in your course textbook or lecture notes for the precise definition your lecturer expects.\n🔗 **Practical application:** Try to link the concept to real examples you already understand.\n\n💡 To get a detailed, accurate AI explanation, ask your admin to configure an AI key (OpenAI / Gemini / Groq) in the admin panel.`,
+      `**On the topic of "${topic}":**\n\n1️⃣ **Identify the basics first** — what are the key terms involved?\n2️⃣ **Break it into parts** — most complex ideas consist of 2–4 simpler sub-concepts.\n3️⃣ **Apply it** — try one worked example or practice question.\n4️⃣ **Teach it back** — if you can explain it simply, you understand it.\n\nNeed a real in-depth explanation? Ask your school's LYNK admin to enable AI — it takes just one API key.`,
+      `Great — let's work through **"${topic}"** step by step.\n\n**Step 1 — Define it:** Write down your own definition without looking. Compare with your notes.\n**Step 2 — Recall examples:** Can you think of at least two real-world cases where this applies?\n**Step 3 — Identify gaps:** Which part is still unclear? That's where to focus.\n\n📖 *Tip: Consistent 45-minute focused sessions beat cramming every time.*\n\n⚙️ *Full AI answers are available once an API key is set up in Admin → AI Settings.*`,
+      `Thinking about **"${topic}"** — here's a structured approach:\n\n🔍 **Analyse:** What exactly is being asked? Break the question into sub-parts.\n🧠 **Recall:** What do you already know that's related?\n📐 **Apply:** Use that knowledge to address each sub-part.\n✅ **Check:** Does your answer actually answer what was asked?\n\nThis method works for any subject — engineering, sciences, arts, or social sciences.`,
+      `For **"${topic}"**, consider these angles:\n\n• **Definition** — formal and informal meanings\n• **Context** — which course/field is this from?\n• **Common mistakes** — what do students usually get wrong here?\n• **Exam angle** — how is this likely to be tested?\n\nIf you share more detail about your specific course or the question you're working on, I can give more targeted advice.`,
     ],
     summarize: "**Summary of Your Notes:**\n\n📌 **Key Points:**\n• [Main concept 1 from your text]\n• [Main concept 2 from your text]\n• [Key terminology and definitions]\n\n📝 **Core Ideas:**\nYour notes cover several important topics. The main theme revolves around understanding fundamental principles and their practical applications.\n\n❓ **Suggested Practice Questions:**\n1. What is the main concept discussed?\n2. How does this apply in practice?\n3. What are the key differences between the terms mentioned?\n\n*Note: Configure an AI API key in admin settings for precise summaries of your actual content.*",
     flashcards: "FRONT: What is the primary purpose of this concept? | BACK: It serves to explain the relationship between variables in the system\n\nFRONT: Define the key term | BACK: A fundamental unit that describes a specific property or behavior\n\nFRONT: What are the main applications? | BACK: Used in analysis, research, and practical problem-solving\n\n*Upload your actual notes and configure an API key for accurate flashcards!*",
