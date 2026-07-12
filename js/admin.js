@@ -645,6 +645,31 @@ window.saveNewSchool = async () => {
   loadSchools();
 };
 
+// ===== EMAIL HELPER (EmailJS) =====
+// Sends approval / rejection emails that land in the inbox, not spam.
+// Requires EmailJS config set in admin.html. Falls back silently if not configured.
+async function sendSchoolEmail(type, toEmail, toName, schoolName, reason) {
+  const cfg = window.EMAILJS_CONFIG;
+  if (!cfg || cfg.publicKey === 'YOUR_EMAILJS_PUBLIC_KEY') {
+    console.warn('EmailJS not configured — skipping live email. Set EMAILJS_CONFIG in admin.html.');
+    return;
+  }
+  try {
+    const templateId = type === 'approved' ? cfg.templateIdApproved : cfg.templateIdRejected;
+    await emailjs.send(cfg.serviceId, templateId, {
+      to_email:    toEmail,
+      to_name:     toName,
+      school_name: schoolName,
+      reason:      reason || '',
+      signin_url:  'https://crazylegend01.github.io/LYNK/auth.html',
+    });
+    console.log(`EmailJS: ${type} email sent to ${toEmail}`);
+  } catch (err) {
+    console.error('EmailJS send error:', err);
+    // Non-fatal — mailQueue record is still written as a backup
+  }
+}
+
 // ===== SCHOOL VERIFICATION REQUESTS =====
 let _allSchoolRequests = [];
 let _sreqFilter = 'pending';
@@ -792,7 +817,10 @@ window.approveSchoolRequest = async (reqId) => {
       createdAt: serverTimestamp()
     });
 
-    // Email queue entry (connect Firebase "Trigger Email" extension later)
+    // Send real email via EmailJS (good deliverability, comes from your own Gmail/domain)
+    await sendSchoolEmail('approved', req.userEmail, req.userName || 'there', req.schoolName, '');
+
+    // Also write to mailQueue as a backup record (for Firebase Trigger Email extension if you later add it)
     await addDoc(collection(db, 'mailQueue'), {
       to:       req.userEmail,
       subject:  '✅ Your school has been verified — Welcome to LYNK!',
@@ -846,7 +874,10 @@ window.rejectSchoolRequest = async (reqId) => {
       createdAt: serverTimestamp()
     });
 
-    // Email queue entry
+    // Send real email via EmailJS
+    await sendSchoolEmail('rejected', req.userEmail, req.userName || 'there', req.schoolName, reason || 'Does not meet verification criteria.');
+
+    // Backup record in mailQueue
     await addDoc(collection(db, 'mailQueue'), {
       to:      req.userEmail,
       subject: 'Update on your LYNK school verification',

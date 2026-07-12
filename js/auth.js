@@ -161,6 +161,7 @@ loadSchools();
 
 // ===== SIGNUP STEP 1 =====
 let pendingUserUid = null;
+let pendingUserIsGoogleAuth = false; // skip email verification for Google sign-ins (already verified)
 let pendingUserEmail = null;
 let pendingUserPassword = null;
 let pendingUserPhoneNumber = null;
@@ -307,7 +308,8 @@ window.closePendingModal = () => {
 
 async function sendEmailVerificationAndShowScreen() {
   const user = auth.currentUser;
-  if (user) {
+  if (user && !pendingUserIsGoogleAuth) {
+    // Google accounts already have a verified email — skip Firebase's verification email
     try {
       await sendEmailVerification(user, {
         url: 'https://crazylegend01.github.io/LYNK/auth.html',
@@ -360,14 +362,15 @@ window.completeUniversityInfo = async () => {
 
       // Save pending school request (admins will review this)
       await addDoc(collection(db, 'pendingSchoolRequests'), {
-        userId:      pendingUserUid,
-        userEmail:   pendingUserEmail,
-        userName:    displayName,
-        schoolName:  customSchoolName,
-        faculty:     customFaculty,
-        department:  customDept || '',
-        status:      'pending',
-        createdAt:   serverTimestamp()
+        userId:        pendingUserUid,
+        userEmail:     pendingUserEmail,
+        userName:      displayName,
+        schoolName:    customSchoolName,
+        faculty:       customFaculty,
+        department:    customDept || '',
+        status:        'pending',
+        authProvider:  pendingUserIsGoogleAuth ? 'google' : 'email',
+        createdAt:     serverTimestamp()
       });
 
       // Mark user as blocked until admin approves
@@ -379,17 +382,23 @@ window.completeUniversityInfo = async () => {
         profileComplete: false
       }, { merge: true });
 
-      // Still send email verification so email is confirmed while they wait
-      const user = auth.currentUser;
-      if (user) {
-        try {
-          await sendEmailVerification(user, {
-            url: 'https://crazylegend01.github.io/LYNK/auth.html',
-            handleCodeInApp: false
-          });
-        } catch (err) { console.warn('sendEmailVerification error:', err.code); }
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        if (!pendingUserIsGoogleAuth) {
+          // Email/password sign-ups: send verification email while they wait
+          try {
+            await sendEmailVerification(currentUser, {
+              url: 'https://crazylegend01.github.io/LYNK/auth.html',
+              handleCodeInApp: false
+            });
+          } catch (err) { console.warn('sendEmailVerification error:', err.code); }
+        }
         await firebaseSignOut(auth);
       }
+
+      // Adjust pending modal text for Google users (email already verified)
+      const emailNote = document.getElementById('pending-email-verify-note');
+      if (emailNote) emailNote.style.display = pendingUserIsGoogleAuth ? 'none' : '';
 
       // Show the pending approval popup
       const nameDisplay = document.getElementById('pending-school-name-display');
@@ -430,7 +439,13 @@ window.completeUniversityInfo = async () => {
       }, { merge: true });
     }
 
-    await sendEmailVerificationAndShowScreen();
+    if (pendingUserIsGoogleAuth) {
+      // Google users have verified emails — no verification screen needed, go straight in
+      await setDoc(doc(db, 'users', pendingUserUid), { isOnline: true, lastSeen: serverTimestamp() }, { merge: true });
+      window.location.href = 'feed.html';
+    } else {
+      await sendEmailVerificationAndShowScreen();
+    }
 
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Continue →'; }
@@ -541,8 +556,15 @@ document.getElementById('form-login')?.addEventListener('submit', async (e) => {
     }
     // Block users whose school is awaiting admin approval
     const userSnap = await getDoc(doc(db, 'users', user.uid));
-    if (userSnap.data()?.accountStatus === 'pending_school_verification') {
+    const accountStatus = userSnap.data()?.accountStatus;
+    if (accountStatus === 'pending_school_verification') {
       showAlert('⏳ Your school is still pending admin verification. You\'ll receive an email once it\'s approved.');
+      await firebaseSignOut(auth);
+      setLoading('btn-login', false, 'Sign In');
+      return;
+    }
+    if (accountStatus === 'school_rejected') {
+      showAlert('❌ Your school request was not approved. Please register again and either pick an existing school or resubmit with the correct details.');
       await firebaseSignOut(auth);
       setLoading('btn-login', false, 'Sign In');
       return;
@@ -599,14 +621,21 @@ window.signInWithGoogle = async () => {
       });
       pendingUserUid = user.uid;
       pendingUserEmail = user.email;
+      pendingUserIsGoogleAuth = true;
       await loadSchools();
       window.switchTab('university');
       return;
     }
-    // Block pending users even via Google
+    // Returning Google user — check account status
     const existingSnap2 = await getDoc(userRef);
-    if (existingSnap2.data()?.accountStatus === 'pending_school_verification') {
+    const status = existingSnap2.data()?.accountStatus;
+    if (status === 'pending_school_verification') {
       showAlert('⏳ Your school is still pending admin verification. You\'ll receive an email once it\'s approved.');
+      await firebaseSignOut(auth);
+      return;
+    }
+    if (status === 'school_rejected') {
+      showAlert('❌ Your school request was rejected. Please sign in with email/password, update your school choice, and resubmit.');
       await firebaseSignOut(auth);
       return;
     }

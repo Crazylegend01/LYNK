@@ -10,6 +10,25 @@
   <link rel="stylesheet" href="assets/css/custom.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="js/mobile-nav.js" defer></script>
+  <!-- EmailJS — client-side email sending for school approval/rejection notices -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script>
+    // ── EmailJS config ──────────────────────────────────────────────────
+    // 1. Sign up free at https://www.emailjs.com (200 emails/month free)
+    // 2. Add your email account (Gmail works great) as a service
+    // 3. Create two templates: one for APPROVED, one for REJECTED
+    //    Use template variables: {{to_email}}, {{to_name}}, {{school_name}}, {{reason}}
+    // 4. Replace the placeholders below with your real IDs from the EmailJS dashboard
+    window.EMAILJS_CONFIG = {
+      publicKey:           'YOUR_EMAILJS_PUBLIC_KEY',      // Account > API Keys
+      serviceId:           'YOUR_EMAILJS_SERVICE_ID',      // Email Services tab
+      templateIdApproved:  'YOUR_TEMPLATE_ID_APPROVED',   // Email Templates tab
+      templateIdRejected:  'YOUR_TEMPLATE_ID_REJECTED',   // Email Templates tab
+    };
+    if (window.EMAILJS_CONFIG.publicKey !== 'YOUR_EMAILJS_PUBLIC_KEY') {
+      emailjs.init({ publicKey: window.EMAILJS_CONFIG.publicKey });
+    }
+  </script>
 </head>
 <body>
 
