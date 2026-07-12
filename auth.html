@@ -298,16 +298,72 @@
       </div>
     </div>
 
-    <!-- ===== VERIFY EMAIL ===== -->
-    <div id="form-verify" class="lynk-card p-8 fade-in hidden text-center">
-      <div class="text-5xl mb-4">📧</div>
-      <h2 class="text-2xl font-bold mb-2">Check your inbox</h2>
-      <p class="mb-6" style="color:var(--text-secondary)">We sent a verification email to <strong id="verify-email-addr"></strong>
-      <div id="verify-spam-note" class="hidden mt-3 p-3 rounded-xl text-sm" style="background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.4);color:#fbbf24">
-        ⚠️ <strong>Can't find it?</strong> Check your <strong>spam or junk folder</strong> — Firebase verification emails sometimes land there. Mark it as "Not spam" so future emails reach your inbox.
-      </div>. Click the link to activate your account.</p>
-      <button onclick="resendVerification()" class="lynk-btn lynk-btn-secondary w-full py-3 rounded-xl mb-3">Resend Email</button>
-      <button onclick="switchTab('login')" class="lynk-btn lynk-btn-ghost w-full py-3 rounded-xl">Back to Sign In</button>
+    <!-- ===== VERIFY ACCOUNT (email + phone) ===== -->
+    <div id="form-verify" class="lynk-card p-8 fade-in hidden">
+      <div class="text-center mb-5">
+        <div class="text-4xl mb-3">🔐</div>
+        <h2 class="text-2xl font-bold mb-1">Verify Your Account</h2>
+        <p class="text-sm" style="color:var(--text-secondary)">Complete at least the email step to activate your account.</p>
+      </div>
+
+      <!-- Step pills -->
+      <div class="flex gap-3 mb-5">
+        <div class="flex-1 p-3 rounded-xl border-2 text-center" id="step-email-pill" style="border-color:var(--grad-2);background:rgba(6,182,212,0.07)">
+          <div class="text-xl">📧</div>
+          <div class="text-xs font-bold mt-0.5">Email</div>
+          <div class="text-xs mt-0.5" id="email-pill-status" style="color:var(--text-muted)">Link sent</div>
+        </div>
+        <div class="flex-1 p-3 rounded-xl border-2 text-center" id="step-phone-pill" style="border-color:var(--border)">
+          <div class="text-xl">📱</div>
+          <div class="text-xs font-bold mt-0.5">Phone</div>
+          <div class="text-xs mt-0.5" id="phone-pill-status" style="color:var(--text-muted)">Optional</div>
+        </div>
+      </div>
+
+      <!-- Email section -->
+      <div class="p-4 rounded-xl mb-4" style="background:var(--bg-card-hover);border:1px solid var(--border)">
+        <p class="text-sm font-semibold mb-1">📧 Check your inbox</p>
+        <p class="text-xs mb-3" style="color:var(--text-secondary)">We sent a link to <strong id="verify-email-addr"></strong> — click it to activate your account.</p>
+        <div id="verify-spam-note" class="hidden mb-3 p-2 rounded-lg text-xs" style="background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.4);color:#fbbf24">
+          ⚠️ <strong>Can't find it?</strong> Check your <strong>spam/junk folder</strong> and mark as "Not spam".
+        </div>
+        <button onclick="resendVerification()" class="lynk-btn lynk-btn-secondary w-full py-2.5 rounded-xl text-sm">📧 Resend Email</button>
+      </div>
+
+      <!-- Phone OTP section — shown only when phone was provided -->
+      <div id="phone-verify-section" class="hidden p-4 rounded-xl mb-4" style="background:var(--bg-card-hover);border:1px solid var(--border)">
+        <p class="text-sm font-semibold mb-1">📱 Verify your phone</p>
+        <p class="text-xs mb-3" style="color:var(--text-secondary)">We'll send a 6-digit code to <strong id="verify-phone-display"></strong></p>
+
+        <!-- Invisible reCAPTCHA mounts here -->
+        <div id="recaptcha-container"></div>
+
+        <div id="otp-send-section">
+          <button onclick="sendPhoneOtp()" id="btn-send-otp" class="lynk-btn lynk-btn-secondary w-full py-2.5 rounded-xl text-sm">
+            📲 Send SMS Code
+          </button>
+        </div>
+
+        <div id="otp-input-section" class="hidden mt-3">
+          <p class="text-xs mb-2" style="color:var(--text-muted)">Enter the 6-digit code we sent:</p>
+          <div class="flex gap-2">
+            <input id="otp-input" type="tel" inputmode="numeric" maxlength="6"
+              class="lynk-input flex-1 text-center text-xl font-bold tracking-[0.4em]" placeholder="------" />
+            <button onclick="verifyPhoneOtp()" id="btn-verify-otp"
+              class="lynk-btn lynk-btn-primary px-5 py-2 rounded-xl text-sm flex-shrink-0">Verify</button>
+          </div>
+          <button onclick="sendPhoneOtp()" class="text-xs mt-2 block" style="color:var(--grad-2)">Resend code</button>
+        </div>
+
+        <div id="phone-verified-badge" class="hidden items-center gap-2 mt-3 p-2 rounded-lg text-sm font-medium" style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:#22c55e">
+          ✅ Phone number verified!
+        </div>
+      </div>
+
+      <button onclick="finishVerifyAndSignOut()" class="lynk-btn lynk-btn-primary w-full py-3 rounded-xl mb-2">
+        Done — Go to Sign In →
+      </button>
+      <button onclick="switchTab('login')" class="lynk-btn lynk-btn-ghost w-full py-2 rounded-xl text-sm">Back to Sign In</button>
     </div>
 
   </div>

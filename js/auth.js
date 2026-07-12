@@ -12,7 +12,10 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   onAuthStateChanged,
-  signOut as firebaseSignOut
+  signOut as firebaseSignOut,
+  RecaptchaVerifier,
+  PhoneAuthProvider,
+  linkWithCredential
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   doc, setDoc, getDoc, getDocs, updateDoc, collection, query, where, limit, serverTimestamp, increment as fsIncrement
@@ -160,6 +163,7 @@ loadSchools();
 let pendingUserUid = null;
 let pendingUserEmail = null;
 let pendingUserPassword = null;
+let pendingUserPhoneNumber = null;
 
 document.getElementById('form-signup')?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -203,6 +207,7 @@ document.getElementById('form-signup')?.addEventListener('submit', async (e) => 
     pendingUserUid = user.uid;
     pendingUserEmail = email;
     pendingUserPassword = password;
+    pendingUserPhoneNumber = phoneNumber || null;
 
     // Generate unique referral code for this user
     const referralCode = 'LNK' + user.uid.slice(0, 7).toUpperCase();
@@ -275,6 +280,39 @@ document.getElementById('form-signup')?.addEventListener('submit', async (e) => 
 });
 
 // ===== STEP 2 — University Info =====
+async function sendEmailVerificationAndShowScreen() {
+  const user = auth.currentUser;
+  if (user) {
+    try {
+      await sendEmailVerification(user, {
+        url: 'https://crazylegend01.github.io/LYNK/auth.html',
+        handleCodeInApp: false
+      });
+    } catch (err) {
+      console.warn('sendEmailVerification error:', err.code);
+    }
+    // Keep session open — needed for phone OTP linking below
+  }
+  document.getElementById('verify-email-addr').textContent = pendingUserEmail || '';
+  const spamNote = document.getElementById('verify-spam-note');
+  if (spamNote) spamNote.classList.remove('hidden');
+
+  // Reveal phone section only when a number was provided at signup
+  if (pendingUserPhoneNumber) {
+    const phoneSection = document.getElementById('phone-verify-section');
+    const phoneDisplay = document.getElementById('verify-phone-display');
+    if (phoneSection) phoneSection.classList.remove('hidden');
+    if (phoneDisplay) phoneDisplay.textContent = pendingUserPhoneNumber;
+    const phonePill = document.getElementById('step-phone-pill');
+    if (phonePill) {
+      phonePill.style.borderColor = 'var(--grad-1)';
+      phonePill.style.background = 'rgba(168,85,247,0.07)';
+    }
+  }
+
+  window.switchTab('verify');
+}
+
 window.completeUniversityInfo = async () => {
   const schoolId   = document.getElementById('uni-select')?.value;
   const facultyVal = document.getElementById('faculty-select')?.value;
@@ -303,41 +341,96 @@ window.completeUniversityInfo = async () => {
     }, { merge: true });
   }
 
-  const user = auth.currentUser;
-  if (user) {
-    try {
-      await sendEmailVerification(user, {
-      url: 'https://crazylegend01.github.io/LYNK/auth.html',
-      handleCodeInApp: false
-    });
-    } catch (err) {
-      console.warn('sendEmailVerification error:', err.code);
-    }
-    await firebaseSignOut(auth);
-  }
-  document.getElementById('verify-email-addr').textContent = pendingUserEmail || '';
-  const spamNote = document.getElementById('verify-spam-note');
-  if (spamNote) spamNote.classList.remove('hidden');
-  window.switchTab('verify');
+  await sendEmailVerificationAndShowScreen();
 };
 
 window.skipUniversityInfo = async () => {
-  const user = auth.currentUser;
-  if (user) {
-    try {
-      await sendEmailVerification(user, {
-      url: 'https://crazylegend01.github.io/LYNK/auth.html',
-      handleCodeInApp: false
-    });
-    } catch (err) {
-      console.warn('sendEmailVerification error:', err.code);
+  await sendEmailVerificationAndShowScreen();
+};
+
+// ===== PHONE OTP VERIFICATION =====
+let recaptchaVerifier = null;
+let phoneVerificationId = null;
+
+window.sendPhoneOtp = async () => {
+  const btn = document.getElementById('btn-send-otp');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Sending…'; }
+
+  try {
+    // Build invisible reCAPTCHA once; recreate on failure
+    if (!recaptchaVerifier) {
+      recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible',
+        callback: () => {}
+      });
+      await recaptchaVerifier.render();
     }
-    await firebaseSignOut(auth);
+
+    const provider = new PhoneAuthProvider(auth);
+    phoneVerificationId = await provider.verifyPhoneNumber(
+      pendingUserPhoneNumber,
+      recaptchaVerifier
+    );
+
+    document.getElementById('otp-send-section').classList.add('hidden');
+    document.getElementById('otp-input-section').classList.remove('hidden');
+    document.getElementById('otp-input')?.focus();
+    showAlert('✅ SMS sent! Enter the 6-digit code below.', 'success');
+  } catch (err) {
+    console.warn('Phone OTP send error:', err.code, err.message);
+    const msgs = {
+      'auth/invalid-phone-number':  'The phone number is invalid. Please go back and fix it.',
+      'auth/too-many-requests':     'Too many attempts — wait a few minutes and try again.',
+      'auth/captcha-check-failed':  'reCAPTCHA failed — refresh the page and retry.',
+    };
+    showAlert(msgs[err.code] || 'Could not send SMS. Check the number and try again.');
+    if (btn) { btn.disabled = false; btn.textContent = '📲 Send SMS Code'; }
+    if (recaptchaVerifier) { try { recaptchaVerifier.clear(); } catch {} recaptchaVerifier = null; }
   }
-  document.getElementById('verify-email-addr').textContent = pendingUserEmail || '';
-  const spamNote2 = document.getElementById('verify-spam-note');
-  if (spamNote2) spamNote2.classList.remove('hidden');
-  window.switchTab('verify');
+};
+
+window.verifyPhoneOtp = async () => {
+  const code = (document.getElementById('otp-input')?.value || '').trim();
+  const btn  = document.getElementById('btn-verify-otp');
+  if (!code || code.length !== 6) { showAlert('Enter the full 6-digit code.'); return; }
+  if (!phoneVerificationId) { showAlert('Please send the SMS code first.'); return; }
+  if (btn) { btn.disabled = true; btn.textContent = '⏳…'; }
+
+  try {
+    const credential = PhoneAuthProvider.credential(phoneVerificationId, code);
+    const user = auth.currentUser;
+    if (user) {
+      await linkWithCredential(user, credential);
+      await setDoc(doc(db, 'users', user.uid), { phoneVerified: true }, { merge: true });
+    }
+
+    document.getElementById('otp-input-section').classList.add('hidden');
+    const badge = document.getElementById('phone-verified-badge');
+    if (badge) { badge.style.display = 'flex'; }
+    const pill = document.getElementById('step-phone-pill');
+    if (pill) {
+      pill.style.borderColor = '#22c55e';
+      pill.style.background  = 'rgba(34,197,94,0.07)';
+      const status = document.getElementById('phone-pill-status');
+      if (status) { status.textContent = '✓ Verified'; status.style.color = '#22c55e'; }
+    }
+    showAlert('✅ Phone verified!', 'success');
+  } catch (err) {
+    console.warn('OTP verify error:', err.code, err.message);
+    const msgs = {
+      'auth/invalid-verification-code': 'Incorrect code — please try again.',
+      'auth/code-expired':              'Code expired — tap Resend to get a new one.',
+      'auth/provider-already-linked':   'This phone is already linked to another account.',
+    };
+    showAlert(msgs[err.code] || 'Verification failed. Please retry.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Verify'; }
+  }
+};
+
+// Sign out after user finishes verification steps
+window.finishVerifyAndSignOut = async () => {
+  await firebaseSignOut(auth);
+  window.switchTab('login');
 };
 
 // ===== LOGIN =====
