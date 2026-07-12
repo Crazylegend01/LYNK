@@ -47,6 +47,7 @@ async function initDashboard() {
   loadAdminsList();
   loadSchools();
   loadAnnouncementsAdmin();
+  loadSchoolRequests(); // also populates the sidebar badge
   // Reports and payments load on-demand via showSection
 }
 
@@ -62,6 +63,7 @@ window.showSection = (id, el) => {
   if (id === 'communities') loadCommunities();
   if (id === 'payments') loadPaymentsSection();
   if (id === 'reports') loadReports();
+  if (id === 'school-requests') loadSchoolRequests();
 };
 
 // ===== STATS — real data =====
@@ -641,6 +643,230 @@ window.saveNewSchool = async () => {
   document.getElementById('new-school-faculties').value = '';
   document.getElementById('add-school-modal').classList.add('hidden');
   loadSchools();
+};
+
+// ===== SCHOOL VERIFICATION REQUESTS =====
+let _allSchoolRequests = [];
+let _sreqFilter = 'pending';
+
+async function loadSchoolRequests() {
+  const list = document.getElementById('school-requests-list');
+  if (list) list.innerHTML = '<div class="text-sm" style="color:var(--text-muted)">Loading…</div>';
+
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'pendingSchoolRequests'),
+      orderBy('createdAt', 'desc')
+    ));
+    _allSchoolRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // Update sidebar badge with pending count
+    const pendingCount = _allSchoolRequests.filter(r => r.status === 'pending').length;
+    const badge = document.getElementById('school-req-badge');
+    if (badge) {
+      if (pendingCount > 0) {
+        badge.textContent = pendingCount;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    renderSchoolRequests(_sreqFilter);
+  } catch (err) {
+    if (list) list.innerHTML = '<div class="text-sm" style="color:#ef4444">Failed to load requests.</div>';
+    console.error('loadSchoolRequests error:', err);
+  }
+}
+
+window.filterSchoolRequests = (status) => {
+  _sreqFilter = status;
+  ['pending','approved','rejected'].forEach(s => {
+    const btn = document.getElementById(`sreq-tab-${s}`);
+    if (!btn) return;
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    if (s === status) {
+      const colors = { pending: ['rgba(234,179,8,0.5)','#fbbf24'], approved: ['rgba(34,197,94,0.5)','#22c55e'], rejected: ['rgba(239,68,68,0.5)','#ef4444'] };
+      btn.style.borderColor = colors[s][0];
+      btn.style.color = colors[s][1];
+    }
+  });
+  renderSchoolRequests(status);
+};
+
+function renderSchoolRequests(status) {
+  const list = document.getElementById('school-requests-list');
+  if (!list) return;
+
+  const items = _allSchoolRequests.filter(r => (r.status || 'pending') === status);
+  if (items.length === 0) {
+    list.innerHTML = `<div class="lynk-card p-8 text-center text-sm" style="color:var(--text-muted)">No ${status} requests.</div>`;
+    return;
+  }
+
+  list.innerHTML = '';
+  items.forEach(r => {
+    const ts = r.createdAt?.toDate?.()?.toLocaleDateString() || '—';
+    const isPending = r.status === 'pending';
+    list.insertAdjacentHTML('beforeend', `
+      <div class="lynk-card p-5 mb-3" id="sreq-card-${r.id}">
+        <div class="flex items-start justify-between gap-4 flex-wrap">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap mb-1">
+              <p class="font-semibold">${escHtml(r.schoolName || '—')}</p>
+              <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:${isPending ? 'rgba(234,179,8,0.15)' : r.status === 'approved' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'};color:${isPending ? '#fbbf24' : r.status === 'approved' ? '#22c55e' : '#ef4444'}">
+                ${isPending ? '⏳ Pending' : r.status === 'approved' ? '✅ Approved' : '❌ Rejected'}
+              </span>
+            </div>
+            <p class="text-sm" style="color:var(--text-secondary)">Faculty: <strong>${escHtml(r.faculty || '—')}</strong>${r.department ? ` · Dept: ${escHtml(r.department)}` : ''}</p>
+            <p class="text-xs mt-1" style="color:var(--text-muted)">
+              Submitted by <strong>${escHtml(r.userName || 'Unknown')}</strong>
+              (${escHtml(r.userEmail || '—')}) · ${ts}
+            </p>
+            ${r.adminNote ? `<p class="text-xs mt-1 italic" style="color:var(--text-muted)">Note: ${escHtml(r.adminNote)}</p>` : ''}
+          </div>
+          ${isPending ? `
+          <div class="flex gap-2 flex-shrink-0">
+            <button onclick="approveSchoolRequest('${r.id}')"
+              class="lynk-btn text-xs py-1.5 px-3 rounded-lg font-semibold"
+              style="background:rgba(34,197,94,0.12);color:#22c55e;border:1px solid rgba(34,197,94,0.3)">
+              ✓ Approve
+            </button>
+            <button onclick="rejectSchoolRequest('${r.id}')"
+              class="lynk-btn text-xs py-1.5 px-3 rounded-lg font-semibold"
+              style="background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.3)">
+              ✕ Reject
+            </button>
+          </div>` : ''}
+        </div>
+      </div>`);
+  });
+}
+
+window.approveSchoolRequest = async (reqId) => {
+  const req = _allSchoolRequests.find(r => r.id === reqId);
+  if (!req) return;
+  if (!confirm(`Approve "${req.schoolName}" for ${req.userName || req.userEmail}?`)) return;
+
+  try {
+    // Mark request approved
+    await updateDoc(doc(db, 'pendingSchoolRequests', reqId), {
+      status: 'approved',
+      approvedAt: serverTimestamp(),
+      approvedBy: currentUser?.uid || 'admin'
+    });
+
+    // Unlock the user's account
+    await updateDoc(doc(db, 'users', req.userId), {
+      accountStatus: 'active',
+      profileComplete: !!(req.schoolName && req.faculty)
+    });
+
+    // Add school to the schools collection if not already there
+    const existing = await getDocs(query(
+      collection(db, 'schools'),
+      where('name', '==', req.schoolName),
+      limit(1)
+    ));
+    if (existing.empty) {
+      const faculties = {};
+      if (req.faculty) {
+        faculties[req.faculty] = req.department ? [req.department] : [];
+      }
+      await addDoc(collection(db, 'schools'), {
+        name: req.schoolName,
+        faculties,
+        createdAt: serverTimestamp(),
+        addedViaRequest: true
+      });
+    }
+
+    // In-app notification for the user
+    await addDoc(collection(db, 'notifications'), {
+      userId:    req.userId,
+      type:      'school_approved',
+      title:     '🎉 School Verified!',
+      body:      `Your school "${req.schoolName}" has been verified. You can now sign in and access LYNK!`,
+      read:      false,
+      createdAt: serverTimestamp()
+    });
+
+    // Email queue entry (connect Firebase "Trigger Email" extension later)
+    await addDoc(collection(db, 'mailQueue'), {
+      to:       req.userEmail,
+      subject:  '✅ Your school has been verified — Welcome to LYNK!',
+      html:     `<p>Hi ${escHtml(req.userName || 'there')},</p>
+                 <p>Great news! Your school <strong>${escHtml(req.schoolName)}</strong> has been verified by our team.</p>
+                 <p>You can now <a href="https://crazylegend01.github.io/LYNK/auth.html">sign in to LYNK</a> and access the platform.</p>
+                 <p>Welcome aboard! 🎓</p>
+                 <p>— The LYNK Team</p>`,
+      createdAt: serverTimestamp(),
+      status:    'pending'
+    });
+
+    // Update local state and re-render
+    const idx = _allSchoolRequests.findIndex(r => r.id === reqId);
+    if (idx !== -1) _allSchoolRequests[idx].status = 'approved';
+    renderSchoolRequests(_sreqFilter);
+    loadSchoolRequests(); // refresh badge count
+    alert(`✅ Approved! ${req.userName || req.userEmail} can now sign in.`);
+  } catch (err) {
+    alert('Error approving request: ' + err.message);
+    console.error(err);
+  }
+};
+
+window.rejectSchoolRequest = async (reqId) => {
+  const req = _allSchoolRequests.find(r => r.id === reqId);
+  if (!req) return;
+  const reason = prompt(`Reason for rejecting "${req.schoolName}" (shown to user):`);
+  if (reason === null) return; // cancelled
+
+  try {
+    await updateDoc(doc(db, 'pendingSchoolRequests', reqId), {
+      status:     'rejected',
+      adminNote:  reason || 'Does not meet verification criteria.',
+      rejectedAt: serverTimestamp(),
+      rejectedBy: currentUser?.uid || 'admin'
+    });
+
+    // Update user status so they know to re-submit or pick existing school
+    await updateDoc(doc(db, 'users', req.userId), {
+      accountStatus: 'school_rejected'
+    });
+
+    // In-app notification
+    await addDoc(collection(db, 'notifications'), {
+      userId:    req.userId,
+      type:      'school_rejected',
+      title:     '❌ School Not Verified',
+      body:      `Your school "${req.schoolName}" could not be verified. Reason: ${reason || 'Does not meet criteria.'}. Please sign in and select an existing school or re-submit.`,
+      read:      false,
+      createdAt: serverTimestamp()
+    });
+
+    // Email queue entry
+    await addDoc(collection(db, 'mailQueue'), {
+      to:      req.userEmail,
+      subject: 'Update on your LYNK school verification',
+      html:    `<p>Hi ${escHtml(req.userName || 'there')},</p>
+                <p>Unfortunately, we were unable to verify your school <strong>${escHtml(req.schoolName)}</strong>.</p>
+                <p><strong>Reason:</strong> ${escHtml(reason || 'Does not meet verification criteria.')}</p>
+                <p>You can <a href="https://crazylegend01.github.io/LYNK/auth.html">sign in</a> and either select an existing school from our list or re-submit your school details.</p>
+                <p>— The LYNK Team</p>`,
+      createdAt: serverTimestamp(),
+      status:    'pending'
+    });
+
+    const idx = _allSchoolRequests.findIndex(r => r.id === reqId);
+    if (idx !== -1) { _allSchoolRequests[idx].status = 'rejected'; _allSchoolRequests[idx].adminNote = reason; }
+    renderSchoolRequests(_sreqFilter);
+    loadSchoolRequests();
+  } catch (err) {
+    alert('Error rejecting request: ' + err.message);
+    console.error(err);
+  }
 };
 
 // ===== ANNOUNCEMENTS (Admin section) =====

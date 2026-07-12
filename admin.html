@@ -85,6 +85,10 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
       <span>Schools</span>
     </a>
+    <a href="#" onclick="showSection('school-requests',this)" class="lynk-sidebar-link" id="nav-school-requests">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      <span>School Requests <span id="school-req-badge" class="hidden ml-1 px-1.5 py-0.5 rounded-full text-xs font-bold" style="background:rgba(234,179,8,0.2);color:#fbbf24"></span></span>
+    </a>
     <a href="#" onclick="showSection('reports',this)" class="lynk-sidebar-link">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
       <span>Reports</span>
@@ -757,6 +761,40 @@ service cloud.firestore {
       </button>
     </div>
     <div id="schools-list"></div>
+  </section>
+
+  <!-- SCHOOL REQUESTS -->
+  <section id="section-school-requests" class="hidden">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold">School Verification Requests</h1>
+        <p class="text-sm mt-1" style="color:var(--text-secondary)">Users whose schools aren't in your list — review and approve or reject below.</p>
+      </div>
+      <button onclick="loadSchoolRequests()" class="lynk-btn lynk-btn-secondary text-sm gap-2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Refresh
+      </button>
+    </div>
+
+    <!-- Filter tabs -->
+    <div class="flex gap-2 mb-5">
+      <button onclick="filterSchoolRequests('pending')" id="sreq-tab-pending"
+        class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-full" style="border-color:rgba(234,179,8,0.5);color:#fbbf24">
+        ⏳ Pending
+      </button>
+      <button onclick="filterSchoolRequests('approved')" id="sreq-tab-approved"
+        class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-full">
+        ✅ Approved
+      </button>
+      <button onclick="filterSchoolRequests('rejected')" id="sreq-tab-rejected"
+        class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-full">
+        ❌ Rejected
+      </button>
+    </div>
+
+    <div id="school-requests-list">
+      <div class="text-sm" style="color:var(--text-muted)">Loading requests…</div>
+    </div>
   </section>
 
   <!-- REPORTS -->

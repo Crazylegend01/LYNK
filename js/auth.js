@@ -18,7 +18,7 @@ import {
   linkWithCredential
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  doc, setDoc, getDoc, getDocs, updateDoc, collection, query, where, limit, serverTimestamp, increment as fsIncrement
+  doc, setDoc, getDoc, getDocs, addDoc, updateDoc, collection, query, where, limit, serverTimestamp, increment as fsIncrement
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 ThemeManager.init();
@@ -280,6 +280,31 @@ document.getElementById('form-signup')?.addEventListener('submit', async (e) => 
 });
 
 // ===== STEP 2 — University Info =====
+
+// Toggle between known-school picker and custom school inputs
+window.toggleCustomSchool = (checked) => {
+  const customSection = document.getElementById('custom-school-section');
+  const schoolPicker  = document.getElementById('school-picker-section');
+  const facWrapper    = document.getElementById('faculty-wrapper');
+  const deptWrapper   = document.getElementById('dept-wrapper');
+  if (checked) {
+    customSection.style.display = 'flex';
+    schoolPicker.style.opacity = '0.4';
+    schoolPicker.style.pointerEvents = 'none';
+    facWrapper?.classList.add('hidden');
+    deptWrapper?.classList.add('hidden');
+  } else {
+    customSection.style.display = 'none';
+    schoolPicker.style.opacity = '1';
+    schoolPicker.style.pointerEvents = 'auto';
+  }
+};
+
+window.closePendingModal = () => {
+  document.getElementById('pending-modal')?.classList.add('hidden');
+  window.switchTab('login');
+};
+
 async function sendEmailVerificationAndShowScreen() {
   const user = auth.currentUser;
   if (user) {
@@ -291,13 +316,12 @@ async function sendEmailVerificationAndShowScreen() {
     } catch (err) {
       console.warn('sendEmailVerification error:', err.code);
     }
-    // Keep session open — needed for phone OTP linking below
+    // Keep session open for phone OTP linking
   }
   document.getElementById('verify-email-addr').textContent = pendingUserEmail || '';
   const spamNote = document.getElementById('verify-spam-note');
   if (spamNote) spamNote.classList.remove('hidden');
 
-  // Reveal phone section only when a number was provided at signup
   if (pendingUserPhoneNumber) {
     const phoneSection = document.getElementById('phone-verify-section');
     const phoneDisplay = document.getElementById('verify-phone-display');
@@ -314,38 +338,103 @@ async function sendEmailVerificationAndShowScreen() {
 }
 
 window.completeUniversityInfo = async () => {
-  const schoolId   = document.getElementById('uni-select')?.value;
-  const facultyVal = document.getElementById('faculty-select')?.value;
-  const deptVal    = document.getElementById('dept-select')?.value;
-
   if (!pendingUserUid) { window.location.href = 'feed.html'; return; }
 
-  const universityName = schoolId ? (schoolsData[schoolId]?.name || '') : '';
-  await setDoc(doc(db, 'users', pendingUserUid), {
-    university: universityName,
-    faculty: facultyVal || '',
-    department: deptVal || '',
-    profileComplete: !!(universityName && facultyVal && deptVal)
-  }, { merge: true });
+  const isCustom = document.getElementById('school-not-listed')?.checked;
+  const btn = document.getElementById('btn-complete-uni');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
 
-  if (universityName && facultyVal) {
-    await setDoc(doc(db, 'communities', `${universityName}-${facultyVal}`.replace(/\s+/g,'-').toLowerCase()), {
-      name: `${facultyVal} — ${universityName}`, type: 'faculty',
-      university: universityName, faculty: facultyVal, memberCount: 1, createdAt: serverTimestamp()
+  try {
+    // ── Path A: user's school is NOT in the admin list ──────────────
+    if (isCustom) {
+      const customSchoolName = document.getElementById('custom-school-name')?.value.trim();
+      const customFaculty    = document.getElementById('custom-faculty')?.value.trim();
+      const customDept       = document.getElementById('custom-dept')?.value.trim();
+
+      if (!customSchoolName) { showAlert('Please enter your university name.'); return; }
+      if (!customFaculty)    { showAlert('Please enter your faculty.'); return; }
+
+      // Fetch display name for the request record
+      const userSnap = await getDoc(doc(db, 'users', pendingUserUid));
+      const displayName = userSnap.data()?.displayName || '';
+
+      // Save pending school request (admins will review this)
+      await addDoc(collection(db, 'pendingSchoolRequests'), {
+        userId:      pendingUserUid,
+        userEmail:   pendingUserEmail,
+        userName:    displayName,
+        schoolName:  customSchoolName,
+        faculty:     customFaculty,
+        department:  customDept || '',
+        status:      'pending',
+        createdAt:   serverTimestamp()
+      });
+
+      // Mark user as blocked until admin approves
+      await setDoc(doc(db, 'users', pendingUserUid), {
+        university:    customSchoolName,
+        faculty:       customFaculty,
+        department:    customDept || '',
+        accountStatus: 'pending_school_verification',
+        profileComplete: false
+      }, { merge: true });
+
+      // Still send email verification so email is confirmed while they wait
+      const user = auth.currentUser;
+      if (user) {
+        try {
+          await sendEmailVerification(user, {
+            url: 'https://crazylegend01.github.io/LYNK/auth.html',
+            handleCodeInApp: false
+          });
+        } catch (err) { console.warn('sendEmailVerification error:', err.code); }
+        await firebaseSignOut(auth);
+      }
+
+      // Show the pending approval popup
+      const nameDisplay = document.getElementById('pending-school-name-display');
+      if (nameDisplay) nameDisplay.textContent = `"${customSchoolName}"`;
+      document.getElementById('pending-modal')?.classList.remove('hidden');
+      return;
+    }
+
+    // ── Path B: user picked from the admin-approved dropdown ────────
+    const schoolId   = document.getElementById('uni-select')?.value;
+    const facultyVal = document.getElementById('faculty-select')?.value;
+    const deptVal    = document.getElementById('dept-select')?.value;
+
+    if (!schoolId)   { showAlert('Please select your university from the list.'); return; }
+    if (!facultyVal) { showAlert('Please select your faculty.'); return; }
+
+    const universityName = schoolsData[schoolId]?.name || '';
+
+    await setDoc(doc(db, 'users', pendingUserUid), {
+      university:    universityName,
+      faculty:       facultyVal,
+      department:    deptVal || '',
+      accountStatus: 'active',
+      profileComplete: !!(universityName && facultyVal)
     }, { merge: true });
-  }
-  if (universityName && deptVal) {
-    await setDoc(doc(db, 'communities', `${universityName}-${deptVal}`.replace(/\s+/g,'-').toLowerCase()), {
-      name: `${deptVal} — ${universityName}`, type: 'department',
-      university: universityName, faculty: facultyVal || '', department: deptVal, memberCount: 1, createdAt: serverTimestamp()
-    }, { merge: true });
-  }
 
-  await sendEmailVerificationAndShowScreen();
-};
+    // Create faculty & dept community nodes
+    if (universityName && facultyVal) {
+      await setDoc(doc(db, 'communities', `${universityName}-${facultyVal}`.replace(/\s+/g,'-').toLowerCase()), {
+        name: `${facultyVal} — ${universityName}`, type: 'faculty',
+        university: universityName, faculty: facultyVal, memberCount: 1, createdAt: serverTimestamp()
+      }, { merge: true });
+    }
+    if (universityName && deptVal) {
+      await setDoc(doc(db, 'communities', `${universityName}-${deptVal}`.replace(/\s+/g,'-').toLowerCase()), {
+        name: `${deptVal} — ${universityName}`, type: 'department',
+        university: universityName, faculty: facultyVal, department: deptVal, memberCount: 1, createdAt: serverTimestamp()
+      }, { merge: true });
+    }
 
-window.skipUniversityInfo = async () => {
-  await sendEmailVerificationAndShowScreen();
+    await sendEmailVerificationAndShowScreen();
+
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Continue →'; }
+  }
 };
 
 // ===== PHONE OTP VERIFICATION =====
@@ -450,6 +539,14 @@ document.getElementById('form-login')?.addEventListener('submit', async (e) => {
       setLoading('btn-login', false, 'Sign In');
       return;
     }
+    // Block users whose school is awaiting admin approval
+    const userSnap = await getDoc(doc(db, 'users', user.uid));
+    if (userSnap.data()?.accountStatus === 'pending_school_verification') {
+      showAlert('⏳ Your school is still pending admin verification. You\'ll receive an email once it\'s approved.');
+      await firebaseSignOut(auth);
+      setLoading('btn-login', false, 'Sign In');
+      return;
+    }
     await setDoc(doc(db, 'users', user.uid), { isOnline: true, lastSeen: serverTimestamp() }, { merge: true });
     window.location.href = 'feed.html';
   } catch (err) {
@@ -504,6 +601,13 @@ window.signInWithGoogle = async () => {
       pendingUserEmail = user.email;
       await loadSchools();
       window.switchTab('university');
+      return;
+    }
+    // Block pending users even via Google
+    const existingSnap2 = await getDoc(userRef);
+    if (existingSnap2.data()?.accountStatus === 'pending_school_verification') {
+      showAlert('⏳ Your school is still pending admin verification. You\'ll receive an email once it\'s approved.');
+      await firebaseSignOut(auth);
       return;
     }
     await setDoc(userRef, { isOnline: true, lastSeen: serverTimestamp() }, { merge: true });

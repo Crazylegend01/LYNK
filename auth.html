@@ -266,11 +266,14 @@
         <h2 class="text-xl font-bold">University Info 🏛️</h2>
         <span class="text-xs lynk-badge" style="background:var(--bg-card-hover);color:var(--text-muted)">Step 2 of 2</span>
       </div>
-      <p class="text-sm mb-5" style="color:var(--text-secondary)">Select your university, faculty and department. You can skip this and fill it in later from your profile.</p>
+      <p class="text-sm mb-1" style="color:var(--text-secondary)">University and faculty are <strong>required</strong> to access the platform.</p>
+      <p class="text-xs mb-5" style="color:var(--text-muted)">If your school isn't listed, submit it for admin review — you'll be notified by email once approved.</p>
 
       <div class="flex flex-col gap-4">
-        <div>
-          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">University</label>
+
+        <!-- ── Known-school picker ── -->
+        <div id="school-picker-section">
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">University *</label>
           <select id="uni-select" class="lynk-input" onchange="loadFaculties(this.value)">
             <option value="">-- Select your university --</option>
           </select>
@@ -278,23 +281,48 @@
         </div>
 
         <div id="faculty-wrapper" class="hidden">
-          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Faculty</label>
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Faculty *</label>
           <select id="faculty-select" class="lynk-input" onchange="loadDepartments(this.value)">
             <option value="">-- Select faculty --</option>
           </select>
         </div>
 
         <div id="dept-wrapper" class="hidden">
-          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Department</label>
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Department <span class="font-normal text-xs" style="color:var(--text-muted)">(optional)</span></label>
           <select id="dept-select" class="lynk-input">
             <option value="">-- Select department --</option>
           </select>
         </div>
 
-        <div class="flex gap-3 mt-2">
-          <button onclick="completeUniversityInfo()" class="lynk-btn lynk-btn-primary flex-1 py-3 rounded-xl">Complete Setup ✓</button>
-          <button onclick="skipUniversityInfo()" class="lynk-btn lynk-btn-secondary py-3 px-4 rounded-xl text-sm">Skip for now →</button>
+        <!-- ── "Not listed" toggle ── -->
+        <label class="flex items-center gap-2.5 cursor-pointer select-none text-sm" style="color:var(--text-secondary)">
+          <input type="checkbox" id="school-not-listed" class="accent-purple-500 w-4 h-4"
+                 onchange="toggleCustomSchool(this.checked)" />
+          My school isn't in the list
+        </label>
+
+        <!-- ── Custom school inputs ── -->
+        <div id="custom-school-section" class="hidden flex-col gap-3 p-4 rounded-xl" style="background:var(--bg-card-hover);border:1px solid rgba(168,85,247,0.3)">
+          <div class="flex items-start gap-2 text-xs p-2 rounded-lg" style="background:rgba(234,179,8,0.08);color:#fbbf24">
+            ⏳ Your school will be submitted for admin review. You won't be able to access the platform until an admin approves it — we'll email you when that happens.
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">University / Institution Name *</label>
+            <input id="custom-school-name" type="text" class="lynk-input" placeholder="e.g. University of Lagos" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Faculty *</label>
+            <input id="custom-faculty" type="text" class="lynk-input" placeholder="e.g. Faculty of Engineering" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1.5" style="color:var(--text-secondary)">Department <span class="font-normal text-xs" style="color:var(--text-muted)">(optional)</span></label>
+            <input id="custom-dept" type="text" class="lynk-input" placeholder="e.g. Computer Engineering" />
+          </div>
         </div>
+
+        <button onclick="completeUniversityInfo()" id="btn-complete-uni" class="lynk-btn lynk-btn-primary w-full py-3 rounded-xl mt-1">
+          Continue →
+        </button>
       </div>
     </div>
 
@@ -366,6 +394,22 @@
       <button onclick="switchTab('login')" class="lynk-btn lynk-btn-ghost w-full py-2 rounded-xl text-sm">Back to Sign In</button>
     </div>
 
+  </div>
+</div>
+
+<!-- PENDING SCHOOL APPROVAL MODAL -->
+<div id="pending-modal" class="lynk-modal-overlay hidden">
+  <div class="lynk-card p-8 w-full max-w-sm mx-4 text-center">
+    <div class="text-5xl mb-4">🏫</div>
+    <h3 class="text-xl font-bold mb-2">School Under Review</h3>
+    <p class="text-sm mb-4" style="color:var(--text-secondary)">
+      <strong id="pending-school-name-display"></strong> has been submitted for admin verification.
+    </p>
+    <div class="p-3 rounded-xl text-sm mb-4 text-left" style="background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.4);color:#fbbf24">
+      ⏳ <strong>Access is restricted</strong> until an admin approves your school. We've also sent a verification link to your email — please confirm it while you wait.
+    </div>
+    <p class="text-xs mb-6" style="color:var(--text-muted)">You'll receive an email notification once an admin verifies your school. This usually takes 24–48 hours.</p>
+    <button onclick="closePendingModal()" class="lynk-btn lynk-btn-primary w-full py-3 rounded-xl">Got it — Back to Sign In</button>
   </div>
 </div>
 
