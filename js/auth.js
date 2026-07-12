@@ -171,6 +171,9 @@ document.getElementById('form-signup')?.addEventListener('submit', async (e) => 
   const userType = document.querySelector('input[name="user-type"]:checked')?.value || 'student';
   const position = document.getElementById('signup-position')?.value.trim() || '';
   const academicLevel = document.getElementById('signup-level')?.value || '';
+  const phoneCode = document.getElementById('signup-phone-code')?.value || '';
+  const phoneRaw  = (document.getElementById('signup-phone')?.value || '').replace(/\s+/g, '').replace(/-/g, '');
+  const phoneNumber = phoneRaw ? `${phoneCode}${phoneRaw.startsWith('0') ? phoneRaw.slice(1) : phoneRaw}` : '';
 
   if (!username || username.length < 3) {
     showAlert('Username must be at least 3 characters.'); return;
@@ -222,6 +225,7 @@ document.getElementById('form-signup')?.addEventListener('submit', async (e) => 
       faculty: '',
       department: '',
       bio: '',
+      phoneNumber: phoneNumber || '',
       photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(fname+' '+lname)}&background=a855f7&color=fff&size=200`,
       coverURL: '',
       role: 'user',

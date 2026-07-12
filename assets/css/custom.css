@@ -414,27 +414,27 @@ body {
   display: none; position: fixed; bottom: 0; left: 0; right: 0;
   z-index: 900; background: var(--sidebar-bg);
   border-top: 1px solid var(--border);
-  height: calc(64px + env(safe-area-inset-bottom, 0px));
+  height: calc(72px + env(safe-area-inset-bottom, 0px));
   justify-content: space-around; align-items: flex-start;
-  padding: 8px 4px env(safe-area-inset-bottom, 0px) 4px;
+  padding: 10px 4px env(safe-area-inset-bottom, 0px) 4px;
   backdrop-filter: blur(12px); overflow: hidden;
 }
 .lynk-bottom-nav a {
   display: flex; flex-direction: column; align-items: center;
-  gap: 3px; color: var(--text-secondary); text-decoration: none;
-  font-size: 0.62rem; font-weight: 500; flex: 1; padding: 6px 0;
+  gap: 4px; color: var(--text-secondary); text-decoration: none;
+  font-size: 0.68rem; font-weight: 600; flex: 1; padding: 4px 0;
   border-radius: 8px; transition: color 0.15s; opacity: 0.85;
 }
-.lynk-bottom-nav a .bnav-icon { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; }
-.lynk-bottom-nav a svg { stroke-width: 2; }
+.lynk-bottom-nav a .bnav-icon { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; }
+.lynk-bottom-nav a svg { stroke-width: 2; width: 28px !important; height: 28px !important; }
 .lynk-bottom-nav a.active, .lynk-bottom-nav a:hover { color: var(--text-primary); opacity: 1; }
-.lynk-bottom-nav a.active svg { filter: drop-shadow(0 0 5px var(--grad-2)); stroke-width: 2.2; }
+.lynk-bottom-nav a.active svg { filter: drop-shadow(0 0 6px var(--grad-2)); stroke-width: 2.4; }
 .lynk-bottom-nav a.active { color: var(--grad-1); }
 .lynk-bottom-nav .bnav-plus {
   background: linear-gradient(135deg, var(--grad-1), var(--grad-3));
-  border-radius: 14px; width: 42px; height: 36px;
+  border-radius: 16px; width: 50px; height: 42px;
   display: flex; align-items: center; justify-content: center;
-  color: #fff; box-shadow: 0 2px 8px rgba(168,85,247,0.4);
+  color: #fff; box-shadow: 0 2px 12px rgba(168,85,247,0.5);
 }
 
 
@@ -503,7 +503,8 @@ body {
     padding-top: 24px; width: 270px;
   }
   .lynk-sidebar.drawer-open { transform: translateX(0); }
-  .main-content { margin-left: 0; padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+  .main-content { margin-left: 0; padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+  .main-content > div { padding-top: 8px !important; }
   .lynk-bottom-nav { display: flex; }
   #hamburger-btn { display: flex; align-items: center; }
 }
@@ -995,13 +996,19 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 /* ===== Ambient glassmorphism orbs (injected by mobile-nav.js + inline on auth) ===== */
 .lynk-orb-wrap { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
 .lynk-orb { position: absolute; border-radius: 50%; }
-.lynk-orb-1 { width: 520px; height: 520px; background: var(--grad-1); opacity: 0.055; top: -160px; left: -130px; filter: blur(100px); animation: orbDrift 24s linear infinite; }
-.lynk-orb-2 { width: 440px; height: 440px; background: var(--grad-2); opacity: 0.045; bottom: -130px; right: -110px; filter: blur(90px); animation: orbDrift 30s linear infinite reverse; }
-.lynk-orb-3 { width: 360px; height: 360px; background: var(--grad-3); opacity: 0.04; top: 35%; left: 42%; filter: blur(110px); animation: orbDrift 20s linear infinite 4s; }
-[data-theme="light"] .lynk-orb-1 { opacity: 0.035; }
-[data-theme="light"] .lynk-orb-2 { opacity: 0.03; }
-[data-theme="light"] .lynk-orb-3 { opacity: 0.025; }
+.lynk-orb-1 { width: 600px; height: 600px; background: var(--grad-1); opacity: 0.13; top: -160px; left: -130px; filter: blur(90px); animation: orbDrift 24s linear infinite; }
+.lynk-orb-2 { width: 500px; height: 500px; background: var(--grad-2); opacity: 0.11; bottom: -130px; right: -110px; filter: blur(80px); animation: orbDrift 30s linear infinite reverse; }
+.lynk-orb-3 { width: 420px; height: 420px; background: var(--grad-3); opacity: 0.09; top: 35%; left: 42%; filter: blur(100px); animation: orbDrift 20s linear infinite 4s; }
+[data-theme="light"] .lynk-orb-1 { opacity: 0.07; }
+[data-theme="light"] .lynk-orb-2 { opacity: 0.06; }
+[data-theme="light"] .lynk-orb-3 { opacity: 0.05; }
 @keyframes orbDrift { to { transform: rotate(360deg); } }
+
+/* ===== Glassmorphism card enhancement ===== */
+.lynk-card {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
 
 /* ===== AI low-credit warning badge dot ===== */
 .lynk-bottom-nav a[href="ai.html"] .bnav-icon,
