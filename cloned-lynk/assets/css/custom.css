@@ -415,8 +415,8 @@ body {
   z-index: 900; background: var(--sidebar-bg);
   border-top: 1px solid var(--border);
   height: calc(72px + env(safe-area-inset-bottom, 0px));
-  justify-content: space-around; align-items: flex-start;
-  padding: 10px 4px env(safe-area-inset-bottom, 0px) 4px;
+  justify-content: space-around; align-items: center;
+  padding: 0 4px env(safe-area-inset-bottom, 0px) 4px;
   backdrop-filter: blur(12px); overflow: hidden;
 }
 .lynk-bottom-nav a {

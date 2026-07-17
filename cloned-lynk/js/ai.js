@@ -21,9 +21,11 @@ let aiSettings = null;
 let uploadedFileContent = '';
 let isPremium = false;
 let userCredits = 0;
+let isAdminUser = false;
 let flutterwaveKey = null;
-const NEW_USER_CREDITS = 1000;
-const DAILY_REFILL_CREDITS = 100;
+const NEW_USER_CREDITS   = 100;   // first-time welcome credits
+const REFILL_CREDITS     = 100;   // top-up amount every 15 days
+const REFILL_DAYS        = 15;    // refill cadence in days
 
 const MODE_CONFIG = {
   chat: { title: 'Ask Anything', subtitle: 'Your AI-powered study assistant', icon: '🤖' },
@@ -61,9 +63,11 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 async function checkPremiumStatus() {
-  // Admins and super admins always have premium access for free
+  // Admins have unlimited access — flag separately so credit logic can skip them
   if (currentUserData.role === 'admin' || currentUserData.adminRole) {
-    isPremium = true;
+    isPremium    = true;
+    isAdminUser  = true;
+    userCredits  = Infinity;
     return;
   }
   const snap = await getDoc(doc(db, 'premiumSubscriptions', currentUser.uid));
@@ -120,43 +124,54 @@ async function loadAISettings() {
 }
 
 async function loadCredits() {
-  const today = new Date().toISOString().slice(0, 10);
-  const userRef = doc(db, 'users', currentUser.uid);
-  const snap = await getDoc(userRef);
-  const data = snap.data() || {};
-
-  let credits = data.aiCredits ?? null;
-  const lastRefill = data.aiCreditsLastRefill || null;
-
-  if (credits === null || !data.aiCreditsEverReceived) {
-    // First-time user — award 1,000 welcome credits
-    credits = NEW_USER_CREDITS;
-    await updateDoc(userRef, {
-      aiCredits: NEW_USER_CREDITS,
-      aiCreditsLastRefill: today,
-      aiCreditsEverReceived: true,
-    });
-  } else {
-    // Refill every 15 days
-    const daysSince = lastRefill
-      ? Math.floor((Date.now() - new Date(lastRefill).getTime()) / 86400000)
-      : 999;
-    if (daysSince >= 15) {
-      credits = Math.max(credits, 0) + DAILY_REFILL_CREDITS;
-      await updateDoc(userRef, { aiCredits: credits, aiCreditsLastRefill: today });
-    }
+  // Admins have unlimited credits — skip Firestore read entirely
+  if (isAdminUser) {
+    try { localStorage.setItem('lynk_ai_credits', 'unlimited'); } catch {}
+    return;
   }
 
-  userCredits = credits;
-  // Persist credit count so other pages can show the low-credit badge
-  try { localStorage.setItem('lynk_ai_credits', credits); } catch {}
+  try {
+    const today   = new Date().toISOString().slice(0, 10);
+    const userRef = doc(db, 'users', currentUser.uid);
+    const snap    = await getDoc(userRef);
+    const data    = snap.data() || {};
+
+    let credits         = data.aiCredits ?? null;
+    const lastRefill    = data.aiCreditsLastRefill || null;
+
+    if (credits === null || !data.aiCreditsEverReceived) {
+      // First-time user — award welcome credits
+      credits = NEW_USER_CREDITS;
+      await updateDoc(userRef, {
+        aiCredits:            NEW_USER_CREDITS,
+        aiCreditsLastRefill:  today,
+        aiCreditsEverReceived: true,
+      });
+    } else {
+      // Refill every 15 days
+      const daysSince = lastRefill
+        ? Math.floor((Date.now() - new Date(lastRefill).getTime()) / 86400000)
+        : 999;
+      if (daysSince >= REFILL_DAYS) {
+        credits = Math.max(credits, 0) + REFILL_CREDITS;
+        await updateDoc(userRef, { aiCredits: credits, aiCreditsLastRefill: today });
+      }
+    }
+
+    userCredits = credits;
+    try { localStorage.setItem('lynk_ai_credits', credits); } catch {}
+  } catch (e) {
+    // If Firestore read fails, give the user a safe default so they aren't locked out
+    console.warn('loadCredits error:', e.message);
+    if (userCredits <= 0) userCredits = NEW_USER_CREDITS;
+  }
 }
 
 function updateUsageUI() {
-  const bar     = document.getElementById('ai-usage-bar');
-  const text    = document.getElementById('ai-usage-text');
-  const badge   = document.getElementById('ai-usage-badge');
-  const status  = document.getElementById('ai-sidebar-status');
+  const bar       = document.getElementById('ai-usage-bar');
+  const text      = document.getElementById('ai-usage-text');
+  const badge     = document.getElementById('ai-usage-badge');
+  const status    = document.getElementById('ai-sidebar-status');
   const paywall   = document.getElementById('ai-paywall');
   const lowBanner = document.getElementById('ai-low-credit-banner');
   const lowText   = document.getElementById('ai-low-credit-text');
@@ -167,19 +182,20 @@ function updateUsageUI() {
 
   if (isPremium) {
     if (bar) { bar.style.width = '100%'; bar.style.background = 'linear-gradient(135deg,#22c55e,#10b981)'; }
-    if (text)   text.textContent  = 'Unlimited queries';
-    if (badge)  badge.textContent = '⭐ Premium — Unlimited';
-    if (status) status.textContent = '⭐ Premium Active';
+    if (text)   text.textContent   = isAdminUser ? 'Admin — Unlimited' : 'Unlimited queries';
+    if (badge)  badge.textContent  = isAdminUser ? '🛡️ Admin' : '⭐ Premium — Unlimited';
+    if (status) status.textContent = isAdminUser ? '🛡️ Admin — Unlimited' : '⭐ Premium Active';
     if (paywall)   paywall.classList.add('hidden');
     if (lowBanner) lowBanner.classList.add('hidden');
     if (input)   input.disabled   = false;
     if (sendBtn) sendBtn.disabled = false;
   } else {
-    const pct = Math.min(100, (userCredits / NEW_USER_CREDITS) * 100);
+    // Progress bar: treat 100 credits as "full"
+    const pct = Math.min(100, (userCredits / 100) * 100);
     if (bar) { bar.style.width = pct + '%'; bar.style.background = ''; }
-    if (text)   text.textContent  = `${userCredits.toLocaleString()} credits remaining`;
-    if (badge)  badge.textContent = `💳 ${userCredits.toLocaleString()} credits`;
-    if (status) status.textContent = `${userCredits.toLocaleString()} AI credits left`;
+    if (text)   text.textContent   = `${userCredits.toLocaleString()} credits remaining`;
+    if (badge)  badge.textContent  = `💳 ${userCredits.toLocaleString()} credits`;
+    if (status) status.textContent = `${userCredits.toLocaleString()} credits left`;
 
     if (userCredits <= 0) {
       if (paywall)   paywall.classList.remove('hidden');
@@ -187,7 +203,7 @@ function updateUsageUI() {
       if (input)   input.disabled   = true;
       if (sendBtn) sendBtn.disabled = true;
       notifyAILimitReached({ toUid: currentUser.uid }).catch(() => {});
-    } else if (userCredits <= 50) {
+    } else if (userCredits <= 20) {
       if (paywall)   paywall.classList.add('hidden');
       if (lowBanner) lowBanner.classList.remove('hidden');
       if (lowText)   lowText.textContent = `Only ${userCredits} credit${userCredits === 1 ? '' : 's'} left — top up to keep chatting`;
@@ -499,13 +515,13 @@ function hideTypingIndicator() {
 }
 
 // ===== CREDIT HELPERS =====
-function showCreditWarning(wordCount, remaining) {
+function showCreditWarning(cost, remaining) {
   const el = document.getElementById('ai-credit-warning');
   if (!el) return;
   if (remaining <= 0) {
     el.textContent = '⚠️ You have no credits left. Buy more credits to keep chatting.';
   } else {
-    el.textContent = `⚠️ Your message uses ${wordCount} credit${wordCount !== 1 ? 's' : ''} but you only have ${remaining} left. Shorten it, or buy more credits.`;
+    el.textContent = `⚠️ Your message needs ${cost} credit${cost !== 1 ? 's' : ''} but you only have ${remaining} left. Shorten it, or buy more credits.`;
   }
   el.classList.remove('hidden');
 }
@@ -515,18 +531,22 @@ function clearCreditWarning() {
 }
 
 window.updateLiveWordCount = (el) => {
-  const words = (el.value.trim().split(/\s+/).filter(Boolean)).length;
+  const cost     = (el.value.trim().split(/\s+/).filter(Boolean)).length; // 1 word = 1 credit (internal)
   const counter  = document.getElementById('ai-word-counter');
   const credDisp = document.getElementById('ai-credits-display');
-  if (counter) counter.textContent = words > 0 ? `${words} word${words !== 1 ? 's' : ''}` : '';
-  if (credDisp && !isPremium) {
-    if (words > userCredits && userCredits > 0) {
+  // Never show raw word count — users don't need to see it
+  if (counter) counter.textContent = '';
+  if (credDisp) {
+    if (isPremium) {
+      credDisp.style.color = '#22c55e';
+      credDisp.textContent = isAdminUser ? '🛡️ Unlimited' : '⭐ Unlimited';
+    } else if (cost > userCredits && userCredits > 0) {
       credDisp.style.color = '#ef4444';
-      credDisp.textContent = `⚠️ ${words} words > ${userCredits} credits`;
-    } else if (words > 0 && userCredits > 0) {
+      credDisp.textContent = `⚠️ Not enough credits`;
+    } else if (cost > 0 && userCredits > 0) {
       credDisp.style.color = 'var(--text-muted)';
-      credDisp.textContent = `${(userCredits - words).toLocaleString()} left after send`;
-    } else if (userCredits > 0) {
+      credDisp.textContent = `${(userCredits - cost).toLocaleString()} credits after send`;
+    } else {
       credDisp.style.color = 'var(--text-muted)';
       credDisp.textContent = `${userCredits.toLocaleString()} credits`;
     }
