@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <script>!function(){var t=localStorage.getItem("lynk-theme")||"system",r=t==="system"?(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t;document.documentElement.setAttribute("data-theme",r)}();</script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notifications — LYNK By Legends</title>
+  <link rel="icon" href="assets/logo.jpg" type="image/jpeg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/custom.css" />
+  <script src="js/mobile-nav.js" defer></script>
+</head>
+<body>
+<div id="page-loader">
+  <div class="pl-ring">
+    <svg class="pl-spin" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="44" cy="44" r="40" stroke="url(#plGrad)" stroke-width="2" stroke-dasharray="10 7" stroke-linecap="round"/>
+      <defs>
+        <linearGradient id="plGrad" x1="0" y1="0" x2="88" y2="88" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#a855f7"/>
+          <stop offset="50%" stop-color="#06b6d4"/>
+          <stop offset="100%" stop-color="#3b82f6"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <div class="pl-ring-img"><img src="assets/logo.jpg" alt="LYNK" /></div>
+  </div>
+  <div class="pl-wordmark">LYNK</div>
+  <div class="pl-sub">By Legends</div>
+  <div class="pl-bar-wrap"><div class="pl-bar"></div></div>
+</div>
+
+<!-- NAVBAR -->
+<nav class="lynk-nav h-16 flex items-center px-4 justify-between gap-2">
+  <div class="flex items-center gap-2 flex-shrink-0">
+    <button id="hamburger-btn" onclick="openMobileNav()" aria-label="Open menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <span class="flex flex-col leading-none">
+      <span class="logo-text">LYNK</span>
+      <span class="logo-sub">By Legends</span>
+    </span>
+  </div>
+  <div class="flex items-center gap-3 flex-shrink-0">
+    <a href="feed.html" class="lynk-btn lynk-btn-secondary text-sm flex items-center gap-1.5">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      Feed
+    </a>
+  </div>
+</nav>
+
+<div id="drawer-overlay" class="lynk-drawer-overlay" onclick="closeMobileNav()"></div>
+
+<!-- SIDEBAR -->
+<aside class="lynk-sidebar pt-4 pb-20">
+  <nav class="flex flex-col gap-0.5">
+    <a href="feed.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Home Feed</span>
+    </a>
+    <a href="profile.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>My Profile</span>
+    </a>
+    <a href="chat.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>Messages</span>
+    </a>
+    <a href="notifications.html" class="lynk-sidebar-link active">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span>Notifications</span>
+    </a>
+    <div class="px-4 mt-4 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Explore</div>
+    <a href="events.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>Events</span>
+    </a>
+    <a href="clubs.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <span>Clubs</span>
+    </a>
+    <a href="communities.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>Communities</span>
+    </a>
+    <a href="marketplace.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      <span>Marketplace</span>
+    </a>
+    <a href="ai.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span>LYNK AI</span>
+    </a>
+    <a href="premium.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <span style="color:var(--grad-1)">LYNK Premium</span>
+    </a>
+    <div class="px-4 mt-4 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Settings</div>
+    <a href="#" onclick="signOut()" class="lynk-sidebar-link" style="color:#ef4444">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <span>Sign Out</span>
+    </a>
+  </nav>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+  <div class="max-w-2xl mx-auto px-4 py-6">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <h1 class="text-2xl font-bold">Notifications</h1>
+        <p class="text-sm" style="color:var(--text-secondary)">Stay up to date with your campus activity</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="markAllReadFull()" class="lynk-btn lynk-btn-secondary text-sm py-2 px-4 rounded-xl flex items-center gap-1.5">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Mark all read
+        </button>
+        <button id="push-toggle-btn" onclick="togglePushPermission()" class="lynk-btn lynk-btn-primary text-sm py-2 px-4 rounded-xl flex items-center gap-1.5">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Enable Push
+        </button>
+      </div>
+    </div>
+
+    <!-- Push notification status banner -->
+    <div id="push-banner" class="lynk-card p-4 mb-5 hidden">
+      <div class="flex items-center gap-3">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--grad-1);flex-shrink:0"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        <div class="flex-1">
+          <p class="font-semibold text-sm">Get notified even when LYNK is closed</p>
+          <p class="text-xs mt-0.5" style="color:var(--text-secondary)">Enable browser push notifications to receive alerts for messages, likes, and friend requests.</p>
+        </div>
+        <button onclick="togglePushPermission()" class="lynk-btn lynk-btn-primary text-sm py-2 px-4 rounded-xl flex-shrink-0">Enable</button>
+      </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="flex gap-1 mb-5 p-1 rounded-xl overflow-x-auto" style="background:var(--bg-card)">
+      <button class="lynk-tab active flex-1 text-sm whitespace-nowrap" onclick="filterNotifs('all', this)">All</button>
+      <button class="lynk-tab flex-1 text-sm whitespace-nowrap" onclick="filterNotifs('unread', this)">Unread</button>
+      <button class="lynk-tab flex-1 text-sm whitespace-nowrap flex items-center justify-center gap-1" onclick="filterNotifs('like', this)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--grad-1)" stroke="var(--grad-1)" stroke-width="1"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        Likes
+      </button>
+      <button class="lynk-tab flex-1 text-sm whitespace-nowrap flex items-center justify-center gap-1" onclick="filterNotifs('comment', this)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Comments
+      </button>
+      <button class="lynk-tab flex-1 text-sm whitespace-nowrap flex items-center justify-center gap-1" onclick="filterNotifs('friend_request', this)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Friends
+      </button>
+    </div>
+
+    <!-- Notifications List -->
+    <div id="full-notif-list" class="flex flex-col gap-0 lynk-card overflow-hidden">
+      <div class="p-4 animate-pulse border-b" style="border-color:var(--border)">
+        <div class="flex gap-3">
+          <div class="w-10 h-10 rounded-full flex-shrink-0" style="background:var(--border)"></div>
+          <div class="flex-1">
+            <div class="h-3 rounded w-2/3 mb-2" style="background:var(--border)"></div>
+            <div class="h-3 rounded w-1/3" style="background:var(--border)"></div>
+          </div>
+        </div>
+      </div>
+      <div class="p-4 animate-pulse border-b" style="border-color:var(--border)">
+        <div class="flex gap-3">
+          <div class="w-10 h-10 rounded-full flex-shrink-0" style="background:var(--border)"></div>
+          <div class="flex-1">
+            <div class="h-3 rounded w-1/2 mb-2" style="background:var(--border)"></div>
+            <div class="h-3 rounded w-1/4" style="background:var(--border)"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- BOTTOM NAV -->
+<nav class="lynk-bottom-nav">
+  <a href="feed.html">
+    <span class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+    Home
+  </a>
+  <a href="search.html">
+    <span class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+    Search
+  </a>
+  <a href="notifications.html" class="active">
+    <span class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
+    Alerts
+  </a>
+  <a href="chat.html">
+    <span class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+    Chat
+  </a>
+  <a href="profile.html">
+    <span class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+    Profile
+  </a>
+  </nav>
+
+<script type="module">
+  import { auth, db } from './js/firebase-config.js';
+  import { ThemeManager } from './js/theme.js';
+  import {
+    collection, query, where, orderBy, limit, onSnapshot,
+    updateDoc, doc, getDocs, writeBatch, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { requestPushPermission } from './js/notifications.js';
+
+  ThemeManager.init();
+
+  let currentUser = null;
+  let currentFilter = 'all';
+  let allNotifications = [];
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) { window.location.href = 'auth.html'; return; }
+    currentUser = user;
+    listenNotifications(user.uid);
+    checkPushStatus();
+  });
+
+  function listenNotifications(uid) {
+    const q = query(
+      collection(db, 'notifications'),
+      where('toUid', '==', uid),
+      orderBy('createdAt', 'desc'),
+      limit(100)
+    );
+    onSnapshot(q, (snap) => {
+      allNotifications = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderFull(allNotifications, currentFilter);
+    });
+  }
+
+  function getNotifIcon(type) {
+    const icons = {
+      like: `<svg width="14" height="14" viewBox="0 0 24 24" fill="var(--grad-1)" stroke="var(--grad-1)" stroke-width="1"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`,
+      comment: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+      friend_request: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+      friend_accepted: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`,
+      message: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+      mention: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/></svg>`,
+    };
+    return icons[type] || `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`;
+  }
+
+  function renderFull(notifs, filter) {
+    const list = document.getElementById('full-notif-list');
+    if (!list) return;
+    let filtered = notifs;
+    if (filter === 'unread') filtered = notifs.filter(n => !n.read);
+    else if (filter !== 'all') filtered = notifs.filter(n => n.type === filter || n.type?.startsWith(filter));
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="p-12 text-center">
+        <svg class="mx-auto mb-3" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-muted)"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <h3 class="font-semibold mb-1">${filter === 'unread' ? 'All caught up!' : 'No notifications here'}</h3>
+        <p class="text-sm" style="color:var(--text-muted)">
+          ${filter === 'unread' ? 'You have no unread notifications.' : 'Notifications will appear here when people interact with you.'}
+        </p>
+      </div>`;
+      return;
+    }
+
+    const links = {
+      like: 'feed.html', comment: 'feed.html',
+      friend_request: (n) => `profile.html?uid=${n.fromUid}`,
+      friend_accepted: (n) => `profile.html?uid=${n.fromUid}`,
+      message: (n) => `chat.html?uid=${n.fromUid}`,
+      mention: 'feed.html'
+    };
+
+    list.innerHTML = filtered.map(n => {
+      const ava = n.fromPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(n.fromName||'U')}&background=a855f7&color=fff&size=80`;
+      const ts = n.createdAt?.toDate?.()?.toLocaleString() || '';
+      const href = typeof links[n.type] === 'function' ? links[n.type](n) : (links[n.type] || 'feed.html');
+      return `
+        <a href="${href}" onclick="markOneRead('${n.id}')"
+           class="flex items-start gap-4 px-5 py-4 border-b transition-colors hover:opacity-90 block"
+           style="background:${n.read ? 'transparent' : 'linear-gradient(135deg,var(--grad-1)06,var(--grad-3)06)'};border-color:var(--border);text-decoration:none;color:inherit">
+          <div class="relative flex-shrink-0 mt-0.5">
+            <img src="${ava}" class="lynk-avatar w-11 h-11" />
+            <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center" style="background:var(--bg-card);border:1px solid var(--border)">${getNotifIcon(n.type)}</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm leading-snug">
+              <strong>${n.fromName || 'Someone'}</strong>
+              <span style="color:var(--text-secondary)"> ${n.message || ''}</span>
+            </p>
+            ${n.preview ? `<p class="text-xs mt-1 truncate px-3 py-1.5 rounded-lg" style="background:var(--bg-card-hover);color:var(--text-muted)">"${n.preview}"</p>` : ''}
+            <p class="text-xs mt-1.5" style="color:var(--text-muted)">${ts}</p>
+          </div>
+          ${!n.read ? `<span class="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5 lynk-gradient"></span>` : ''}
+        </a>`;
+    }).join('');
+  }
+
+  window.filterNotifs = (filter, btn) => {
+    currentFilter = filter;
+    document.querySelectorAll('.lynk-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderFull(allNotifications, filter);
+  };
+
+  window.markOneRead = async (id) => {
+    await updateDoc(doc(db, 'notifications', id), { read: true });
+  };
+
+  window.markAllReadFull = async () => {
+    if (!currentUser) return;
+    const q = query(collection(db, 'notifications'), where('toUid', '==', currentUser.uid), where('read', '==', false));
+    const snap = await getDocs(q);
+    const batch = writeBatch(db);
+    snap.docs.forEach(d => batch.update(d.ref, { read: true }));
+    await batch.commit();
+  };
+
+  function checkPushStatus() {
+    const banner = document.getElementById('push-banner');
+    const btn = document.getElementById('push-toggle-btn');
+    if (!('Notification' in window)) { btn?.classList.add('hidden'); return; }
+    if (Notification.permission === 'default') {
+      banner?.classList.remove('hidden');
+      if (btn) btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Enable Push`;
+    } else if (Notification.permission === 'granted') {
+      if (btn) btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Push On`;
+      banner?.classList.add('hidden');
+    } else {
+      if (btn) btn.textContent = 'Push Blocked';
+    }
+  }
+
+  window.togglePushPermission = async () => {
+    if (!currentUser) return;
+    if (Notification.permission === 'granted') return;
+    const granted = await requestPushPermission(currentUser.uid);
+    if (granted) {
+      document.getElementById('push-toggle-btn').innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Push On`;
+      document.getElementById('push-banner')?.classList.add('hidden');
+    }
+  };
+
+  window.signOut = async () => {
+    await firebaseSignOut(auth);
+    window.location.href = 'auth.html';
+  };
+</script>
+<!-- Explore Sheet (mobile) -->
+<p style="text-align:center;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin:0 0 4px">Explore</p>
+  <div class="explore-sheet-grid">
+    <a href="events.html" class="explore-sheet-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Events</a>
+    <a href="clubs.html" class="explore-sheet-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Clubs</a>
+    <a href="communities.html" class="explore-sheet-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Communities</a>
+    <a href="marketplace.html" class="explore-sheet-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Marketplace</a>
+    <a href="ai.html" class="explore-sheet-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>LYNK AI</a>
+    <a href="premium.html" class="explore-sheet-item" style="color:var(--grad-1)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Premium</a>
+  </div>
+</div>
+<script>
+</script>
+
+<!-- ===== EXPLORE FAB ===== -->
+<button class="explore-fab" id="explore-fab" onclick="toggleExploreFab()" aria-label="Explore">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
+<div class="explore-dropdown" id="explore-dropdown">
+  <div class="explore-dropdown-grid">
+    <a href="events.html" class="explore-dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Events</a>
+    <a href="clubs.html" class="explore-dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Clubs</a>
+    <a href="communities.html" class="explore-dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Communities</a>
+    <a href="marketplace.html" class="explore-dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Market</a>
+    <a href="ai.html" class="explore-dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>LYNK AI</a>
+    <a href="premium.html" class="explore-dropdown-item" style="color:var(--grad-1)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Premium</a>
+  </div>
+</div>
+<div class="explore-fab-overlay" id="explore-fab-overlay" onclick="closeExploreFab()"></div>
+<script>
+function toggleExploreFab(){
+  var fab=document.getElementById('explore-fab');
+  var dd=document.getElementById('explore-dropdown');
+  var ov=document.getElementById('explore-fab-overlay');
+  var isOpen=dd.classList.contains('open');
+  fab.classList.toggle('open',!isOpen);
+  dd.classList.toggle('open',!isOpen);
+  ov.classList.toggle('open',!isOpen);
+}
+function closeExploreFab(){
+  document.getElementById('explore-fab')?.classList.remove('open');
+  document.getElementById('explore-dropdown')?.classList.remove('open');
+  document.getElementById('explore-fab-overlay')?.classList.remove('open');
+}
+</script>
+
+<script type="module" src="js/dm-badge.js"></script>
+<script>
+window.addEventListener('load',function(){var l=document.getElementById('page-loader');if(l){l.classList.add('pl-done');setTimeout(function(){l.remove()},450);}});
+</script>
+</body>
+</html>

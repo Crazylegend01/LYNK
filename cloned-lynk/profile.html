@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="google-adsense-account" content="ca-pub-4316159694380125">
+  <title>Profile — LYNK By Legends</title>
+  <link rel="icon" href="assets/logo.jpg" type="image/jpeg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/custom.css" />
+  <script src="js/mobile-nav.js" defer></script>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="lynk-nav h-16 flex items-center px-4 justify-between gap-2">
+  <div class="flex items-center gap-2 flex-shrink-0">
+    <button id="hamburger-btn" onclick="openMobileNav()" aria-label="Open menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <span class="flex flex-col leading-none cursor-default"><span class="logo-text">LYNK</span><span class="logo-sub">By Legends</span></span>
+  </div>
+  <div class="flex items-center gap-3 flex-shrink-0">
+    <a href="feed.html" class="lynk-btn lynk-btn-secondary text-sm flex items-center gap-1.5">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      Feed
+    </a>
+  </div>
+</nav>
+
+<div id="drawer-overlay" class="lynk-drawer-overlay" onclick="closeMobileNav()"></div>
+
+<!-- SIDEBAR -->
+<aside class="lynk-sidebar pt-4 pb-20">
+  <nav class="flex flex-col gap-0.5">
+    <a href="feed.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Home Feed</span>
+    </a>
+    <a href="search.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Search</span>
+    </a>
+    <a href="announcements.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+      <span>Announcements</span>
+    </a>
+    <a href="profile.html" class="lynk-sidebar-link active">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>My Profile</span>
+    </a>
+    <a href="chat.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>Messages</span>
+    </a>
+    <a href="notifications.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span>Notifications</span>
+    </a>
+    <div class="px-4 mt-4 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Communities</div>
+    <a href="#" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/></svg>
+      <span id="faculty-link">My Faculty</span>
+    </a>
+    <a href="#" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+      <span id="dept-link">My Department</span>
+    </a>
+    <div class="px-4 mt-4 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Settings</div>
+    <a href="settings.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Settings</span>
+    </a>
+    <a href="#" onclick="signOut()" class="lynk-sidebar-link" style="color:#ef4444">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <span>Sign Out</span>
+    </a>
+    <a href="#" id="btn-delete-account" onclick="openDeleteModal()" class="lynk-sidebar-link hidden" style="color:#ef4444;opacity:0.7">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      <span>Delete Account</span>
+    </a>
+  </nav>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+  <div class="max-w-3xl mx-auto px-4 py-6">
+
+    <!-- Incomplete profile banner -->
+    <div id="incomplete-banner" class="hidden lynk-card p-4 mb-5 border" style="border-color:#f59e0b;background:#f59e0b10">
+      <div class="flex items-center gap-3">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div class="flex-1">
+          <p class="font-semibold text-sm">Complete your profile</p>
+          <p class="text-xs mt-0.5" style="color:var(--text-secondary)">Add your university, faculty and department so classmates can find you.</p>
+        </div>
+        <button onclick="openEditModal()" class="lynk-btn lynk-btn-primary text-xs py-2 px-3 rounded-xl flex-shrink-0">Complete Now</button>
+      </div>
+    </div>
+
+    <!-- Profile Card -->
+    <div class="lynk-card overflow-hidden mb-5 fade-in">
+      <!-- Cover -->
+      <div class="h-36 relative lynk-gradient" id="cover-container">
+        <div class="absolute inset-0 opacity-30" style="background:repeating-linear-gradient(45deg,transparent,transparent 20px,rgba(255,255,255,0.05) 20px,rgba(255,255,255,0.05) 40px)"></div>
+        <label id="cover-edit" style="display:none;position:absolute;top:12px;right:12px;cursor:pointer"
+               class="lynk-btn lynk-btn-secondary text-xs py-1 px-3 flex items-center gap-1.5">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Edit Cover
+          <input type="file" accept="image/*" class="hidden" onchange="updateCover(this)" />
+        </label>
+      </div>
+
+      <!-- Avatar + Info -->
+      <div class="px-6 pb-6">
+        <div class="flex items-end justify-between -mt-12 mb-4">
+          <div class="relative group">
+            <img id="profile-avatar"
+                 src="https://ui-avatars.com/api/?name=User&background=a855f7&color=fff&size=96"
+                 class="lynk-avatar w-24 h-24 ring-4 flex-shrink-0"
+                 style="--tw-ring-color:var(--bg-card)" alt="Avatar" />
+            <label id="avatar-edit"
+                   style="display:none;position:absolute;inset:0;border-radius:9999px;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;color:white;cursor:pointer">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <input type="file" accept="image/*" class="hidden" id="avatar-file-input" onchange="updateAvatar(this)" />
+            </label>
+            <span id="online-indicator" class="online-dot"></span>
+          </div>
+          <div class="flex gap-2 mt-14 flex-wrap justify-end">
+            <a href="settings.html" id="btn-edit-profile" class="lynk-btn lynk-btn-secondary text-sm py-2 px-4 rounded-xl hidden flex items-center gap-1.5">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Edit Profile
+            </a>
+            <button id="btn-friend-action" onclick="handleFriendAction()" class="lynk-btn lynk-btn-primary text-sm py-2 px-4 rounded-xl hidden">+ Add Friend</button>
+            <a id="btn-message" href="chat.html" class="lynk-btn lynk-btn-secondary text-sm py-2 px-4 rounded-xl hidden flex items-center gap-1.5">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Message
+            </a>
+            <button id="btn-block-user" onclick="toggleBlockUser()" class="lynk-btn lynk-btn-ghost text-sm py-2 px-3 rounded-xl hidden" style="color:#ef4444" title="Block user">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 flex-wrap mb-0.5">
+          <h1 id="profile-name" class="text-2xl font-bold">Loading...</h1>
+          <span id="staff-badge" class="hidden lynk-badge text-xs" style="background:#0ea5e920;color:#38bdf8">Staff</span>
+          <span id="alumni-badge" class="hidden lynk-badge text-xs" style="background:#f59e0b20;color:#f59e0b">Alumni</span>
+        </div>
+        <p id="profile-handle" class="text-sm mb-1" style="color:var(--text-muted)">@handle</p>
+        <p id="profile-position" class="hidden text-sm mb-1 font-medium" style="color:var(--grad-2)"></p>
+        <p id="profile-level" class="hidden text-xs mb-2 lynk-badge" style="background:rgba(168,85,247,0.1);color:var(--grad-1);display:inline-block"></p>
+        <p id="profile-bio" class="text-sm mb-3 max-w-lg" style="color:var(--text-secondary)"></p>
+
+        <!-- Skills & Interests -->
+        <div id="profile-skills-wrap" class="hidden mb-3">
+          <div class="flex flex-wrap gap-1.5" id="profile-skills-list"></div>
+        </div>
+        <div id="profile-interests-wrap" class="hidden mb-3">
+          <p class="text-xs font-semibold mb-1.5 uppercase tracking-wider" style="color:var(--text-muted)">Interests</p>
+          <div class="flex flex-wrap gap-1.5" id="profile-interests-list"></div>
+        </div>
+
+        <!-- Social Links -->
+        <div id="profile-links" class="hidden flex gap-3 mb-3 text-sm flex-wrap">
+          <a id="profile-website" href="#" target="_blank" class="lynk-gradient-text hover:opacity-80 hidden flex items-center gap-1">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            Website
+          </a>
+          <a id="profile-linkedin" href="#" target="_blank" class="lynk-gradient-text hover:opacity-80 hidden">LinkedIn</a>
+          <a id="profile-twitter" href="#" target="_blank" class="lynk-gradient-text hover:opacity-80 hidden">Twitter</a>
+        </div>
+
+        <div class="flex flex-wrap gap-3 text-sm mb-4" style="color:var(--text-secondary)">
+          <span id="profile-university" class="flex items-center gap-1">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/></svg>
+            University
+          </span>
+          <span id="profile-faculty" class="flex items-center gap-1">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/></svg>
+            Faculty
+          </span>
+          <span id="profile-dept" class="flex items-center gap-1">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+            Department
+          </span>
+          <span id="profile-joined" class="flex items-center gap-1">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Joined
+          </span>
+        </div>
+
+        <!-- Stats -->
+        <div class="flex gap-6 text-sm border-t pt-4" style="border-color:var(--border)">
+          <div class="text-center cursor-pointer" onclick="setProfileTab('friends', null)">
+            <div class="font-bold text-lg" id="friends-count">0</div>
+            <div style="color:var(--text-muted)">Friends</div>
+          </div>
+          <div class="text-center">
+            <div class="font-bold text-lg" id="posts-count">0</div>
+            <div style="color:var(--text-muted)">Posts</div>
+          </div>
+          <div class="text-center">
+            <div class="font-bold text-lg" id="communities-count">0</div>
+            <div style="color:var(--text-muted)">Communities</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-1 mb-5 p-1 rounded-xl" style="background:var(--bg-card)">
+      <button id="tab-btn-posts" class="lynk-tab active flex-1 text-sm" onclick="setProfileTab('posts', this)">Posts</button>
+      <button id="tab-btn-friends" class="lynk-tab flex-1 text-sm" onclick="setProfileTab('friends', this)">Friends</button>
+      <button id="tab-btn-about" class="lynk-tab flex-1 text-sm" onclick="setProfileTab('about', this)">About</button>
+    </div>
+
+    <!-- POSTS TAB -->
+    <div id="tab-posts" class="flex flex-col gap-4">
+      <div class="lynk-card p-5 animate-pulse">
+        <div class="h-4 rounded w-3/4 mb-3" style="background:var(--border)"></div>
+        <div class="h-4 rounded w-1/2" style="background:var(--border)"></div>
+      </div>
+    </div>
+
+    <!-- FRIENDS TAB -->
+    <div id="tab-friends" class="hidden">
+      <div id="friend-requests-section" class="hidden mb-5">
+        <h3 class="font-semibold mb-3">Friend Requests (<span id="requests-count">0</span>)</h3>
+        <div id="friend-requests-list" class="grid grid-cols-2 gap-3"></div>
+      </div>
+      <h3 class="font-semibold mb-3">Friends (<span id="friends-list-count">0</span>)</h3>
+      <div id="friends-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div class="lynk-card p-4 animate-pulse">
+          <div class="w-12 h-12 rounded-full mx-auto mb-2" style="background:var(--border)"></div>
+          <div class="h-3 rounded w-3/4 mx-auto" style="background:var(--border)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABOUT TAB -->
+    <div id="tab-about" class="hidden">
+
+      <!-- Referral card — own profile only -->
+      <div id="referral-card" class="lynk-card p-5 mb-4 hidden">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-lg">🎁</span>
+          <h3 class="font-semibold text-sm">Refer Friends, Earn Credits</h3>
+        </div>
+        <p class="text-xs mb-3" style="color:var(--text-muted)">Share your link — when a friend signs up using it, you get <strong style="color:var(--grad-1)">+10 AI credits</strong> instantly.</p>
+        <div class="flex gap-2 mb-3">
+          <input id="referral-link-input" readonly class="lynk-input text-xs flex-1 py-2" style="color:var(--text-secondary)" />
+          <button onclick="copyReferralLink()" class="lynk-btn lynk-btn-primary text-xs py-2 px-4 rounded-xl flex-shrink-0">Copy</button>
+        </div>
+        <div class="flex items-center justify-between text-xs" style="color:var(--text-muted)">
+          <span>Your code: <strong id="referral-code-display" class="lynk-gradient-text"></strong></span>
+          <span id="referral-count-display"></span>
+        </div>
+      </div>
+
+      <div class="lynk-card p-6">
+        <h3 class="font-semibold mb-4">About</h3>
+        <div class="flex flex-col gap-0 text-sm divide-y" style="--tw-divide-opacity:1;border-color:var(--border)">
+          <div class="flex justify-between items-center py-3"><span style="color:var(--text-muted)">Full Name</span><span id="about-name" class="font-medium">—</span></div>
+          <div class="flex justify-between items-center py-3"><span style="color:var(--text-muted)">Username</span><span id="about-username" class="font-medium lynk-gradient-text">—</span></div>
+          <div class="flex justify-between items-center py-3"><span style="color:var(--text-muted)">Account Type</span><span id="about-type" class="font-medium">—</span></div>
+          <div id="about-position-row" class="hidden flex justify-between items-center py-3"><span style="color:var(--text-muted)">Position / Rank</span><span id="about-position" class="font-medium">—</span></div>
+          <div id="about-level-row" class="hidden flex justify-between items-center py-3"><span style="color:var(--text-muted)">Academic Level</span><span id="about-level" class="font-medium">—</span></div>
+          <div class="flex justify-between items-center py-3"><span style="color:var(--text-muted)">University</span><span id="about-university" class="font-medium">—</span></div>
+          <div class="flex justify-between items-center py-3"><span style="color:var(--text-muted)">Faculty</span><span id="about-faculty" class="font-medium">—</span></div>
+          <div class="flex justify-between items-center py-3"><span style="color:var(--text-muted)">Department</span><span id="about-dept" class="font-medium">—</span></div>
+          <div id="about-skills-row" class="hidden py-3"><span style="color:var(--text-muted)">Skills</span><div id="about-skills" class="flex flex-wrap gap-1.5 mt-2"></div></div>
+          <div id="about-interests-row" class="hidden py-3"><span style="color:var(--text-muted)">Interests</span><div id="about-interests" class="flex flex-wrap gap-1.5 mt-2"></div></div>
+          <div class="flex justify-between items-center py-3"><span style="color:var(--text-muted)">Member Since</span><span id="about-joined" class="font-medium">—</span></div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</main>
+
+<!-- EDIT PROFILE MODAL -->
+<div id="edit-modal" class="lynk-modal-overlay hidden">
+  <div class="lynk-card p-6 w-full max-w-lg mx-4" style="max-height:90vh;overflow-y:auto">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-bold text-lg">Edit Profile — Go to Settings</h3>
+      <button onclick="closeEditModal()" class="lynk-icon-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="flex flex-col gap-4">
+      <div>
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Full Name</label>
+        <input id="edit-name" type="text" class="lynk-input" placeholder="Your full name" />
+      </div>
+      <div>
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Username
+          <span class="font-normal text-xs" style="color:var(--text-muted)"> (your @handle)</span>
+        </label>
+        <div class="relative">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 font-semibold" style="color:var(--text-muted)">@</span>
+          <input id="edit-username" type="text" class="lynk-input pl-7" placeholder="yourhandle" oninput="checkEditUsername(this.value)" />
+        </div>
+        <p id="edit-username-status" class="text-xs mt-1" style="color:var(--text-muted)"></p>
+      </div>
+      <div>
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Bio</label>
+        <textarea id="edit-bio" class="lynk-input resize-none" rows="3" placeholder="Tell your campus about yourself..." maxlength="300"></textarea>
+      </div>
+      <div id="edit-position-wrapper">
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Position / Rank <span class="font-normal text-xs" style="color:var(--text-muted)">(staff only)</span></label>
+        <input id="edit-position" type="text" class="lynk-input" placeholder="e.g. Sub-dean, Lecturer I, Professor" />
+      </div>
+      <div id="edit-level-wrapper">
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Academic Level</label>
+        <select id="edit-level" class="lynk-input">
+          <option value="">Not specified</option>
+          <option value="100L">100 Level</option>
+          <option value="200L">200 Level</option>
+          <option value="300L">300 Level</option>
+          <option value="400L">400 Level</option>
+          <option value="500L">500 Level</option>
+          <option value="Postgrad">Postgraduate</option>
+          <option value="PhD">PhD Candidate</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Skills <span class="font-normal text-xs" style="color:var(--text-muted)">(comma-separated)</span></label>
+        <input id="edit-skills" type="text" class="lynk-input" placeholder="e.g. Python, Design, Public Speaking" />
+      </div>
+      <div>
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Interests <span class="font-normal text-xs" style="color:var(--text-muted)">(comma-separated)</span></label>
+        <input id="edit-interests" type="text" class="lynk-input" placeholder="e.g. AI, Basketball, Music" />
+      </div>
+      <div>
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">University</label>
+        <select id="edit-university-select" class="lynk-input" onchange="loadEditFaculties(this.value)">
+          <option value="">-- Select or type below --</option>
+        </select>
+        <input id="edit-university" type="text" class="lynk-input mt-2" placeholder="Or type your university name" />
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Faculty</label>
+          <select id="edit-faculty-select" class="lynk-input mb-1" onchange="loadEditDepartments(this.value)">
+            <option value="">-- Select --</option>
+          </select>
+          <input id="edit-faculty" type="text" class="lynk-input" placeholder="Or type faculty" />
+        </div>
+        <div>
+          <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Department</label>
+          <select id="edit-dept-select" class="lynk-input mb-1">
+            <option value="">-- Select --</option>
+          </select>
+          <input id="edit-dept" type="text" class="lynk-input" placeholder="Or type department" />
+        </div>
+      </div>
+      <div class="flex gap-3 mt-2">
+        <button onclick="saveProfile()" class="lynk-btn lynk-btn-primary flex-1 py-3 rounded-xl">Save Changes</button>
+        <button onclick="closeEditModal()" class="lynk-btn lynk-btn-secondary flex-1 py-3 rounded-xl">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE ACCOUNT MODAL -->
+<div id="delete-modal" class="lynk-modal-overlay hidden">
+  <div class="lynk-card p-6 w-full max-w-sm mx-4">
+    <div class="text-center mb-5">
+      <svg class="mx-auto mb-3" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <h3 class="font-bold text-lg mb-1" style="color:#ef4444">Delete Account</h3>
+      <p class="text-sm" style="color:var(--text-secondary)">This will permanently delete your account, all your posts, and friend connections. <strong>This cannot be undone.</strong></p>
+    </div>
+    <div class="flex flex-col gap-3">
+      <div>
+        <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Enter your password to confirm</label>
+        <input id="delete-password" type="password" class="lynk-input" placeholder="Your password" />
+      </div>
+      <p id="delete-error" class="hidden text-xs p-2 rounded-lg" style="background:rgba(239,68,68,0.1);color:#f87171;border:1px solid #ef4444"></p>
+      <button id="btn-confirm-delete" onclick="confirmDeleteAccount()" class="lynk-btn w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2" style="background:#ef4444;color:white">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        Yes, Delete My Account
+      </button>
+      <button onclick="closeDeleteModal()" class="lynk-btn lynk-btn-secondary w-full py-3 rounded-xl">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function setProfileTab(tab, btn) {
+    ['posts','friends','about'].forEach(t => {
+      document.getElementById(`tab-${t}`)?.classList.add('hidden');
+      document.getElementById(`tab-btn-${t}`)?.classList.remove('active');
+    });
+    document.getElementById(`tab-${tab}`)?.classList.remove('hidden');
+    if (btn) btn.classList.add('active');
+    else document.getElementById(`tab-btn-${tab}`)?.classList.add('active');
+  }
+  function openEditModal() { document.getElementById('edit-modal').classList.remove('hidden'); }
+  function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); }
+  function openDeleteModal() { document.getElementById('delete-modal').classList.remove('hidden'); }
+  function closeDeleteModal() { document.getElementById('delete-modal').classList.add('hidden'); }
+</script>
+<script type="module" src="js/profile.js"></script>
+
+<!-- BOTTOM NAV -->
+<nav class="lynk-bottom-nav">
+  <a href="feed.html">
+    <span class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+    Home
+  </a>
+  <a href="search.html">
+    <span class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+    Search
+  </a>
+  <a href="chat.html">
+    <span class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+    Chat
+  </a>
+  <a href="profile.html" class="active">
+    <span class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+    Profile
+  </a>
+  </nav>
+<!-- Explore Sheet (mobile) -->
+<p style="text-align:center;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin:0 0 4px">Explore</p>
+  <div class="explore-sheet-grid">
+    <a href="events.html" class="explore-sheet-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Events</a>
+    <a href="clubs.html" class="explore-sheet-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Clubs</a>
+    <a href="communities.html" class="explore-sheet-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Communities</a>
+    <a href="marketplace.html" class="explore-sheet-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Marketplace</a>
+    <a href="ai.html" class="explore-sheet-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>LYNK AI</a>
+    <a href="premium.html" class="explore-sheet-item" style="color:var(--grad-1)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Premium</a>
+  </div>
+</div>
+<script>
+</script>
+
+<!-- ===== EXPLORE FAB ===== -->
+<button class="explore-fab" id="explore-fab" onclick="toggleExploreFab()" aria-label="Explore">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+</button>
+<div class="explore-dropdown" id="explore-dropdown">
+  <div class="explore-dropdown-grid">
+    <a href="events.html" class="explore-dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Events</a>
+    <a href="clubs.html" class="explore-dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Clubs</a>
+    <a href="communities.html" class="explore-dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Communities</a>
+    <a href="marketplace.html" class="explore-dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Market</a>
+    <a href="ai.html" class="explore-dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>LYNK AI</a>
+    <a href="premium.html" class="explore-dropdown-item" style="color:var(--grad-1)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Premium</a>
+  </div>
+</div>
+<div class="explore-fab-overlay" id="explore-fab-overlay" onclick="closeExploreFab()"></div>
+<script>
+function toggleExploreFab(){
+  var fab=document.getElementById('explore-fab');
+  var dd=document.getElementById('explore-dropdown');
+  var ov=document.getElementById('explore-fab-overlay');
+  var isOpen=dd.classList.contains('open');
+  fab.classList.toggle('open',!isOpen);
+  dd.classList.toggle('open',!isOpen);
+  ov.classList.toggle('open',!isOpen);
+}
+function closeExploreFab(){
+  document.getElementById('explore-fab')?.classList.remove('open');
+  document.getElementById('explore-dropdown')?.classList.remove('open');
+  document.getElementById('explore-fab-overlay')?.classList.remove('open');
+}
+</script>
+
+<script type="module" src="js/dm-badge.js"></script>
+</body>
+</html>

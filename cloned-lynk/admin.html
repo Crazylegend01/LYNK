@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="google-adsense-account" content="ca-pub-4316159694380125">
+  <title>Admin Panel — LYNK By Legends</title>
+  <link rel="icon" href="assets/logo.jpg" type="image/jpeg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/custom.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="js/mobile-nav.js" defer></script>
+  <!-- EmailJS — client-side email sending for school approval/rejection notices -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script>
+    // ── EmailJS config ──────────────────────────────────────────────────
+    // 1. Sign up free at https://www.emailjs.com (200 emails/month free)
+    // 2. Add your email account (Gmail works great) as a service
+    // 3. Create two templates: one for APPROVED, one for REJECTED
+    //    Use template variables: {{to_email}}, {{to_name}}, {{school_name}}, {{reason}}
+    // 4. Replace the placeholders below with your real IDs from the EmailJS dashboard
+    window.EMAILJS_CONFIG = {
+      publicKey:           'YOUR_EMAILJS_PUBLIC_KEY',      // Account > API Keys
+      serviceId:           'YOUR_EMAILJS_SERVICE_ID',      // Email Services tab
+      templateIdApproved:  'YOUR_TEMPLATE_ID_APPROVED',   // Email Templates tab
+      templateIdRejected:  'YOUR_TEMPLATE_ID_REJECTED',   // Email Templates tab
+    };
+    if (window.EMAILJS_CONFIG.publicKey !== 'YOUR_EMAILJS_PUBLIC_KEY') {
+      emailjs.init({ publicKey: window.EMAILJS_CONFIG.publicKey });
+    }
+  </script>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="lynk-nav h-16 flex items-center px-4 justify-between">
+  <div class="flex items-center gap-2">
+    <button id="hamburger-btn" onclick="openMobileNav()" aria-label="Open menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <span class="flex flex-col leading-none cursor-default"><span class="logo-text">LYNK</span><span class="logo-sub">By Legends</span></span>
+  </div>
+  <div class="flex items-center gap-3">
+    <span id="admin-role-badge" class="lynk-badge lynk-gradient text-white text-xs">Admin</span>
+    <a href="feed.html" class="lynk-btn lynk-btn-secondary text-sm py-1.5 px-3 rounded-lg">← Feed</a>
+  </div>
+</nav>
+
+<div id="drawer-overlay" class="lynk-drawer-overlay" onclick="closeMobileNav()"></div>
+
+<!-- ACCESS DENIED -->
+<div id="access-denied" class="hidden main-content flex items-center justify-center py-20">
+  <div class="text-center">
+    <svg class="mx-auto mb-4" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-muted)"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+    <h2 class="text-xl font-bold mb-2">Access Denied</h2>
+    <p style="color:var(--text-secondary)">You don't have admin privileges.</p>
+    <a href="feed.html" class="lynk-btn lynk-btn-primary mt-4 inline-flex">Go to Feed</a>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<aside class="lynk-sidebar pt-4 pb-20">
+  <div class="px-4 mb-4">
+    <p class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:var(--text-muted)">Admin Panel</p>
+  </div>
+  <nav class="flex flex-col gap-0.5">
+    <a href="#" onclick="showSection('dashboard',this)" class="lynk-sidebar-link active">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span>Dashboard</span>
+    </a>
+    <a href="#" onclick="showSection('users',this)" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>Users</span>
+    </a>
+    <a href="#" onclick="showSection('content',this)" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <span>Content</span>
+    </a>
+    <a href="#" onclick="showSection('announcements',this)" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+      <span>Announcements</span>
+    </a>
+    <a href="#" onclick="showSection('communities',this)" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/></svg>
+      <span>Communities</span>
+    </a>
+    <a href="#" onclick="showSection('marketplace',this)" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      <span>Marketplace</span>
+    </a>
+    <a href="#" onclick="showSection('ai',this)" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span>LYNK AI</span>
+    </a>
+    <a href="#" onclick="showSection('premium',this)" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <span>Premium</span>
+    </a>
+    <a href="#" onclick="showSection('payments',this)" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      <span>Payments</span>
+    </a>
+    <a href="#" onclick="showSection('schools',this)" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+      <span>Schools</span>
+    </a>
+    <a href="#" onclick="showSection('school-requests',this)" class="lynk-sidebar-link" id="nav-school-requests">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      <span>School Requests <span id="school-req-badge" class="hidden ml-1 px-1.5 py-0.5 rounded-full text-xs font-bold" style="background:rgba(234,179,8,0.2);color:#fbbf24"></span></span>
+    </a>
+    <a href="#" onclick="showSection('reports',this)" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+      <span>Reports</span>
+    </a>
+    <a href="#" onclick="showSection('security',this)" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span>Security Logs</span>
+    </a>
+    <a href="#" onclick="showSection('analytics',this)" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span>Analytics</span>
+    </a>
+    <a href="#" onclick="showSection('admins',this)" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span>Admins</span>
+    </a>
+    <div class="h-px my-2 mx-4" style="background:var(--border)"></div>
+    <a href="#" onclick="signOut()" class="lynk-sidebar-link" style="color:#ef4444">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <span>Sign Out</span>
+    </a>
+  </nav>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main id="admin-content" class="main-content p-4 lg:p-8">
+
+  <!-- DASHBOARD -->
+  <section id="section-dashboard">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-bold">Dashboard</h1>
+      <button onclick="refreshDashboard()" class="lynk-btn lynk-btn-secondary text-sm gap-2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Refresh
+      </button>
+    </div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="stat-card">
+        <div class="flex justify-center mb-2"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--grad-1)"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <p class="text-3xl font-black lynk-gradient-text" id="stat-users">—</p>
+        <p class="text-xs mt-1" style="color:var(--text-muted)">Total Users</p>
+        <p class="text-xs mt-0.5 lynk-gradient-text font-medium" id="stat-users-growth">—</p>
+      </div>
+      <div class="stat-card">
+        <div class="flex justify-center mb-2"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--grad-2)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <p class="text-3xl font-black lynk-gradient-text" id="stat-posts">—</p>
+        <p class="text-xs mt-1" style="color:var(--text-muted)">Total Posts</p>
+        <p class="text-xs mt-0.5 lynk-gradient-text font-medium" id="stat-posts-growth">—</p>
+      </div>
+      <div class="stat-card">
+        <div class="flex justify-center mb-2"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#f59e0b"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></div>
+        <p class="text-3xl font-black lynk-gradient-text" id="stat-reports">—</p>
+        <p class="text-xs mt-1" style="color:var(--text-muted)">Open Reports</p>
+        <p class="text-xs mt-0.5" style="color:var(--text-muted)">Needs review</p>
+      </div>
+      <div class="stat-card">
+        <div class="flex justify-center mb-2"><svg width="24" height="24" viewBox="0 0 24 24" fill="#22c55e" stroke="#22c55e" stroke-width="0"><circle cx="12" cy="12" r="6"/></svg></div>
+        <p class="text-3xl font-black" style="color:#22c55e" id="stat-active">—</p>
+        <p class="text-xs mt-1" style="color:var(--text-muted)">Online Now</p>
+        <p class="text-xs mt-0.5" style="color:#22c55e">Live</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="lynk-card p-4"><canvas id="chart-growth" height="200"></canvas></div>
+      <div class="lynk-card p-4"><canvas id="chart-activity" height="200"></canvas></div>
+    </div>
+  </section>
+
+  <!-- USERS -->
+  <section id="section-users" class="hidden">
+    <h1 class="text-2xl font-bold mb-6">Users</h1>
+    <div class="lynk-card overflow-hidden">
+      <div class="p-4 border-b flex items-center gap-3" style="border-color:var(--border)">
+        <div class="relative flex-1">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" class="lynk-input text-sm py-2 pl-9" placeholder="Search by name, email, university..."
+                 oninput="filterUsers(this.value)" />
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr style="background:var(--bg-card-hover)">
+              <th class="text-left p-3 font-semibold text-xs" style="color:var(--text-muted)">User</th>
+              <th class="text-left p-3 font-semibold text-xs" style="color:var(--text-muted)">Email</th>
+              <th class="text-left p-3 font-semibold text-xs" style="color:var(--text-muted)">Type</th>
+              <th class="text-left p-3 font-semibold text-xs" style="color:var(--text-muted)">University</th>
+              <th class="text-left p-3 font-semibold text-xs" style="color:var(--text-muted)">Status</th>
+              <th class="text-left p-3 font-semibold text-xs" style="color:var(--text-muted)">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTENT -->
+  <section id="section-content" class="hidden">
+    <h1 class="text-2xl font-bold mb-6">Content Moderation</h1>
+    <div class="lynk-card p-4">
+      <p class="text-sm font-semibold mb-4" style="color:var(--text-secondary)">Recent Posts</p>
+      <div id="content-list"></div>
+    </div>
+  </section>
+
+  <!-- ANNOUNCEMENTS -->
+  <section id="section-announcements" class="hidden">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-bold">Announcements</h1>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Compose -->
+      <div class="lynk-card p-6">
+        <h3 class="font-semibold mb-4 flex items-center gap-2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--grad-1)"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+          New Announcement
+        </h3>
+        <div class="flex flex-col gap-3">
+          <input id="admin-ann-title" type="text" class="lynk-input" placeholder="Title" />
+          <textarea id="admin-ann-body" class="lynk-input resize-y" rows="4" placeholder="Announcement body..."></textarea>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Priority</label>
+              <select id="admin-ann-priority" class="lynk-input">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Audience</label>
+              <select id="admin-ann-audience" class="lynk-input">
+                <option value="all">Everyone</option>
+                <option value="students">Students</option>
+                <option value="staff">Staff</option>
+                <option value="alumni">Alumni</option>
+              </select>
+            </div>
+          </div>
+          <input id="admin-ann-category" type="text" class="lynk-input" placeholder="Category (e.g. Academic, Events)" />
+          <input id="admin-ann-link" type="url" class="lynk-input" placeholder="Link URL (optional)" />
+          <input id="admin-ann-link-label" type="text" class="lynk-input" placeholder="Link label (e.g. Learn More)" />
+          <button id="btn-post-admin-ann" onclick="postAdminAnnouncement()" class="lynk-btn lynk-btn-primary py-3 rounded-xl">Post Announcement</button>
+        </div>
+      </div>
+      <!-- Existing -->
+      <div>
+        <h3 class="font-semibold mb-3">Posted Announcements</h3>
+        <div id="admin-ann-list" class="flex flex-col gap-2 overflow-y-auto" style="max-height:500px"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMMUNITIES -->
+  <section id="section-communities" class="hidden">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-bold">Communities</h1>
+      <button onclick="document.getElementById('create-community-modal').classList.remove('hidden')" class="lynk-btn lynk-btn-primary text-sm gap-2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Community
+      </button>
+    </div>
+    <div class="flex gap-2 mb-4 flex-wrap">
+      <button onclick="filterCommunities('all')" class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-full comm-filter-btn active" id="comm-filter-all">All</button>
+      <button onclick="filterCommunities('active')" class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-full comm-filter-btn" id="comm-filter-active">Active</button>
+      <button onclick="filterCommunities('pending')" class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-full comm-filter-btn" id="comm-filter-pending">Pending Approval</button>
+      <button onclick="filterCommunities('suspended')" class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-full comm-filter-btn" id="comm-filter-suspended">Suspended</button>
+    </div>
+    <div class="lynk-card overflow-hidden">
+      <div class="p-4 border-b flex items-center gap-3" style="border-color:var(--border)">
+        <div class="relative flex-1">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" class="lynk-input text-sm py-2 pl-9" placeholder="Search communities..." oninput="searchCommunities(this.value)" />
+        </div>
+      </div>
+      <div id="communities-list" class="divide-y" style="border-color:var(--border)">
+        <div class="p-8 text-center" style="color:var(--text-muted)">Loading communities…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MARKETPLACE -->
+  <section id="section-marketplace" class="hidden">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-bold">Marketplace</h1>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="stat-card"><p class="text-2xl font-black lynk-gradient-text" id="mkt-total">—</p><p class="text-xs" style="color:var(--text-muted)">Total Listings</p></div>
+      <div class="stat-card"><p class="text-2xl font-black" style="color:#f59e0b" id="mkt-pending">—</p><p class="text-xs" style="color:var(--text-muted)">Pending Review</p></div>
+      <div class="stat-card"><p class="text-2xl font-black" style="color:#22c55e" id="mkt-active">—</p><p class="text-xs" style="color:var(--text-muted)">Active</p></div>
+      <div class="stat-card"><p class="text-2xl font-black" style="color:#ef4444" id="mkt-removed">—</p><p class="text-xs" style="color:var(--text-muted)">Removed</p></div>
+    </div>
+    <div class="flex gap-2 mb-4 flex-wrap">
+      <button onclick="filterMarketplace('all')" class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-full mkt-filter-btn active">All</button>
+      <button onclick="filterMarketplace('pending')" class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-full mkt-filter-btn">Pending</button>
+      <button onclick="filterMarketplace('active')" class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-full mkt-filter-btn">Active</button>
+      <button onclick="filterMarketplace('sold')" class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-full mkt-filter-btn">Sold</button>
+      <button onclick="filterMarketplace('removed')" class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-full mkt-filter-btn">Removed</button>
+    </div>
+    <div class="lynk-card overflow-hidden">
+      <div class="p-4 border-b flex items-center gap-3" style="border-color:var(--border)">
+        <div class="relative flex-1">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" class="lynk-input text-sm py-2 pl-9" placeholder="Search listings by title, seller..." oninput="searchMarketplace(this.value)" />
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr style="background:var(--bg-card-hover)">
+              <th class="text-left p-3 font-semibold text-xs" style="color:var(--text-muted)">Listing</th>
+              <th class="text-left p-3 font-semibold text-xs" style="color:var(--text-muted)">Seller</th>
+              <th class="text-left p-3 font-semibold text-xs" style="color:var(--text-muted)">Price</th>
+              <th class="text-left p-3 font-semibold text-xs" style="color:var(--text-muted)">Category</th>
+              <th class="text-left p-3 font-semibold text-xs" style="color:var(--text-muted)">Status</th>
+              <th class="text-left p-3 font-semibold text-xs" style="color:var(--text-muted)">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="marketplace-tbody">
+            <tr><td colspan="6" class="p-8 text-center" style="color:var(--text-muted)">Loading listings…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- LYNK AI CONFIG -->
+  <section id="section-ai" class="hidden">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-bold">LYNK AI Configuration</h1>
+      <button onclick="saveAllAiKeys()" class="lynk-btn lynk-btn-primary text-sm gap-2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13"/><polyline points="7 3 7 8 15 8"/></svg>
+        Save All Keys
+      </button>
+    </div>
+    <p class="text-sm mb-4" style="color:var(--text-secondary)">Configure API keys for each AI provider. Up to 5 keys per provider are used in rotation for load balancing and fallback. Keys are stored securely in Firestore and never exposed to users.</p>
+
+    <!-- Firestore Rules Setup Banner -->
+    <div class="lynk-card p-4 mb-6" style="border-color:rgba(245,158,11,0.4);background:rgba(245,158,11,0.06)">
+      <details>
+        <summary class="flex items-center gap-2 cursor-pointer text-sm font-semibold" style="color:#f59e0b;list-style:none">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          ⚠️ Getting "Permission Denied" errors when saving keys? — Click to see the fix
+        </summary>
+        <div class="mt-3 flex flex-col gap-3">
+          <p class="text-xs" style="color:var(--text-secondary)">
+            Firestore Security Rules block writes to <code style="background:rgba(168,85,247,0.15);padding:1px 5px;border-radius:4px">admin_config</code> by default.
+            Paste the rules below into your <strong>Firebase Console → Firestore → Rules</strong> tab, then click <strong>Publish</strong>.
+          </p>
+          <pre class="text-xs p-3 rounded-xl overflow-x-auto" style="background:rgba(0,0,0,0.3);color:#e2e8f0;font-family:monospace;line-height:1.6">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Public reads for posts, users, communities
+    match /{document=**} {
+      allow read: if request.auth != null;
+    }
+
+    // Admin-only writes (admin_config, settings)
+    match /admin_config/{doc} {
+      allow read, write: if request.auth != null
+        &amp;&amp; request.auth.token.admin == true;
+    }
+    match /settings/{doc} {
+      allow read, write: if request.auth != null
+        &amp;&amp; request.auth.token.admin == true;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow write: if request.auth != null
+        &amp;&amp; (request.auth.uid == userId
+            || request.auth.token.admin == true);
+    }
+
+    // Posts, reports, communities, marketplace
+    match /posts/{postId} {
+      allow write: if request.auth != null;
+    }
+    match /reports/{reportId} {
+      allow read, write: if request.auth != null
+        &amp;&amp; request.auth.token.admin == true;
+    }
+    match /communities/{doc} {
+      allow read, write: if request.auth != null;
+    }
+    match /marketplace/{doc} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}</pre>
+          <p class="text-xs" style="color:var(--text-muted)">
+            After publishing rules, also set the <code style="background:rgba(168,85,247,0.15);padding:1px 5px;border-radius:4px">admin: true</code> custom claim on your account via
+            <strong>Firebase Admin SDK</strong> or a Cloud Function — this is what grants you write access to restricted collections.
+          </p>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="(function(){const el=this.previousSibling;const pre=this.closest('.flex').parentElement.querySelector('pre');navigator.clipboard.writeText(pre.textContent).then(()=>{this.textContent='✓ Copied!';this.style.color='#22c55e';setTimeout(()=>{this.textContent='Copy Rules';this.style.color='';},2000);});}).call(this)"
+              class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-lg">
+              Copy Rules
+            </button>
+            <a href="https://console.firebase.google.com" target="_blank" rel="noopener"
+               class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-lg">
+              Open Firebase Console →
+            </a>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <!-- OpenAI -->
+    <div class="lynk-card p-6 mb-4">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#10a37f,#0d8f6f)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="12" r="10"/></svg>
+          </div>
+          <div>
+            <h3 class="font-bold">OpenAI (ChatGPT)</h3>
+            <p class="text-xs" style="color:var(--text-muted)">GPT-4o · GPT-4 Turbo · GPT-3.5</p>
+          </div>
+        </div>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <span class="text-xs font-medium" style="color:var(--text-muted)">Enabled</span>
+          <input type="checkbox" id="ai-openai-enabled" class="w-4 h-4 accent-purple-500" checked />
+        </label>
+      </div>
+      <div class="grid grid-cols-1 gap-2">
+        <input type="password" id="ai-openai-key-1" class="lynk-input text-sm" placeholder="API Key 1 — Primary (sk-…)" />
+        <input type="password" id="ai-openai-key-2" class="lynk-input text-sm" placeholder="API Key 2 — Fallback (sk-…)" />
+        <input type="password" id="ai-openai-key-3" class="lynk-input text-sm" placeholder="API Key 3 — Rotation (sk-…)" />
+        <input type="password" id="ai-openai-key-4" class="lynk-input text-sm" placeholder="API Key 4 — Rotation (sk-…)" />
+        <input type="password" id="ai-openai-key-5" class="lynk-input text-sm" placeholder="API Key 5 — Reserve (sk-…)" />
+      </div>
+      <div class="flex items-center gap-3 mt-3">
+        <button onclick="saveAiKeys('openai')" class="lynk-btn lynk-btn-primary text-sm py-2 px-4 rounded-xl">Save OpenAI Keys</button>
+        <button onclick="testAiKey('openai')" class="lynk-btn lynk-btn-secondary text-sm py-2 px-4 rounded-xl">Test Connection</button>
+        <span id="ai-openai-status" class="text-xs" style="color:var(--text-muted)"></span>
+      </div>
+    </div>
+
+    <!-- Google Gemini -->
+    <div class="lynk-card p-6 mb-4">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#4285f4,#34a853)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </div>
+          <div>
+            <h3 class="font-bold">Google Gemini</h3>
+            <p class="text-xs" style="color:var(--text-muted)">Gemini 1.5 Pro · Gemini 1.5 Flash · Gemini Ultra</p>
+          </div>
+        </div>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <span class="text-xs font-medium" style="color:var(--text-muted)">Enabled</span>
+          <input type="checkbox" id="ai-gemini-enabled" class="w-4 h-4 accent-purple-500" checked />
+        </label>
+      </div>
+      <div class="grid grid-cols-1 gap-2">
+        <input type="password" id="ai-gemini-key-1" class="lynk-input text-sm" placeholder="API Key 1 — Primary (AIza…)" />
+        <input type="password" id="ai-gemini-key-2" class="lynk-input text-sm" placeholder="API Key 2 — Fallback (AIza…)" />
+        <input type="password" id="ai-gemini-key-3" class="lynk-input text-sm" placeholder="API Key 3 — Rotation (AIza…)" />
+        <input type="password" id="ai-gemini-key-4" class="lynk-input text-sm" placeholder="API Key 4 — Rotation (AIza…)" />
+        <input type="password" id="ai-gemini-key-5" class="lynk-input text-sm" placeholder="API Key 5 — Reserve (AIza…)" />
+      </div>
+      <div class="flex items-center gap-3 mt-3">
+        <button onclick="saveAiKeys('gemini')" class="lynk-btn lynk-btn-primary text-sm py-2 px-4 rounded-xl">Save Gemini Keys</button>
+        <button onclick="testAiKey('gemini')" class="lynk-btn lynk-btn-secondary text-sm py-2 px-4 rounded-xl">Test Connection</button>
+        <span id="ai-gemini-status" class="text-xs" style="color:var(--text-muted)"></span>
+      </div>
+    </div>
+
+    <!-- Anthropic Claude -->
+    <div class="lynk-card p-6 mb-4">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#d97706,#b45309)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8" stroke="white" stroke-width="2" fill="none"/></svg>
+          </div>
+          <div>
+            <h3 class="font-bold">Anthropic (Claude)</h3>
+            <p class="text-xs" style="color:var(--text-muted)">Claude 3.5 Sonnet · Claude 3 Opus · Claude 3 Haiku</p>
+          </div>
+        </div>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <span class="text-xs font-medium" style="color:var(--text-muted)">Enabled</span>
+          <input type="checkbox" id="ai-claude-enabled" class="w-4 h-4 accent-purple-500" checked />
+        </label>
+      </div>
+      <div class="grid grid-cols-1 gap-2">
+        <input type="password" id="ai-claude-key-1" class="lynk-input text-sm" placeholder="API Key 1 — Primary (sk-ant-…)" />
+        <input type="password" id="ai-claude-key-2" class="lynk-input text-sm" placeholder="API Key 2 — Fallback (sk-ant-…)" />
+        <input type="password" id="ai-claude-key-3" class="lynk-input text-sm" placeholder="API Key 3 — Rotation (sk-ant-…)" />
+        <input type="password" id="ai-claude-key-4" class="lynk-input text-sm" placeholder="API Key 4 — Rotation (sk-ant-…)" />
+        <input type="password" id="ai-claude-key-5" class="lynk-input text-sm" placeholder="API Key 5 — Reserve (sk-ant-…)" />
+      </div>
+      <div class="flex items-center gap-3 mt-3">
+        <button onclick="saveAiKeys('claude')" class="lynk-btn lynk-btn-primary text-sm py-2 px-4 rounded-xl">Save Claude Keys</button>
+        <button onclick="testAiKey('claude')" class="lynk-btn lynk-btn-secondary text-sm py-2 px-4 rounded-xl">Test Connection</button>
+        <span id="ai-claude-status" class="text-xs" style="color:var(--text-muted)"></span>
+      </div>
+    </div>
+
+    <!-- Grok / xAI -->
+    <div class="lynk-card p-6 mb-4">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#1a1a1a,#444)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M18 6 6 18M6 6l12 12" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg>
+          </div>
+          <div>
+            <h3 class="font-bold">xAI (Grok)</h3>
+            <p class="text-xs" style="color:var(--text-muted)">Grok-2 · Grok-1.5 Vision · Grok Beta</p>
+          </div>
+        </div>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <span class="text-xs font-medium" style="color:var(--text-muted)">Enabled</span>
+          <input type="checkbox" id="ai-grok-enabled" class="w-4 h-4 accent-purple-500" />
+        </label>
+      </div>
+      <div class="grid grid-cols-1 gap-2">
+        <input type="password" id="ai-grok-key-1" class="lynk-input text-sm" placeholder="API Key 1 — Primary (xai-…)" />
+        <input type="password" id="ai-grok-key-2" class="lynk-input text-sm" placeholder="API Key 2 — Fallback (xai-…)" />
+        <input type="password" id="ai-grok-key-3" class="lynk-input text-sm" placeholder="API Key 3 — Rotation (xai-…)" />
+        <input type="password" id="ai-grok-key-4" class="lynk-input text-sm" placeholder="API Key 4 — Rotation (xai-…)" />
+        <input type="password" id="ai-grok-key-5" class="lynk-input text-sm" placeholder="API Key 5 — Reserve (xai-…)" />
+      </div>
+      <div class="flex items-center gap-3 mt-3">
+        <button onclick="saveAiKeys('grok')" class="lynk-btn lynk-btn-primary text-sm py-2 px-4 rounded-xl">Save Grok Keys</button>
+        <button onclick="testAiKey('grok')" class="lynk-btn lynk-btn-secondary text-sm py-2 px-4 rounded-xl">Test Connection</button>
+        <span id="ai-grok-status" class="text-xs" style="color:var(--text-muted)"></span>
+      </div>
+    </div>
+
+    <!-- Key rotation settings -->
+    <div class="lynk-card p-6">
+      <h3 class="font-semibold mb-4">Key Rotation Settings</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Default AI Provider</label>
+          <select id="ai-default-provider" class="lynk-input text-sm">
+            <option value="openai">OpenAI (ChatGPT)</option>
+            <option value="gemini">Google Gemini</option>
+            <option value="claude">Anthropic (Claude)</option>
+            <option value="grok">xAI (Grok)</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Rotation Strategy</label>
+          <select id="ai-rotation-strategy" class="lynk-input text-sm">
+            <option value="sequential">Sequential (1→2→3→4→5)</option>
+            <option value="random">Random</option>
+            <option value="least-used">Least Used First</option>
+            <option value="failover">Failover Only</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Rate Limit per Key (req/min)</label>
+          <input type="number" id="ai-rate-limit" class="lynk-input text-sm" placeholder="60" value="60" />
+        </div>
+        <div>
+          <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Max Tokens per Request</label>
+          <input type="number" id="ai-max-tokens" class="lynk-input text-sm" placeholder="2048" value="2048" />
+        </div>
+      </div>
+      <button onclick="saveAiSettings()" class="lynk-btn lynk-btn-primary text-sm py-2 px-4 rounded-xl mt-4">Save Settings</button>
+    </div>
+  </section>
+
+  <!-- PREMIUM -->
+  <section id="section-premium" class="hidden">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-bold">LYNK Premium</h1>
+      <button onclick="document.getElementById('grant-premium-modal').classList.remove('hidden')" class="lynk-btn lynk-btn-primary text-sm gap-2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Grant Premium
+      </button>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="stat-card"><p class="text-2xl font-black lynk-gradient-text" id="prem-total">—</p><p class="text-xs" style="color:var(--text-muted)">Total Premium</p></div>
+      <div class="stat-card"><p class="text-2xl font-black" style="color:#22c55e" id="prem-active">—</p><p class="text-xs" style="color:var(--text-muted)">Active</p></div>
+      <div class="stat-card"><p class="text-2xl font-black" style="color:#f59e0b" id="prem-expiring">—</p><p class="text-xs" style="color:var(--text-muted)">Expiring Soon</p></div>
+      <div class="stat-card"><p class="text-2xl font-black" style="color:#a855f7" id="prem-revenue">—</p><p class="text-xs" style="color:var(--text-muted)">Revenue (est.)</p></div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <!-- Pricing config -->
+      <div class="lynk-card p-6">
+        <h3 class="font-semibold mb-4 flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--grad-1)"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Pricing
+        </h3>
+        <div class="flex flex-col gap-3">
+          <div>
+            <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Monthly Price</label>
+            <input type="number" id="prem-price-monthly" class="lynk-input text-sm" placeholder="9.99" step="0.01" />
+          </div>
+          <div>
+            <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Annual Price</label>
+            <input type="number" id="prem-price-annual" class="lynk-input text-sm" placeholder="79.99" step="0.01" />
+          </div>
+          <div>
+            <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Currency</label>
+            <select id="prem-currency" class="lynk-input text-sm">
+              <option value="USD">USD ($)</option>
+              <option value="GHS">GHS (₵)</option>
+              <option value="NGN">NGN (₦)</option>
+              <option value="KES">KES (KSh)</option>
+              <option value="ZAR">ZAR (R)</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Trial Period (days)</label>
+            <input type="number" id="prem-trial-days" class="lynk-input text-sm" placeholder="7" />
+          </div>
+          <button onclick="savePremiumPricing()" class="lynk-btn lynk-btn-primary text-sm py-2.5 rounded-xl">Save Pricing</button>
+        </div>
+      </div>
+      <!-- Features config -->
+      <div class="lynk-card p-6 lg:col-span-2">
+        <h3 class="font-semibold mb-4">Premium Features</h3>
+        <div class="grid grid-cols-1 gap-2 text-sm">
+          <label class="flex items-center gap-3 p-2 rounded-lg cursor-pointer" style="background:var(--surface)">
+            <input type="checkbox" id="pf-ai" checked class="w-4 h-4 accent-purple-500" />
+            <div><p class="font-medium">Unlimited LYNK AI access</p><p class="text-xs" style="color:var(--text-muted)">All 4 AI providers, no daily cap</p></div>
+          </label>
+          <label class="flex items-center gap-3 p-2 rounded-lg cursor-pointer" style="background:var(--surface)">
+            <input type="checkbox" id="pf-badge" checked class="w-4 h-4 accent-purple-500" />
+            <div><p class="font-medium">Premium badge on profile</p><p class="text-xs" style="color:var(--text-muted)">Gold star shown next to name</p></div>
+          </label>
+          <label class="flex items-center gap-3 p-2 rounded-lg cursor-pointer" style="background:var(--surface)">
+            <input type="checkbox" id="pf-marketplace" checked class="w-4 h-4 accent-purple-500" />
+            <div><p class="font-medium">Marketplace priority listing</p><p class="text-xs" style="color:var(--text-muted)">Listings shown first in search</p></div>
+          </label>
+          <label class="flex items-center gap-3 p-2 rounded-lg cursor-pointer" style="background:var(--surface)">
+            <input type="checkbox" id="pf-analytics" checked class="w-4 h-4 accent-purple-500" />
+            <div><p class="font-medium">Post analytics & insights</p><p class="text-xs" style="color:var(--text-muted)">Reach, impressions, engagement stats</p></div>
+          </label>
+          <label class="flex items-center gap-3 p-2 rounded-lg cursor-pointer" style="background:var(--surface)">
+            <input type="checkbox" id="pf-themes" checked class="w-4 h-4 accent-purple-500" />
+            <div><p class="font-medium">Exclusive themes & customization</p><p class="text-xs" style="color:var(--text-muted)">Premium-only colour palettes</p></div>
+          </label>
+          <label class="flex items-center gap-3 p-2 rounded-lg cursor-pointer" style="background:var(--surface)">
+            <input type="checkbox" id="pf-storage" checked class="w-4 h-4 accent-purple-500" />
+            <div><p class="font-medium">Extended media storage (5 GB)</p><p class="text-xs" style="color:var(--text-muted)">vs 500 MB on free plan</p></div>
+          </label>
+        </div>
+        <button onclick="savePremiumFeatures()" class="lynk-btn lynk-btn-primary text-sm py-2.5 rounded-xl mt-4">Save Features</button>
+      </div>
+    </div>
+    <!-- Subscribers list -->
+    <div class="lynk-card overflow-hidden">
+      <div class="p-4 border-b" style="border-color:var(--border)">
+        <p class="font-semibold text-sm">Premium Subscribers</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr style="background:var(--bg-card-hover)">
+              <th class="text-left p-3 font-semibold text-xs" style="color:var(--text-muted)">User</th>
+              <th class="text-left p-3 font-semibold text-xs" style="color:var(--text-muted)">Plan</th>
+              <th class="text-left p-3 font-semibold text-xs" style="color:var(--text-muted)">Started</th>
+              <th class="text-left p-3 font-semibold text-xs" style="color:var(--text-muted)">Expires</th>
+              <th class="text-left p-3 font-semibold text-xs" style="color:var(--text-muted)">Status</th>
+              <th class="text-left p-3 font-semibold text-xs" style="color:var(--text-muted)">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="premium-tbody">
+            <tr><td colspan="6" class="p-8 text-center" style="color:var(--text-muted)">Loading subscribers…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- PAYMENTS -->
+  <section id="section-payments" class="hidden">
+    <h1 class="text-2xl font-bold mb-4">Payments & Billing</h1>
+
+    <!-- Firestore Rules reminder for payments section -->
+    <div class="lynk-card p-3 mb-6 flex items-start gap-3" style="border-color:rgba(245,158,11,0.4);background:rgba(245,158,11,0.06)">
+      <svg class="flex-shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <p class="text-xs" style="color:#f59e0b">
+        If saving the Flutterwave key shows "Permission Denied", update your Firestore Security Rules to allow admin writes to the <code style="background:rgba(245,158,11,0.15);padding:1px 4px;border-radius:3px">settings</code> collection.
+        See the <strong style="cursor:pointer;text-decoration:underline" onclick="showSection('ai')">LYNK AI section</strong> for the full rules snippet.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <!-- Flutterwave Settings -->
+      <div class="lynk-card p-6">
+        <h3 class="font-semibold mb-4 flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--grad-2)"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          Flutterwave Gateway
+        </h3>
+        <div class="flex flex-col gap-3">
+          <div>
+            <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Public Key</label>
+            <input type="text" id="fw-public-key" class="lynk-input text-sm font-mono" placeholder="FLWPUBK_TEST-xxxxxxxxxxxxxxxxxxxxxxxx-X or FLWPUBK-xxxxxxxxxxxxxxxxxxxxxxxx-X" />
+            <p class="text-xs mt-1" style="color:var(--text-muted)">Starts with <code>FLWPUBK_TEST-</code> (sandbox) or <code>FLWPUBK-</code> (live)</p>
+          </div>
+          <div class="p-3 rounded-xl text-xs" style="background:rgba(245,158,11,0.1);color:#f59e0b;border:1px solid rgba(245,158,11,0.2)">
+            <p class="font-semibold mb-0.5">⚠️ Secret Key Security Note</p>
+            <p>Your Flutterwave <strong>Secret Key</strong> must never be stored in the browser or client-side database. Add it to your server environment variables (e.g. Firebase Cloud Functions) only. The Public Key above is safe to store for client-side payments.</p>
+          </div>
+          <div>
+            <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Currency</label>
+            <select id="fw-currency" class="lynk-input text-sm">
+              <option value="NGN">NGN — Nigerian Naira (₦)</option>
+              <option value="GHS">GHS — Ghanaian Cedi (₵)</option>
+              <option value="USD">USD — US Dollar ($)</option>
+              <option value="KES">KES — Kenyan Shilling</option>
+              <option value="ZAR">ZAR — South African Rand</option>
+              <option value="TZS">TZS — Tanzanian Shilling</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-3">
+            <button onclick="saveFlutterwaveSettings()" class="lynk-btn lynk-btn-primary text-sm py-2.5 rounded-xl flex-1">Save Keys</button>
+            <span id="fw-save-status" class="hidden text-xs text-green-500 font-medium">✅ Saved!</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pricing -->
+      <div class="lynk-card p-6">
+        <h3 class="font-semibold mb-4 flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--grad-1)"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Premium Pricing
+        </h3>
+        <div class="flex flex-col gap-3">
+          <div>
+            <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Weekly Price</label>
+            <input type="number" id="price-weekly" class="lynk-input text-sm" placeholder="e.g. 1000 (NGN)" value="1000" />
+          </div>
+          <div>
+            <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Monthly Price</label>
+            <input type="number" id="price-monthly" class="lynk-input text-sm" placeholder="e.g. 3500 (NGN)" value="3500" />
+          </div>
+          <div>
+            <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Quarterly Price</label>
+            <input type="number" id="price-quarterly" class="lynk-input text-sm" placeholder="e.g. 9000 (NGN)" value="9000" />
+          </div>
+          <button onclick="savePaymentPricing()" class="lynk-btn lynk-btn-primary text-sm py-2.5 rounded-xl">Update Prices</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transaction Logs -->
+    <div class="lynk-card p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--grad-3)"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Transaction Logs
+        </h3>
+        <button onclick="loadPaymentLogs()" class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-lg">Refresh</button>
+      </div>
+      <div id="payment-logs-list">
+        <p class="text-sm text-center py-6" style="color:var(--text-muted)">Loading transactions...</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCHOOLS -->
+  <section id="section-schools" class="hidden">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-bold">Schools & Faculties</h1>
+      <button onclick="document.getElementById('add-school-modal').classList.remove('hidden')" class="lynk-btn lynk-btn-primary text-sm gap-2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add School
+      </button>
+    </div>
+    <div id="schools-list"></div>
+  </section>
+
+  <!-- SCHOOL REQUESTS -->
+  <section id="section-school-requests" class="hidden">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold">School Verification Requests</h1>
+        <p class="text-sm mt-1" style="color:var(--text-secondary)">Users whose schools aren't in your list — review and approve or reject below.</p>
+      </div>
+      <button onclick="loadSchoolRequests()" class="lynk-btn lynk-btn-secondary text-sm gap-2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Refresh
+      </button>
+    </div>
+
+    <!-- Filter tabs -->
+    <div class="flex gap-2 mb-5">
+      <button onclick="filterSchoolRequests('pending')" id="sreq-tab-pending"
+        class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-full" style="border-color:rgba(234,179,8,0.5);color:#fbbf24">
+        ⏳ Pending
+      </button>
+      <button onclick="filterSchoolRequests('approved')" id="sreq-tab-approved"
+        class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-full">
+        ✅ Approved
+      </button>
+      <button onclick="filterSchoolRequests('rejected')" id="sreq-tab-rejected"
+        class="lynk-btn lynk-btn-secondary text-xs py-1.5 px-3 rounded-full">
+        ❌ Rejected
+      </button>
+    </div>
+
+    <div id="school-requests-list">
+      <div class="text-sm" style="color:var(--text-muted)">Loading requests…</div>
+    </div>
+  </section>
+
+  <!-- REPORTS -->
+  <section id="section-reports" class="hidden">
+    <h1 class="text-2xl font-bold mb-6">Reports</h1>
+    <div id="reports-list"></div>
+  </section>
+
+  <!-- SECURITY LOGS -->
+  <section id="section-security" class="hidden">
+    <h1 class="text-2xl font-bold mb-6">Security Logs</h1>
+    <div class="lynk-card p-4">
+      <div id="security-list"></div>
+    </div>
+  </section>
+
+  <!-- ANALYTICS -->
+  <section id="section-analytics" class="hidden">
+    <h1 class="text-2xl font-bold mb-6">Analytics</h1>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+      <div class="stat-card"><p class="text-2xl font-black lynk-gradient-text" id="ana-dau">—</p><p class="text-xs" style="color:var(--text-muted)">Online Now</p></div>
+      <div class="stat-card"><p class="text-2xl font-black lynk-gradient-text" id="ana-posts-day">—</p><p class="text-xs" style="color:var(--text-muted)">Posts Today</p></div>
+      <div class="stat-card"><p class="text-2xl font-black lynk-gradient-text" id="ana-messages">—</p><p class="text-xs" style="color:var(--text-muted)">Conversations</p></div>
+    </div>
+    <div class="lynk-card p-4">
+      <p class="font-semibold mb-4 text-sm">Posts by Faculty</p>
+      <canvas id="chart-faculty" height="200"></canvas>
+    </div>
+  </section>
+
+  <!-- ADMINS -->
+  <section id="section-admins" class="hidden">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-bold">Admin Management</h1>
+      <button onclick="document.getElementById('grant-admin-modal').classList.remove('hidden')" class="lynk-btn lynk-btn-primary text-sm gap-2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Grant Admin
+      </button>
+    </div>
+    <!-- Inline add admin form -->
+    <div class="lynk-card p-4 mb-4">
+      <p class="text-sm font-semibold mb-3">Quick Grant Admin</p>
+      <div class="flex gap-2 flex-wrap">
+        <input id="new-admin-email" type="email" class="lynk-input text-sm py-2 flex-1" placeholder="User email" />
+        <select id="new-admin-role" class="lynk-input text-sm py-2" style="flex:0 0 auto;width:auto">
+          <option value="super">Super Admin</option>
+          <option value="security">Security</option>
+          <option value="analytics">Analytics</option>
+          <option value="support">Support</option>
+          <option value="content" selected>Content</option>
+        </select>
+        <button onclick="addAdmin()" class="lynk-btn lynk-btn-primary text-sm py-2 px-4 rounded-xl">Grant</button>
+      </div>
+    </div>
+    <div id="admins-list" class="flex flex-col gap-3"></div>
+  </section>
+
+</main>
+
+<!-- ===== ADD SCHOOL MODAL ===== -->
+<div id="add-school-modal" class="lynk-modal-overlay hidden">
+  <div class="lynk-card w-full max-w-lg mx-4 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-lg">Add New School</h3>
+      <button onclick="document.getElementById('add-school-modal').classList.add('hidden')" class="lynk-icon-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="flex flex-col gap-3">
+      <input id="new-school-name" type="text" class="lynk-input" placeholder="University name (e.g. University of Ghana)" />
+      <div>
+        <label class="text-sm font-medium block mb-1" style="color:var(--text-secondary)">Faculties & Departments</label>
+        <textarea id="new-school-faculties" class="lynk-input resize-y font-mono text-sm" rows="6"
+          placeholder="Engineering: Computer Science, Electrical, Civil&#10;Medicine: General Medicine, Pharmacy&#10;Law: LLB, LLM"></textarea>
+        <p class="text-xs mt-1" style="color:var(--text-muted)">Format: Faculty Name: Dept1, Dept2, Dept3 (one per line)</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="document.getElementById('add-school-modal').classList.add('hidden')" class="lynk-btn lynk-btn-secondary flex-1 py-2.5 rounded-xl">Cancel</button>
+        <button onclick="saveNewSchool()" class="lynk-btn lynk-btn-primary flex-1 py-2.5 rounded-xl">Add School</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EDIT SCHOOL MODAL ===== -->
+<div id="edit-school-modal" class="lynk-modal-overlay hidden">
+  <div class="lynk-card w-full max-w-lg mx-4 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-lg">Edit School</h3>
+      <button onclick="document.getElementById('edit-school-modal').classList.add('hidden')" class="lynk-icon-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="flex flex-col gap-3">
+      <input id="edit-school-name" type="text" class="lynk-input" placeholder="University name" />
+      <div>
+        <label class="text-sm font-medium block mb-1" style="color:var(--text-secondary)">Faculties & Departments</label>
+        <textarea id="edit-school-faculties" class="lynk-input resize-y font-mono text-sm" rows="6"
+          placeholder="Engineering: Computer Science, Electrical&#10;Medicine: General Medicine, Pharmacy"></textarea>
+        <p class="text-xs mt-1" style="color:var(--text-muted)">Format: Faculty Name: Dept1, Dept2, Dept3 (one per line)</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="document.getElementById('edit-school-modal').classList.add('hidden')" class="lynk-btn lynk-btn-secondary flex-1 py-2.5 rounded-xl">Cancel</button>
+        <button onclick="saveEditSchool()" class="lynk-btn lynk-btn-primary flex-1 py-2.5 rounded-xl">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CREATE COMMUNITY MODAL ===== -->
+<div id="create-community-modal" class="lynk-modal-overlay hidden">
+  <div class="lynk-card w-full max-w-lg mx-4 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-lg">Create Community</h3>
+      <button onclick="document.getElementById('create-community-modal').classList.add('hidden')" class="lynk-icon-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="flex flex-col gap-3">
+      <input id="comm-name" type="text" class="lynk-input" placeholder="Community name" />
+      <textarea id="comm-desc" class="lynk-input resize-y" rows="3" placeholder="Description"></textarea>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Type</label>
+          <select id="comm-type" class="lynk-input">
+            <option value="public">Public</option>
+            <option value="private">Private</option>
+            <option value="university">University</option>
+            <option value="interest">Interest Group</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Category</label>
+          <select id="comm-category" class="lynk-input">
+            <option value="academic">Academic</option>
+            <option value="social">Social</option>
+            <option value="sports">Sports</option>
+            <option value="technology">Technology</option>
+            <option value="arts">Arts & Culture</option>
+            <option value="career">Career</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      <input id="comm-university" type="text" class="lynk-input" placeholder="University (optional)" />
+      <div class="flex gap-2">
+        <button onclick="document.getElementById('create-community-modal').classList.add('hidden')" class="lynk-btn lynk-btn-secondary flex-1 py-2.5 rounded-xl">Cancel</button>
+        <button onclick="createCommunityAdmin()" class="lynk-btn lynk-btn-primary flex-1 py-2.5 rounded-xl">Create Community</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GRANT PREMIUM MODAL ===== -->
+<div id="grant-premium-modal" class="lynk-modal-overlay hidden">
+  <div class="lynk-card w-full max-w-md mx-4 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-lg">Grant Premium Access</h3>
+      <button onclick="document.getElementById('grant-premium-modal').classList.add('hidden')" class="lynk-icon-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="flex flex-col gap-3">
+      <input id="prem-grant-email" type="email" class="lynk-input" placeholder="User email address" />
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Plan</label>
+          <select id="prem-grant-plan" class="lynk-input">
+            <option value="monthly">Monthly</option>
+            <option value="annual">Annual</option>
+            <option value="lifetime">Lifetime</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Duration (days)</label>
+          <input id="prem-grant-days" type="number" class="lynk-input" placeholder="30" value="30" />
+        </div>
+      </div>
+      <textarea id="prem-grant-note" class="lynk-input resize-y" rows="2" placeholder="Internal note (optional)"></textarea>
+      <div class="flex gap-2">
+        <button onclick="document.getElementById('grant-premium-modal').classList.add('hidden')" class="lynk-btn lynk-btn-secondary flex-1 py-2.5 rounded-xl">Cancel</button>
+        <button onclick="grantPremiumAdmin()" class="lynk-btn lynk-btn-primary flex-1 py-2.5 rounded-xl">Grant Premium</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GRANT ADMIN MODAL ===== -->
+<div id="grant-admin-modal" class="lynk-modal-overlay hidden">
+  <div class="lynk-card w-full max-w-md mx-4 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-lg">Grant Admin Access</h3>
+      <button onclick="document.getElementById('grant-admin-modal').classList.add('hidden')" class="lynk-icon-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="flex flex-col gap-3">
+      <input id="new-admin-email-modal" type="email" class="lynk-input" placeholder="User's email address" />
+      <select id="new-admin-role-modal" class="lynk-input">
+        <option value="super">Super Admin</option>
+        <option value="security">Security Admin</option>
+        <option value="analytics">Analytics Admin</option>
+        <option value="support">Support Admin</option>
+        <option value="content" selected>Content Admin</option>
+      </select>
+      <div class="flex gap-2">
+        <button onclick="document.getElementById('grant-admin-modal').classList.add('hidden')" class="lynk-btn lynk-btn-secondary flex-1 py-2.5 rounded-xl">Cancel</button>
+        <button onclick="addAdmin()" class="lynk-btn lynk-btn-primary flex-1 py-2.5 rounded-xl">Grant Access</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/admin.js"></script>
+</body>
+</html>

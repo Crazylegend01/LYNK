@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <script>!function(){var t=localStorage.getItem("lynk-theme")||"system",r=t==="system"?(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t;document.documentElement.setAttribute("data-theme",r)}();</script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LYNK AI — Study Assistant</title>
+  <link rel="icon" href="assets/logo.jpg" type="image/jpeg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/custom.css" />
+  <script src="js/mobile-nav.js" defer></script>
+</head>
+<body>
+<div id="page-loader">
+  <div class="pl-ring">
+    <svg class="pl-spin" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="44" cy="44" r="40" stroke="url(#plGrad)" stroke-width="2" stroke-dasharray="10 7" stroke-linecap="round"/>
+      <defs>
+        <linearGradient id="plGrad" x1="0" y1="0" x2="88" y2="88" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#a855f7"/>
+          <stop offset="50%" stop-color="#06b6d4"/>
+          <stop offset="100%" stop-color="#3b82f6"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <div class="pl-ring-img"><img src="assets/logo.jpg" alt="LYNK" /></div>
+  </div>
+  <div class="pl-wordmark">LYNK</div>
+  <div class="pl-sub">By Legends</div>
+  <div class="pl-bar-wrap"><div class="pl-bar"></div></div>
+</div>
+
+<!-- NAVBAR -->
+<nav class="lynk-nav h-16 flex items-center px-4 justify-between gap-2">
+  <div class="flex items-center gap-2 flex-shrink-0">
+    <button id="hamburger-btn" onclick="openMobileNav()" aria-label="Open menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <span class="flex flex-col leading-none">
+      <span class="logo-text">LYNK</span>
+      <span class="logo-sub">By Legends</span>
+    </span>
+  </div>
+  <div class="flex items-center gap-2">
+    <span class="lynk-badge lynk-gradient text-white text-xs px-3 py-1">LYNK AI</span>
+    <span id="ai-usage-badge" class="text-xs" style="color:var(--text-muted)"></span>
+  </div>
+  <div class="flex items-center gap-2">
+    <button onclick="clearChat()" class="lynk-btn lynk-btn-ghost text-sm py-2 px-3 hidden md:inline-flex">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/></svg>
+      New Chat
+    </button>
+    <a href="profile.html"><img id="nav-avatar" src="https://ui-avatars.com/api/?name=User&background=a855f7&color=fff" class="lynk-avatar w-9 h-9" /></a>
+  </div>
+</nav>
+
+<div id="drawer-overlay" class="lynk-drawer-overlay" onclick="closeMobileNav()"></div>
+
+<!-- SIDEBAR -->
+<aside class="lynk-sidebar pt-4 pb-20">
+  <div class="px-4 mb-3">
+    <div class="lynk-card p-3 mb-3" style="background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(59,130,246,0.15))">
+      <p class="text-xs font-bold mb-1" style="color:var(--grad-1)">🤖 LYNK AI</p>
+      <p class="text-xs" style="color:var(--text-muted)" id="ai-sidebar-status">Loading status...</p>
+      <div class="lynk-progress mt-2">
+        <div class="lynk-progress-bar" id="ai-usage-bar" style="width:0%"></div>
+      </div>
+      <p class="text-xs mt-1" id="ai-usage-text" style="color:var(--text-muted)"></p>
+    </div>
+  </div>
+
+  <!-- AI Tools -->
+  <div class="px-4 mb-2">
+    <p class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:var(--text-muted)">AI Tools</p>
+  </div>
+  <nav class="flex flex-col gap-0.5">
+    <button onclick="switchAIMode('chat')" id="mode-chat" class="lynk-sidebar-link active text-left w-full">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>Ask Anything</span>
+    </button>
+    <button onclick="switchAIMode('summarize')" id="mode-summarize" class="lynk-sidebar-link text-left w-full">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <span>Summarize Notes</span>
+    </button>
+    <button onclick="switchAIMode('flashcards')" id="mode-flashcards" class="lynk-sidebar-link text-left w-full">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      <span>Flashcards</span>
+    </button>
+    <button onclick="switchAIMode('quiz')" id="mode-quiz" class="lynk-sidebar-link text-left w-full">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span>Practice Quiz</span>
+    </button>
+    <button onclick="switchAIMode('career')" id="mode-career" class="lynk-sidebar-link text-left w-full">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      <span>Career Assistant</span>
+    </button>
+    <button onclick="switchAIMode('studyplan')" id="mode-studyplan" class="lynk-sidebar-link text-left w-full">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>Study Planner</span>
+    </button>
+    <button onclick="switchAIMode('writing')" id="mode-writing" class="lynk-sidebar-link text-left w-full">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      <span>Writing Help</span>
+    </button>
+
+    <div class="h-px mx-4 my-2" style="background:var(--border)"></div>
+    <a href="feed.html" class="lynk-sidebar-link"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home Feed</span></a>
+    <a href="communities.html" class="lynk-sidebar-link"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span>Communities</span></a>
+    <a href="premium.html" class="lynk-sidebar-link"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><span style="color:var(--grad-1)">LYNK Premium</span></a>
+    <a href="#" onclick="signOut()" class="lynk-sidebar-link" style="color:#ef4444"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>Sign Out</span></a>
+  </nav>
+</aside>
+
+<!-- MAIN AI AREA -->
+<main class="main-content" style="height:calc(100vh - 64px);display:flex;flex-direction:column">
+  <div class="flex flex-col h-full max-w-4xl mx-auto w-full px-4">
+
+    <!-- MODE HEADER -->
+    <div id="ai-mode-header" class="py-4 flex-shrink-0">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl lynk-gradient flex items-center justify-center flex-shrink-0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div>
+          <h2 id="ai-mode-title" class="font-bold text-lg">Ask Anything</h2>
+          <p id="ai-mode-subtitle" class="text-sm" style="color:var(--text-muted)">Your AI-powered study assistant</p>
+        </div>
+        <button onclick="clearChat()" class="ml-auto lynk-btn lynk-btn-ghost text-sm py-1.5 px-3 md:hidden">New Chat</button>
+      </div>
+
+      <!-- Quick prompts -->
+      <div id="quick-prompts" class="flex gap-2 mt-3 overflow-x-auto pb-1">
+        <button class="ai-tool-chip" onclick="sendQuickPrompt('Explain the concept of photosynthesis')">🌱 Photosynthesis</button>
+        <button class="ai-tool-chip" onclick="sendQuickPrompt('Help me solve a quadratic equation step by step')">📐 Math Help</button>
+        <button class="ai-tool-chip" onclick="sendQuickPrompt('Write a professional introduction for my CV')">📄 CV Writing</button>
+        <button class="ai-tool-chip" onclick="sendQuickPrompt('Create 5 practice questions on Newton\'s laws')">❓ Quiz Me</button>
+        <button class="ai-tool-chip" onclick="sendQuickPrompt('Give me interview tips for software engineering roles')">💼 Interview Prep</button>
+        <button class="ai-tool-chip" onclick="sendQuickPrompt('Create a 2-week study plan for my exams')">📅 Study Plan</button>
+      </div>
+    </div>
+
+    <!-- TOOL-SPECIFIC PANELS -->
+    <div id="ai-upload-panel" class="hidden flex-shrink-0 mb-3">
+      <div class="lynk-card p-4 border-2 border-dashed" style="border-color:var(--border)">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl" style="background:rgba(168,85,247,0.1);display:flex;align-items:center;justify-content:center">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--grad-1)"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-semibold">Upload Document</p>
+            <p class="text-xs" style="color:var(--text-muted)">PDF, TXT, or paste your notes below</p>
+          </div>
+          <label class="lynk-btn lynk-btn-secondary text-sm py-2 px-3 cursor-pointer">
+            Upload
+            <input type="file" class="hidden" id="ai-file-input" accept=".pdf,.txt,.doc,.docx" onchange="handleAIFileUpload(this)" />
+          </label>
+        </div>
+        <div id="ai-file-name" class="mt-2 text-xs hidden" style="color:var(--grad-1)"></div>
+      </div>
+    </div>
+
+    <!-- FLASHCARDS VIEW -->
+    <div id="flashcards-view" class="hidden flex-1 overflow-y-auto">
+      <div id="flashcards-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4"></div>
+    </div>
+
+    <!-- QUIZ VIEW -->
+    <div id="quiz-view" class="hidden flex-1 overflow-y-auto">
+      <div id="quiz-container" class="py-4"></div>
+    </div>
+
+    <!-- CAREER VIEW -->
+    <div id="career-view" class="hidden flex-1 overflow-y-auto">
+      <div class="py-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
+          <button onclick="careerAction('cv')" class="lynk-card p-4 text-center hover:border-purple-500 transition-colors cursor-pointer">
+            <div class="text-2xl mb-2">📄</div>
+            <p class="text-sm font-semibold">CV Writing</p>
+            <p class="text-xs mt-1" style="color:var(--text-muted)">Generate a pro CV</p>
+          </button>
+          <button onclick="careerAction('interview')" class="lynk-card p-4 text-center hover:border-purple-500 transition-colors cursor-pointer">
+            <div class="text-2xl mb-2">💬</div>
+            <p class="text-sm font-semibold">Interview Prep</p>
+            <p class="text-xs mt-1" style="color:var(--text-muted)">Practice questions</p>
+          </button>
+          <button onclick="careerAction('roadmap')" class="lynk-card p-4 text-center hover:border-purple-500 transition-colors cursor-pointer">
+            <div class="text-2xl mb-2">🗺️</div>
+            <p class="text-sm font-semibold">Career Roadmap</p>
+            <p class="text-xs mt-1" style="color:var(--text-muted)">Plan your path</p>
+          </button>
+          <button onclick="careerAction('internship')" class="lynk-card p-4 text-center hover:border-purple-500 transition-colors cursor-pointer">
+            <div class="text-2xl mb-2">🔍</div>
+            <p class="text-sm font-semibold">Internship Tips</p>
+            <p class="text-xs mt-1" style="color:var(--text-muted)">Find opportunities</p>
+          </button>
+          <button onclick="careerAction('skills')" class="lynk-card p-4 text-center hover:border-purple-500 transition-colors cursor-pointer">
+            <div class="text-2xl mb-2">⚡</div>
+            <p class="text-sm font-semibold">Skills Analysis</p>
+            <p class="text-xs mt-1" style="color:var(--text-muted)">Know your gaps</p>
+          </button>
+          <button onclick="careerAction('salary')" class="lynk-card p-4 text-center hover:border-purple-500 transition-colors cursor-pointer">
+            <div class="text-2xl mb-2">💰</div>
+            <p class="text-sm font-semibold">Salary Insights</p>
+            <p class="text-xs mt-1" style="color:var(--text-muted)">Know your worth</p>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STUDY PLAN VIEW -->
+    <div id="studyplan-view" class="hidden flex-1 overflow-y-auto">
+      <div class="py-4">
+        <div class="lynk-card p-5 mb-4">
+          <h3 class="font-semibold mb-3">Generate Your Study Plan</h3>
+          <div class="flex flex-col gap-3">
+            <input id="studyplan-subject" class="lynk-input" placeholder="Subject(s) (e.g. Mathematics, Physics)" />
+            <div class="grid grid-cols-2 gap-3">
+              <input id="studyplan-weeks" class="lynk-input" type="number" placeholder="Weeks available" min="1" max="52" value="4" />
+              <select id="studyplan-level" class="lynk-input">
+                <option value="beginner">Beginner</option>
+                <option value="intermediate" selected>Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </div>
+            <textarea id="studyplan-goals" class="lynk-input resize-none" rows="2" placeholder="Specific goals or exam dates..."></textarea>
+            <button onclick="generateStudyPlan()" class="lynk-btn lynk-btn-primary">Generate Study Plan</button>
+          </div>
+        </div>
+        <div id="studyplan-result"></div>
+      </div>
+    </div>
+
+    <!-- CHAT VIEW (default) -->
+    <div id="chat-view" class="flex flex-col flex-1 overflow-hidden">
+      <!-- Messages -->
+      <div id="ai-messages" class="flex-1 overflow-y-auto flex flex-col gap-3 py-2">
+        <!-- Welcome message -->
+        <div class="ai-message-bot fade-in">
+          <p class="font-semibold mb-2">👋 Hi! I'm LYNK AI, your academic study assistant.</p>
+          <p class="text-sm mb-2" style="color:var(--text-secondary)">I can help you with:</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="ai-tool-chip" onclick="sendQuickPrompt('Explain a concept to me')">💡 Explain concepts</span>
+            <span class="ai-tool-chip" onclick="switchAIMode('summarize')">📄 Summarize notes</span>
+            <span class="ai-tool-chip" onclick="switchAIMode('flashcards')">🃏 Make flashcards</span>
+            <span class="ai-tool-chip" onclick="switchAIMode('quiz')">❓ Create quizzes</span>
+            <span class="ai-tool-chip" onclick="switchAIMode('career')">💼 Career advice</span>
+            <span class="ai-tool-chip" onclick="sendQuickPrompt('Help me solve a math problem')">📐 Solve math</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paywall notice for free users -->
+      <div id="ai-paywall" class="hidden flex-shrink-0 mb-2">
+        <div class="lynk-card p-4" style="border-color:var(--grad-1);background:rgba(168,85,247,0.05)">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">⏱️</span>
+            <div class="flex-1">
+              <p class="font-semibold text-sm">Daily limit reached (30 min/day)</p>
+              <p class="text-xs" style="color:var(--text-muted)">Upgrade to LYNK Premium for unlimited AI access</p>
+            </div>
+            <a href="premium.html" class="lynk-btn lynk-btn-primary text-xs py-2 px-3 flex-shrink-0">Upgrade</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input area -->
+      <div class="flex-shrink-0 pb-4 pt-2">
+        <div class="flex gap-2 items-end" style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:8px 12px">
+          <label class="lynk-icon-btn cursor-pointer flex-shrink-0" title="Upload file">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <input type="file" class="hidden" accept=".pdf,.txt,.doc,.docx,image/*" onchange="handleInlineFileUpload(this)" />
+          </label>
+          <textarea id="ai-input"
+            class="flex-1 resize-none text-sm outline-none"
+            style="background:transparent;border:none;color:var(--text-primary);max-height:120px;min-height:36px"
+            rows="1"
+            placeholder="Ask me anything academic..."
+            onkeydown="handleAIKeydown(event)"
+            oninput="autoResizeAI(this)"></textarea>
+          <button onclick="sendAIMessage()" id="ai-send-btn" class="lynk-icon-btn flex-shrink-0" style="background:linear-gradient(135deg,var(--grad-1),var(--grad-3));color:white" title="Send">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <p class="text-xs text-center mt-2" style="color:var(--text-muted)">LYNK AI may make mistakes. Verify important information.</p>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- BOTTOM NAV -->
+<nav class="lynk-bottom-nav">
+  <a href="feed.html"><div class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><span>Home</span></a>
+  <a href="search.html"><div class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><span>Search</span></a>
+  <a href="communities.html"><div class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><span>Groups</span></a>
+  <a href="marketplace.html"><div class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div><span>Market</span></a>
+  <a href="ai.html" class="active"><div class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><span>AI</span></a>
+</nav>
+
+<script type="module" src="js/ai.js"></script>
+<script>
+window.addEventListener('load',function(){var l=document.getElementById('page-loader');if(l){l.classList.add('pl-done');setTimeout(function(){l.remove()},450);}});
+</script>
+</body>
+</html>

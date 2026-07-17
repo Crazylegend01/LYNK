@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <script>!function(){var t=localStorage.getItem("lynk-theme")||"system",r=t==="system"?(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t;document.documentElement.setAttribute("data-theme",r)}();</script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home — LYNK By Legends</title>
+  <link rel="icon" href="assets/logo.jpg" type="image/jpeg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/custom.css" />
+  <script src="js/mobile-nav.js" defer></script>
+</head>
+<body>
+<div id="page-loader">
+  <div class="pl-ring">
+    <svg class="pl-spin" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="44" cy="44" r="40" stroke="url(#plGrad)" stroke-width="2" stroke-dasharray="10 7" stroke-linecap="round"/>
+      <defs>
+        <linearGradient id="plGrad" x1="0" y1="0" x2="88" y2="88" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#a855f7"/>
+          <stop offset="50%" stop-color="#06b6d4"/>
+          <stop offset="100%" stop-color="#3b82f6"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <div class="pl-ring-img"><img src="assets/logo.jpg" alt="LYNK" /></div>
+  </div>
+  <div class="pl-wordmark">LYNK</div>
+  <div class="pl-sub">By Legends</div>
+  <div class="pl-bar-wrap"><div class="pl-bar"></div></div>
+</div>
+
+<!-- ===== NAVBAR ===== -->
+<nav class="lynk-nav h-16 flex items-center px-4 justify-between gap-2">
+  <!-- Left group: hamburger + logo -->
+  <div class="flex items-center gap-2 flex-shrink-0">
+    <button id="hamburger-btn" onclick="openMobileNav()" aria-label="Open menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <span class="flex flex-col leading-none">
+      <span class="logo-text">LYNK</span>
+      <span class="logo-sub">By Legends</span>
+    </span>
+  </div>
+
+  <!-- Center: search bar -->
+  <div class="flex-1 max-w-sm mx-2">
+    <div class="relative">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" class="lynk-input text-sm py-2 pl-8 pr-3" placeholder="Search LYNK..."
+             onfocus="window.location.href='search.html'" />
+    </div>
+  </div>
+
+  <!-- Right: desktop icons + avatar. Mobile: notification bell (left of +), + upload btn -->
+  <div class="flex items-center gap-2 flex-shrink-0">
+    <!-- Mobile ONLY: notification bell (moved to left of +) — notifications.js injects bell into nav-right-icons on desktop -->
+
+    <!-- Desktop: theme toggle -->
+    <button id="theme-toggle" class="lynk-icon-btn hidden md:inline-flex" aria-label="Toggle theme" onclick="quickTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark')">
+      <svg id="theme-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+
+    <!-- Desktop ONLY: + upload button -->
+    <label class="lynk-plus-btn hidden md:inline-flex cursor-pointer" title="Add Photo/Video" aria-label="Upload media">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <input type="file" class="hidden" accept="*" onchange="pickPostMedia(this);document.getElementById('post-content').focus();" />
+    </label>
+
+    <!-- Mobile ONLY: + upload button -->
+    <label class="lynk-plus-btn md:hidden cursor-pointer" title="Add Photo/Video" aria-label="Upload media">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <input type="file" class="hidden" accept="*" onchange="pickPostMedia(this);document.getElementById('post-content').focus();" />
+    </label>
+
+    <a href="profile.html" class="relative flex-shrink-0">
+      <img id="nav-avatar" src="https://ui-avatars.com/api/?name=User&background=a855f7&color=fff" class="lynk-avatar w-9 h-9 cursor-pointer" alt="Profile" />
+      <span class="online-dot"></span>
+    </a>
+  </div>
+</nav>
+
+<div id="drawer-overlay" class="lynk-drawer-overlay" onclick="closeMobileNav()"></div>
+
+<!-- ===== LEFT SIDEBAR ===== -->
+<aside class="lynk-sidebar pt-4 pb-20">
+  <div class="px-4 mb-4">
+    <div class="flex items-center gap-3 p-3 rounded-xl mb-1" style="background:var(--bg-card-hover)">
+      <img id="sidebar-avatar" src="https://ui-avatars.com/api/?name=User&background=a855f7&color=fff" class="lynk-avatar w-10 h-10" />
+      <div class="overflow-hidden">
+        <p class="font-semibold text-sm truncate" id="sidebar-name">Loading...</p>
+        <p class="text-xs truncate" style="color:var(--text-muted)" id="sidebar-dept"></p>
+      </div>
+    </div>
+  </div>
+  <nav class="flex flex-col gap-0.5">
+    <a href="feed.html" class="lynk-sidebar-link active">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Home Feed</span>
+    </a>
+    <a href="search.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Search</span>
+    </a>
+    <a href="announcements.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+      <span>Announcements</span>
+    </a>
+    <a href="profile.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>My Profile</span>
+    </a>
+    <a href="chat.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>Messages</span>
+    </a>
+    <a href="notifications.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span>Notifications</span>
+    </a>
+
+
+    <div class="px-4 mt-4 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Communities</div>
+    <a href="#" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/></svg>
+      <span id="faculty-link">My Faculty</span>
+    </a>
+    <a href="#" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+      <span id="dept-link">My Department</span>
+    </a>
+
+    <div class="px-4 mt-4 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Settings</div>
+    <a href="settings.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Settings</span>
+    </a>
+    <a href="admin.html" id="admin-link" class="lynk-sidebar-link hidden">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span>Admin Panel</span>
+    </a>
+    <a href="#" onclick="signOut()" class="lynk-sidebar-link" style="color:#ef4444">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <span>Sign Out</span>
+    </a>
+  </nav>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<main class="main-content">
+  <div class="max-w-6xl mx-auto px-4 py-6">
+    <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-6">
+
+      <!-- CENTER COLUMN -->
+      <div>
+        <!-- Mobile: People suggestions carousel -->
+        <div class="lynk-card p-4 mb-4 lg:hidden">
+          <p class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--text-muted)">People You May Know</p>
+          <div class="flex gap-3 overflow-x-auto pb-1" id="mobile-suggestions"></div>
+        </div>
+
+        <!-- COMPOSE BOX -->
+        <div class="lynk-card p-4 mb-4">
+          <div class="flex gap-3">
+            <img id="compose-avatar" src="https://ui-avatars.com/api/?name=U&background=a855f7&color=fff" class="lynk-avatar w-10 h-10 flex-shrink-0" />
+            <div class="flex-1 min-w-0">
+              <textarea id="post-content"
+                class="lynk-input resize-none w-full text-sm"
+                rows="2"
+                placeholder="What's on your mind? Share with your campus..."
+                oninput="onPostInput(this)"
+                onfocus="document.getElementById('post-actions-bar').classList.remove('hidden')">
+              </textarea>
+
+              <!-- Media Preview -->
+              <div id="media-preview" class="hidden mt-2 relative rounded-xl overflow-hidden">
+                <img id="preview-img" src="" class="w-full max-h-52 object-cover rounded-xl" />
+                <video id="preview-vid" class="hidden w-full max-h-52 rounded-xl" controls></video>
+                <button onclick="clearMediaPreview()"
+                  class="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-white"
+                  style="background:rgba(0,0,0,0.65)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+
+              <!-- Poll Builder -->
+              <div id="poll-builder" class="hidden mt-3 p-3 rounded-xl" style="background:var(--bg-card-hover)">
+                <p class="text-xs font-semibold mb-2" style="color:var(--text-muted)">Poll Options</p>
+                <div id="poll-options" class="flex flex-col gap-2">
+                  <input type="text" class="lynk-input text-sm py-2" placeholder="Option 1" id="poll-opt-0" />
+                  <input type="text" class="lynk-input text-sm py-2" placeholder="Option 2" id="poll-opt-1" />
+                </div>
+                <button onclick="addPollOption()" class="text-xs mt-2" style="color:var(--grad-2)">+ Add option (max 5)</button>
+              </div>
+
+              <!-- Post action bar (hidden until focused or has content) -->
+              <div id="post-actions-bar" class="hidden mt-3 flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-1">
+                  <!-- Photo attach -->
+                  <label class="lynk-btn lynk-btn-ghost text-sm py-1.5 px-3 rounded-xl cursor-pointer flex items-center gap-1.5" title="Add Photo/Video">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    <span class="hidden sm:inline text-sm">Photo</span>
+                    <input type="file" class="hidden" accept="*" onchange="pickPostMedia(this)" />
+                  </label>
+                  <!-- Poll -->
+                  <button onclick="togglePollBuilder()" class="lynk-btn lynk-btn-ghost text-sm py-1.5 px-3 rounded-xl flex items-center gap-1.5" title="Create Poll">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    <span class="hidden sm:inline text-sm">Poll</span>
+                  </button>
+                </div>
+
+                <!-- Visibility + POST split button (replaces the old separate position of visibility) -->
+                <div class="post-submit-wrap">
+                  <select id="post-visibility" title="Who can see this?">
+                    <option value="public">🌍 Public</option>
+                    <option value="university">🎓 University</option>
+                    <option value="faculty">🏛️ Faculty</option>
+                    <option value="friends">👥 Friends</option>
+                  </select>
+                  <button id="btn-post" onclick="submitPost()">Post</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FEED FILTERS -->
+        <div class="flex gap-2 mb-4 overflow-x-auto pb-1">
+          <button class="lynk-tab filter-btn active whitespace-nowrap" onclick="setFilter('all',this)">For You</button>
+          <button class="lynk-tab filter-btn whitespace-nowrap" onclick="setFilter('faculty',this)">My Faculty</button>
+          <button class="lynk-tab filter-btn whitespace-nowrap flex items-center gap-1.5" onclick="setFilter('trending',this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+            Trending
+          </button>
+        </div>
+
+        <!-- FEED -->
+        <div id="feed-container" class="flex flex-col gap-4"></div>
+
+        <div class="text-center mt-4">
+          <button id="load-more-btn" onclick="loadMorePosts()" class="hidden lynk-btn lynk-btn-secondary px-8 py-3 rounded-xl">
+            Load more posts
+          </button>
+        </div>
+      </div>
+
+      <!-- RIGHT SIDEBAR (desktop only) -->
+      <div class="hidden lg:flex flex-col gap-4 lynk-right-sidebar">
+
+        <!-- Online Friends -->
+        <div class="lynk-card p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="#22c55e" stroke="#22c55e" stroke-width="0"><circle cx="12" cy="12" r="5"/></svg>
+            <p class="text-sm font-semibold">Online Now</p>
+          </div>
+          <div id="online-friends-list" class="flex flex-col gap-1.5">
+            <div class="h-7 rounded animate-pulse" style="background:var(--border)"></div>
+            <div class="h-7 rounded animate-pulse" style="background:var(--border)"></div>
+            <div class="h-7 rounded animate-pulse" style="background:var(--border)"></div>
+          </div>
+        </div>
+
+        <!-- Announcements -->
+        <div class="lynk-card p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--grad-1)"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+              <p class="text-sm font-semibold">Announcements</p>
+            </div>
+            <a href="announcements.html" class="text-xs lynk-gradient-text font-medium">See all</a>
+          </div>
+          <div id="sidebar-announcements" class="flex flex-col gap-0">
+            <div class="h-8 rounded animate-pulse mb-2" style="background:var(--border)"></div>
+            <div class="h-8 rounded animate-pulse" style="background:var(--border)"></div>
+          </div>
+        </div>
+
+        <!-- Trending Communities -->
+        <div class="lynk-card p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--grad-1)"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+            <p class="text-sm font-semibold">Trending Communities</p>
+          </div>
+          <div id="trending-communities"></div>
+        </div>
+
+        <!-- People You May Know -->
+        <div class="lynk-card p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--grad-2)"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <p class="text-sm font-semibold">People You May Know</p>
+          </div>
+          <div id="suggestions-list"></div>
+        </div>
+
+        <!-- Appearance Quick Switcher -->
+        <div class="lynk-card p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--grad-1)"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+            <p class="text-sm font-semibold">Appearance</p>
+          </div>
+          <div class="flex gap-2 flex-wrap mb-2">
+            <button onclick="quickTheme('dark')"  class="theme-swatch theme-swatch-dark"  title="Dark"></button>
+            <button onclick="quickTheme('light')" class="theme-swatch theme-swatch-light" title="Light"></button>
+          </div>
+          <a href="settings.html" class="text-xs" style="color:var(--text-muted)">More options in Settings →</a>
+        </div>
+
+      </div><!-- /right sidebar -->
+    </div>
+  </div>
+</main>
+
+<!-- ===== POST DETAIL MODAL ===== -->
+<div id="post-modal" class="lynk-modal-overlay hidden">
+  <div class="lynk-card w-full max-w-lg mx-4 flex flex-col" style="max-height:90vh">
+    <div class="flex items-center justify-between p-4 border-b flex-shrink-0" style="border-color:var(--border)">
+      <h3 class="font-semibold text-base">Post</h3>
+      <button onclick="closePostModal()" class="lynk-icon-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div id="post-modal-content" class="overflow-y-auto p-4 flex-shrink-0"></div>
+    <div id="comments-list" class="overflow-y-auto flex-1 px-4 py-2 flex flex-col gap-3" style="min-height:80px;max-height:260px"></div>
+    <div class="p-4 border-t flex-shrink-0" style="border-color:var(--border)">
+      <div class="flex items-center gap-2">
+        <img id="comment-avatar" src="" class="lynk-avatar w-8 h-8 flex-shrink-0" />
+        <input id="comment-input" type="text" class="lynk-input text-sm py-2 flex-1" placeholder="Write a comment..."
+               onkeydown="if(event.key==='Enter')submitComment()" />
+        <button id="btn-comment" onclick="submitComment()" class="lynk-btn lynk-btn-primary py-2 px-4 rounded-xl text-sm flex-shrink-0">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ONBOARDING MODAL ===== -->
+<div id="onboarding-modal" class="lynk-modal-overlay hidden">
+  <div class="lynk-card w-full max-w-md mx-4 p-6" style="max-height:90vh;overflow-y:auto">
+    <div class="h-1.5 rounded-full mb-6" style="background:var(--border)">
+      <div id="onboard-progress" class="h-1.5 rounded-full lynk-gradient transition-all" style="width:33%"></div>
+    </div>
+    <!-- Step 1 -->
+    <div id="onboard-step-1">
+      <div class="text-center mb-6">
+        <img id="onboard-avatar" src="" class="lynk-avatar w-20 h-20 mx-auto mb-3 lynk-avatar-ring" />
+        <h2 class="text-xl font-bold">Welcome to LYNK!</h2>
+        <p id="onboard-name" class="font-semibold mt-1 lynk-gradient-text text-lg"></p>
+        <p id="onboard-handle" class="text-sm mt-0.5" style="color:var(--text-muted)"></p>
+        <span id="onboard-type" class="lynk-badge lynk-gradient text-white mt-2 inline-block text-xs px-3 py-1 rounded-full"></span>
+      </div>
+      <p class="text-sm text-center mb-6" style="color:var(--text-secondary)">Let's set up your academic profile so you can connect with people in your department.</p>
+      <div id="onboard-no-schools" class="hidden p-3 rounded-xl mb-4 text-sm" style="background:rgba(245,158,11,0.1);color:#f59e0b">
+        No schools added yet. Ask your admin to add your university first.
+      </div>
+      <button onclick="onboardNext(2)" class="lynk-btn lynk-btn-primary w-full py-3 rounded-xl">Get Started →</button>
+      <button onclick="dismissOnboarding()" class="text-xs text-center block w-full mt-3" style="color:var(--text-muted)">Skip for now</button>
+    </div>
+    <!-- Step 2 -->
+    <div id="onboard-step-2" class="hidden">
+      <h3 class="font-bold text-lg mb-4">Your Academic Info</h3>
+      <div class="flex flex-col gap-3">
+        <div>
+          <label class="text-sm font-medium mb-1 block" style="color:var(--text-secondary)">University</label>
+          <select id="onboard-uni" class="lynk-input" onchange="onboardLoadFaculties(this.value)">
+            <option value="">-- Select university --</option>
+          </select>
+        </div>
+        <div id="onboard-faculty-wrap" class="hidden">
+          <label class="text-sm font-medium mb-1 block" style="color:var(--text-secondary)">Faculty</label>
+          <select id="onboard-faculty" class="lynk-input" onchange="onboardLoadDepts(this.value)">
+            <option value="">-- Select faculty --</option>
+          </select>
+        </div>
+        <div id="onboard-dept-wrap" class="hidden">
+          <label class="text-sm font-medium mb-1 block" style="color:var(--text-secondary)">Department</label>
+          <select id="onboard-dept" class="lynk-input">
+            <option value="">-- Select department --</option>
+          </select>
+        </div>
+        <div id="onboard-position-wrap" class="hidden">
+          <label class="text-sm font-medium mb-1 block" style="color:var(--text-secondary)">Position/Title</label>
+          <input id="onboard-position" type="text" class="lynk-input" placeholder="e.g. Lecturer, Professor" />
+        </div>
+      </div>
+      <div class="flex gap-2 mt-6">
+        <button onclick="onboardBack(1)" class="lynk-btn lynk-btn-secondary flex-1 py-2.5 rounded-xl">Back</button>
+        <button onclick="onboardNext(3)" class="lynk-btn lynk-btn-primary flex-1 py-2.5 rounded-xl">Review →</button>
+      </div>
+    </div>
+    <!-- Step 3 -->
+    <div id="onboard-step-3" class="hidden">
+      <h3 class="font-bold text-lg mb-4">Confirm Your Profile</h3>
+      <div id="onboard-summary" class="lynk-card p-4 flex flex-col gap-2 mb-6"></div>
+      <div class="flex gap-2">
+        <button onclick="onboardBack(2)" class="lynk-btn lynk-btn-secondary flex-1 py-2.5 rounded-xl">Back</button>
+        <button onclick="finishOnboarding()" class="lynk-btn lynk-btn-primary flex-1 py-2.5 rounded-xl">Finish!</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BOTTOM NAV (mobile) ===== -->
+<nav class="lynk-bottom-nav">
+  <a href="feed.html" class="active">
+    <span class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+    Home
+  </a>
+  <a href="search.html">
+    <span class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+    Search
+  </a>
+  <!-- Centre + button — label wraps input directly (no JS click relay needed) -->
+  <label class="flex flex-col items-center gap-0.5 cursor-pointer">
+    <span class="bnav-plus">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </span>
+    <input type="file" class="hidden" accept="*" onchange="pickPostMedia(this);document.getElementById('post-content').focus();" />
+  </label>
+  <a href="chat.html">
+    <span class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+    Chat
+  </a>
+  <a href="profile.html">
+    <span class="bnav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+    Profile
+  </a>
+  </nav>
+
+<script>
+  const _THEMES = {
+    dark:  ['#a855f7','#06b6d4','#3b82f6'],
+    light: ['#a855f7','#06b6d4','#3b82f6'],
+  };
+  function quickTheme(t) {
+    if (!_THEMES[t]) t = 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem('lynk-theme', t);
+    const [g1,g2,g3] = _THEMES[t];
+    document.documentElement.style.setProperty('--grad-1', g1);
+    document.documentElement.style.setProperty('--grad-2', g2);
+    document.documentElement.style.setProperty('--grad-3', g3);
+    localStorage.setItem('lynk-g1', g1);
+    localStorage.setItem('lynk-g2', g2);
+    localStorage.setItem('lynk-g3', g3);
+    localStorage.removeItem('lynk-custom-gradient');
+    document.querySelectorAll('.theme-swatch').forEach(el => el.classList.remove('selected'));
+    document.querySelector('.theme-swatch-'+t)?.classList.add('selected');
+    // Update theme toggle icon
+    const icon = document.getElementById('theme-icon-svg');
+    if (icon) {
+      if (t === 'light') {
+        icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+      } else {
+        icon.innerHTML = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+      }
+    }
+  }
+  (function(){
+    const t = localStorage.getItem('lynk-theme') || 'dark';
+    const g1 = localStorage.getItem('lynk-g1');
+    const g2 = localStorage.getItem('lynk-g2');
+    const g3 = localStorage.getItem('lynk-g3');
+    if (g1) document.documentElement.style.setProperty('--grad-1', g1);
+    if (g2) document.documentElement.style.setProperty('--grad-2', g2);
+    if (g3) document.documentElement.style.setProperty('--grad-3', g3);
+    document.documentElement.setAttribute('data-theme', _THEMES[t] ? t : 'dark');
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelector('.theme-swatch-'+t)?.classList.add('selected');
+    });
+  })();
+</script>
+<script type="module" src="js/feed.js"></script>
+<!-- Explore Sheet (mobile) -->
+<p style="text-align:center;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin:0 0 4px">Explore</p>
+  <div class="explore-sheet-grid">
+    <a href="events.html" class="explore-sheet-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Events</a>
+    <a href="clubs.html" class="explore-sheet-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Clubs</a>
+    <a href="communities.html" class="explore-sheet-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Communities</a>
+    <a href="marketplace.html" class="explore-sheet-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Marketplace</a>
+    <a href="ai.html" class="explore-sheet-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>LYNK AI</a>
+    <a href="premium.html" class="explore-sheet-item" style="color:var(--grad-1)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Premium</a>
+  </div>
+</div>
+<script>
+</script>
+
+<!-- ===== EXPLORE FAB ===== -->
+<button class="explore-fab" id="explore-fab" onclick="toggleExploreFab()" aria-label="Explore">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+</button>
+<div class="explore-dropdown" id="explore-dropdown">
+  <div class="explore-dropdown-grid">
+    <a href="events.html" class="explore-dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Events</a>
+    <a href="clubs.html" class="explore-dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Clubs</a>
+    <a href="communities.html" class="explore-dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Communities</a>
+    <a href="marketplace.html" class="explore-dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Market</a>
+    <a href="ai.html" class="explore-dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>LYNK AI</a>
+    <a href="premium.html" class="explore-dropdown-item" style="color:var(--grad-1)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Premium</a>
+  </div>
+</div>
+<div class="explore-fab-overlay" id="explore-fab-overlay" onclick="closeExploreFab()"></div>
+<script>
+function toggleExploreFab(){
+  var fab=document.getElementById('explore-fab');
+  var dd=document.getElementById('explore-dropdown');
+  var ov=document.getElementById('explore-fab-overlay');
+  var isOpen=dd.classList.contains('open');
+  fab.classList.toggle('open',!isOpen);
+  dd.classList.toggle('open',!isOpen);
+  ov.classList.toggle('open',!isOpen);
+}
+function closeExploreFab(){
+  document.getElementById('explore-fab')?.classList.remove('open');
+  document.getElementById('explore-dropdown')?.classList.remove('open');
+  document.getElementById('explore-fab-overlay')?.classList.remove('open');
+}
+</script>
+
+<script type="module" src="js/dm-badge.js"></script>
+<script>
+window.addEventListener('load',function(){var l=document.getElementById('page-loader');if(l){l.classList.add('pl-done');setTimeout(function(){l.remove()},450);}});
+</script>
+</body>
+</html>

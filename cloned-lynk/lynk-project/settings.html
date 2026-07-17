@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <script>!function(){var t=localStorage.getItem("lynk-theme")||"system",r=t==="system"?(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t;document.documentElement.setAttribute("data-theme",r)}();</script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings — LYNK By Legends</title>
+  <link rel="icon" href="assets/logo.jpg" type="image/jpeg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/custom.css" />
+  <script src="js/mobile-nav.js" defer></script>
+</head>
+<body>
+<div id="page-loader">
+  <div class="pl-ring">
+    <svg class="pl-spin" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="44" cy="44" r="40" stroke="url(#plGrad)" stroke-width="2" stroke-dasharray="10 7" stroke-linecap="round"/>
+      <defs>
+        <linearGradient id="plGrad" x1="0" y1="0" x2="88" y2="88" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#a855f7"/>
+          <stop offset="50%" stop-color="#06b6d4"/>
+          <stop offset="100%" stop-color="#3b82f6"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <div class="pl-ring-img"><img src="assets/logo.jpg" alt="LYNK" /></div>
+  </div>
+  <div class="pl-wordmark">LYNK</div>
+  <div class="pl-sub">By Legends</div>
+  <div class="pl-bar-wrap"><div class="pl-bar"></div></div>
+</div>
+
+<!-- NAVBAR -->
+<nav class="lynk-nav h-16 flex items-center px-4 justify-between">
+  <div class="flex items-center gap-2">
+    <button id="hamburger-btn" onclick="openMobileNav()" aria-label="Open menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <span class="flex flex-col leading-none">
+      <span class="logo-text">LYNK</span>
+      <span class="logo-sub">By Legends</span>
+    </span>
+  </div>
+  <div class="flex-1 max-w-sm mx-4">
+    <div class="relative">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" class="lynk-input text-sm py-2 pl-8" placeholder="Search LYNK..."
+             onfocus="window.location.href='search.html'" />
+    </div>
+  </div>
+  <div class="flex items-center gap-3">
+    <button id="theme-toggle" class="lynk-icon-btn" aria-label="Toggle theme"><span id="theme-icon">☀️</span></button>
+    <a href="profile.html" class="relative">
+      <img id="nav-avatar" src="https://ui-avatars.com/api/?name=User&background=a855f7&color=fff" class="lynk-avatar w-9 h-9 cursor-pointer" alt="Profile" />
+    </a>
+  </div>
+</nav>
+
+<div id="drawer-overlay" class="lynk-drawer-overlay" onclick="closeMobileNav()"></div>
+
+<!-- SIDEBAR -->
+<aside class="lynk-sidebar pt-4 pb-20">
+  <div class="px-4 mb-4">
+    <div class="flex items-center gap-3 p-3 rounded-xl mb-1" style="background:var(--bg-card-hover)">
+      <img id="sidebar-avatar" src="https://ui-avatars.com/api/?name=User&background=a855f7&color=fff" class="lynk-avatar w-10 h-10" />
+      <div class="overflow-hidden">
+        <p class="font-semibold text-sm truncate" id="sidebar-name">Loading...</p>
+        <p class="text-xs truncate" style="color:var(--text-muted)" id="sidebar-dept"></p>
+      </div>
+    </div>
+  </div>
+  <nav class="flex flex-col gap-0.5">
+    <a href="feed.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Home Feed</span>
+    </a>
+    <a href="search.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Search</span>
+    </a>
+    <a href="announcements.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+      <span>Announcements</span>
+    </a>
+    <a href="profile.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>My Profile</span>
+    </a>
+    <a href="chat.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>Messages</span>
+    </a>
+    <a href="notifications.html" class="lynk-sidebar-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span>Notifications</span>
+    </a>
+    <div class="px-4 mt-4 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Settings</div>
+    <a href="settings.html" class="lynk-sidebar-link active">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Settings</span>
+    </a>
+    <a href="#" onclick="signOut()" class="lynk-sidebar-link" style="color:#ef4444">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <span>Sign Out</span>
+    </a>
+  </nav>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+  <div class="max-w-3xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-6">Settings</h1>
+
+    <!-- TABS -->
+    <div class="flex gap-2 mb-6 overflow-x-auto pb-1 border-b" style="border-color:var(--border)">
+      <button class="lynk-tab active" onclick="showSettingsTab('profile',this)">Profile</button>
+      <button class="lynk-tab" onclick="showSettingsTab('appearance',this)">Appearance</button>
+      <button class="lynk-tab" onclick="showSettingsTab('privacy',this)">Privacy</button>
+      <button class="lynk-tab" onclick="showSettingsTab('notifications',this)">Notifications</button>
+      <button class="lynk-tab" onclick="showSettingsTab('account',this)">Account</button>
+    </div>
+
+    <!-- PROFILE TAB -->
+    <div id="tab-profile">
+      <div class="lynk-card p-6">
+        <h2 class="font-semibold text-lg mb-4">My Profile</h2>
+
+        <!-- Avatar row -->
+        <div class="flex items-center gap-4 mb-6">
+          <div class="relative">
+            <img id="profile-avatar-preview" src="https://ui-avatars.com/api/?name=U&background=a855f7&color=fff" class="lynk-avatar w-20 h-20 lynk-avatar-ring" />
+            <label class="absolute bottom-0 right-0 w-7 h-7 rounded-full flex items-center justify-center cursor-pointer text-white"
+                   style="background:linear-gradient(135deg,var(--grad-1),var(--grad-3))">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <input type="file" class="hidden" accept="image/*" onchange="previewAvatar(this)" />
+            </label>
+          </div>
+          <div>
+            <p class="font-semibold" id="profile-display-name-show">—</p>
+            <p class="text-sm" style="color:var(--text-muted)" id="profile-handle-show">—</p>
+          </div>
+        </div>
+
+        <!-- Editable fields -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="text-sm font-medium block mb-1.5" style="color:var(--text-secondary)">Display Name</label>
+            <input id="edit-display-name" type="text" class="lynk-input" placeholder="Your name" />
+          </div>
+          <div>
+            <label class="text-sm font-medium block mb-1.5" style="color:var(--text-secondary)">Username</label>
+            <input id="edit-username" type="text" class="lynk-input" placeholder="@username" />
+          </div>
+          <div class="md:col-span-2">
+            <label class="text-sm font-medium block mb-1.5" style="color:var(--text-secondary)">Bio</label>
+            <textarea id="edit-bio" class="lynk-input resize-y" rows="3" placeholder="Tell people about yourself..."></textarea>
+          </div>
+        </div>
+
+        <!-- Academic info (read-only) -->
+        <div class="border-t pt-4 mt-2" style="border-color:var(--border)">
+          <p class="text-sm font-semibold mb-3" style="color:var(--text-secondary)">Academic Info <span class="font-normal text-xs" style="color:var(--text-muted)">(contact admin to update)</span></p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div><label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">University</label><p class="text-sm" id="academic-university" style="color:var(--text-secondary)">—</p></div>
+            <div><label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Faculty</label><p class="text-sm" id="academic-faculty" style="color:var(--text-secondary)">—</p></div>
+            <div><label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">Department</label><p class="text-sm" id="academic-department" style="color:var(--text-secondary)">—</p></div>
+            <div><label class="text-xs font-medium block mb-1" style="color:var(--text-muted)">User Type</label><p class="text-sm" id="academic-type" style="color:var(--text-secondary)">—</p></div>
+          </div>
+        </div>
+
+        <div class="mt-5 flex gap-2">
+          <button onclick="saveProfile()" class="lynk-btn lynk-btn-primary px-6 py-2.5 rounded-xl">Save Changes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- APPEARANCE TAB -->
+    <div id="tab-appearance" class="hidden">
+      <div class="lynk-card p-6 mb-4">
+        <h2 class="font-semibold text-lg mb-4 flex items-center gap-2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--grad-1)"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+          Theme
+        </h2>
+        <p class="text-sm mb-4" style="color:var(--text-secondary)">Choose a colour theme for LYNK:</p>
+        <div class="grid grid-cols-3 md:grid-cols-7 gap-4 mb-2">
+          <button onclick="applySettingsTheme('system')" class="flex flex-col items-center gap-2 group">
+            <span class="theme-swatch theme-swatch-system w-12 h-12" data-theme-btn="system" title="Follow OS" style="background:linear-gradient(135deg,#1e1e2e 50%,#f8fafc 50%);border:2px solid var(--border)"></span>
+            <span class="text-xs" style="color:var(--text-muted)">System</span>
+          </button>
+          <button onclick="applySettingsTheme('dark')" class="flex flex-col items-center gap-2 group">
+            <span class="theme-swatch theme-swatch-dark w-12 h-12" data-theme-btn="dark" title="Dark"></span>
+            <span class="text-xs" style="color:var(--text-muted)">Dark</span>
+          </button>
+          <button onclick="applySettingsTheme('light')" class="flex flex-col items-center gap-2 group">
+            <span class="theme-swatch theme-swatch-light w-12 h-12" data-theme-btn="light" title="Light"></span>
+            <span class="text-xs" style="color:var(--text-muted)">Light</span>
+          </button>
+          <button onclick="applySettingsTheme('sunset')" class="flex flex-col items-center gap-2 group">
+            <span class="theme-swatch theme-swatch-sunset w-12 h-12" data-theme-btn="sunset" title="Sunset"></span>
+            <span class="text-xs" style="color:var(--text-muted)">Sunset</span>
+          </button>
+          <button onclick="applySettingsTheme('ocean')" class="flex flex-col items-center gap-2 group">
+            <span class="theme-swatch theme-swatch-ocean w-12 h-12" data-theme-btn="ocean" title="Ocean"></span>
+            <span class="text-xs" style="color:var(--text-muted)">Ocean</span>
+          </button>
+          <button onclick="applySettingsTheme('forest')" class="flex flex-col items-center gap-2 group">
+            <span class="theme-swatch theme-swatch-forest w-12 h-12" data-theme-btn="forest" title="Forest"></span>
+            <span class="text-xs" style="color:var(--text-muted)">Forest</span>
+          </button>
+          <button onclick="applySettingsTheme('midnight')" class="flex flex-col items-center gap-2 group">
+            <span class="theme-swatch theme-swatch-midnight w-12 h-12" data-theme-btn="midnight" title="Midnight"></span>
+            <span class="text-xs" style="color:var(--text-muted)">Midnight</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Custom Gradient -->
+      <div class="lynk-card p-6 mb-4">
+        <h2 class="font-semibold text-lg mb-2">Custom Gradient</h2>
+        <p class="text-sm mb-4" style="color:var(--text-secondary)">Customise the accent colours used throughout LYNK:</p>
+        <div class="flex gap-6 flex-wrap mb-4">
+          <div class="flex flex-col items-center gap-2">
+            <label class="text-xs font-medium" style="color:var(--text-muted)">Colour 1</label>
+            <input type="color" id="picker-g1" value="#a855f7" class="w-12 h-12 rounded-xl cursor-pointer border-0" style="background:transparent" />
+          </div>
+          <div class="flex flex-col items-center gap-2">
+            <label class="text-xs font-medium" style="color:var(--text-muted)">Colour 2</label>
+            <input type="color" id="picker-g2" value="#06b6d4" class="w-12 h-12 rounded-xl cursor-pointer border-0" style="background:transparent" />
+          </div>
+          <div class="flex flex-col items-center gap-2">
+            <label class="text-xs font-medium" style="color:var(--text-muted)">Colour 3</label>
+            <input type="color" id="picker-g3" value="#3b82f6" class="w-12 h-12 rounded-xl cursor-pointer border-0" style="background:transparent" />
+          </div>
+        </div>
+        <!-- Gradient Preview -->
+        <div id="gradient-preview" class="h-10 rounded-xl mb-4" style="background:linear-gradient(135deg,#a855f7,#06b6d4,#3b82f6)"></div>
+        <div class="flex gap-2">
+          <button onclick="saveCustomGradient()" class="lynk-btn lynk-btn-primary px-5 py-2.5 rounded-xl text-sm">Apply Gradient</button>
+          <button onclick="resetGradient()" class="lynk-btn lynk-btn-secondary px-5 py-2.5 rounded-xl text-sm">Reset to Default</button>
+        </div>
+      </div>
+
+      <!-- Font size (placeholder) -->
+      <div class="lynk-card p-6">
+        <h2 class="font-semibold text-lg mb-2">Font Size</h2>
+        <p class="text-sm mb-4" style="color:var(--text-secondary)">Adjust text size for readability:</p>
+        <div class="flex gap-2">
+          <button onclick="setFontSize('small')" class="lynk-btn lynk-btn-secondary text-sm py-2 px-4 rounded-xl">Small</button>
+          <button onclick="setFontSize('normal')" class="lynk-btn lynk-btn-primary text-sm py-2 px-4 rounded-xl">Normal</button>
+          <button onclick="setFontSize('large')" class="lynk-btn lynk-btn-secondary text-sm py-2 px-4 rounded-xl">Large</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRIVACY TAB -->
+    <div id="tab-privacy" class="hidden">
+      <div class="lynk-card p-6">
+        <h2 class="font-semibold text-lg mb-4">Privacy Settings</h2>
+        <div class="flex flex-col gap-4">
+          <div class="flex items-center justify-between py-3 border-b" style="border-color:var(--border)">
+            <div>
+              <p class="text-sm font-medium">Default Post Visibility</p>
+              <p class="text-xs" style="color:var(--text-muted)">Who sees your posts by default</p>
+            </div>
+            <select id="default-visibility" class="lynk-input text-sm py-1.5" style="width:auto">
+              <option value="public">Public</option>
+              <option value="university">University</option>
+              <option value="faculty">Faculty</option>
+              <option value="friends">Friends</option>
+            </select>
+          </div>
+          <div class="flex items-center justify-between py-3 border-b" style="border-color:var(--border)">
+            <div>
+              <p class="text-sm font-medium">Show Online Status</p>
+              <p class="text-xs" style="color:var(--text-muted)">Let others see when you're active</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="show-online" class="sr-only peer" checked />
+              <div class="w-10 h-5 rounded-full peer lynk-gradient after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+            </label>
+          </div>
+          <div class="flex items-center justify-between py-3 border-b" style="border-color:var(--border)">
+            <div>
+              <p class="text-sm font-medium">Show Profile in Search</p>
+              <p class="text-xs" style="color:var(--text-muted)">Allow others to find your profile</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="searchable" class="sr-only peer" checked />
+              <div class="w-10 h-5 rounded-full peer lynk-gradient after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+            </label>
+          </div>
+          <button onclick="savePrivacy()" class="lynk-btn lynk-btn-primary px-6 py-2.5 rounded-xl self-start">Save Privacy Settings</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS TAB -->
+    <div id="tab-notifications" class="hidden">
+      <div class="lynk-card p-6">
+        <h2 class="font-semibold text-lg mb-4">Notification Preferences</h2>
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center justify-between py-2 border-b" style="border-color:var(--border)">
+            <p class="text-sm">Likes on your posts</p>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" class="sr-only peer" id="notif-likes" checked />
+              <div class="w-10 h-5 rounded-full peer lynk-gradient after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+            </label>
+          </div>
+          <div class="flex items-center justify-between py-2 border-b" style="border-color:var(--border)">
+            <p class="text-sm">Comments on your posts</p>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" class="sr-only peer" id="notif-comments" checked />
+              <div class="w-10 h-5 rounded-full peer lynk-gradient after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+            </label>
+          </div>
+          <div class="flex items-center justify-between py-2 border-b" style="border-color:var(--border)">
+            <p class="text-sm">Friend requests</p>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" class="sr-only peer" id="notif-friends" checked />
+              <div class="w-10 h-5 rounded-full peer lynk-gradient after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+            </label>
+          </div>
+          <div class="flex items-center justify-between py-2 border-b" style="border-color:var(--border)">
+            <p class="text-sm">Messages</p>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" class="sr-only peer" id="notif-messages" checked />
+              <div class="w-10 h-5 rounded-full peer lynk-gradient after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+            </label>
+          </div>
+          <div class="flex items-center justify-between py-2" style="border-color:var(--border)">
+            <p class="text-sm">Announcements</p>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" class="sr-only peer" id="notif-announcements" checked />
+              <div class="w-10 h-5 rounded-full peer lynk-gradient after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+            </label>
+          </div>
+        </div>
+        <button onclick="saveNotifPrefs()" class="lynk-btn lynk-btn-primary mt-4 px-6 py-2.5 rounded-xl">Save Preferences</button>
+      </div>
+    </div>
+
+    <!-- ACCOUNT TAB -->
+    <div id="tab-account" class="hidden">
+      <div class="lynk-card p-6 mb-4">
+        <h2 class="font-semibold text-lg mb-4">Account</h2>
+        <div class="flex flex-col gap-3">
+          <div class="py-3 border-b" style="border-color:var(--border)">
+            <p class="text-xs font-medium mb-0.5" style="color:var(--text-muted)">Email</p>
+            <p class="text-sm" id="account-email">—</p>
+          </div>
+          <div class="py-3 border-b" style="border-color:var(--border)">
+            <p class="text-xs font-medium mb-0.5" style="color:var(--text-muted)">Member Since</p>
+            <p class="text-sm" id="account-joined">—</p>
+          </div>
+        </div>
+      </div>
+      <div class="lynk-card p-6">
+        <h2 class="font-semibold text-lg mb-2 text-red-500">Danger Zone</h2>
+        <p class="text-sm mb-4" style="color:var(--text-secondary)">These actions are permanent and cannot be undone.</p>
+        <div class="flex gap-2 flex-wrap">
+          <button onclick="signOut()" class="lynk-btn text-sm py-2 px-4 rounded-xl" style="background:rgba(239,68,68,0.1);color:#ef4444">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-1"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sign Out
+          </button>
+          <button id="btn-delete-account" onclick="openDeleteModal()" class="lynk-btn text-sm py-2 px-4 rounded-xl hidden" style="background:rgba(239,68,68,0.15);color:#ef4444">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-1"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            Delete Account
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- DELETE ACCOUNT MODAL -->
+<div id="delete-modal" class="lynk-modal-overlay hidden">
+  <div class="lynk-card w-full max-w-md mx-4 p-6">
+    <h3 class="font-bold text-xl mb-2">Delete Account</h3>
+    <p class="text-sm mb-4" style="color:var(--text-secondary)">This will permanently delete your account, posts, and all data. This cannot be undone. Type <strong>DELETE</strong> to confirm.</p>
+    <input id="delete-confirm-input" type="text" class="lynk-input mb-4" placeholder="Type DELETE to confirm" />
+    <div class="flex gap-2">
+      <button onclick="document.getElementById('delete-modal').classList.add('hidden')" class="lynk-btn lynk-btn-secondary flex-1 py-2.5 rounded-xl">Cancel</button>
+      <button onclick="confirmDeleteAccount()" class="lynk-btn flex-1 py-2.5 rounded-xl" style="background:rgba(239,68,68,0.8);color:#fff">Delete Forever</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function showSettingsTab(name, btn) {
+  ['profile','appearance','privacy','notifications','account'].forEach(t => {
+    document.getElementById('tab-'+t)?.classList.add('hidden');
+  });
+  document.getElementById('tab-'+name)?.classList.remove('hidden');
+  document.querySelectorAll('.lynk-tab').forEach(b => b.classList.remove('active'));
+  btn?.classList.add('active');
+}
+
+const _THEMES = {
+  dark:     ['#a855f7','#06b6d4','#3b82f6'],
+  light:    ['#a855f7','#06b6d4','#3b82f6'],
+  sunset:   ['#f97316','#ec4899','#8b5cf6'],
+  ocean:    ['#06b6d4','#0ea5e9','#6366f1'],
+  forest:   ['#22c55e','#10b981','#06b6d4'],
+  midnight: ['#818cf8','#c084fc','#f472b6'],
+};
+
+function applySettingsTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('lynk-theme', t);
+  const [g1,g2,g3] = _THEMES[t] || _THEMES.dark;
+  document.documentElement.style.setProperty('--grad-1', g1);
+  document.documentElement.style.setProperty('--grad-2', g2);
+  document.documentElement.style.setProperty('--grad-3', g3);
+  localStorage.setItem('lynk-g1', g1);
+  localStorage.setItem('lynk-g2', g2);
+  localStorage.setItem('lynk-g3', g3);
+  localStorage.removeItem('lynk-custom-gradient');
+  document.getElementById('picker-g1').value = g1;
+  document.getElementById('picker-g2').value = g2;
+  document.getElementById('picker-g3').value = g3;
+  updateGradientPreview();
+  // Update selected swatch
+  document.querySelectorAll('[data-theme-btn]').forEach(el => el.classList.remove('selected'));
+  document.querySelector(`[data-theme-btn="${t}"]`)?.classList.add('selected');
+}
+
+function saveCustomGradient() {
+  const g1 = document.getElementById('picker-g1').value;
+  const g2 = document.getElementById('picker-g2').value;
+  const g3 = document.getElementById('picker-g3').value;
+  document.documentElement.style.setProperty('--grad-1', g1);
+  document.documentElement.style.setProperty('--grad-2', g2);
+  document.documentElement.style.setProperty('--grad-3', g3);
+  localStorage.setItem('lynk-g1', g1);
+  localStorage.setItem('lynk-g2', g2);
+  localStorage.setItem('lynk-g3', g3);
+  localStorage.setItem('lynk-custom-gradient', '1');
+  updateGradientPreview();
+}
+
+function resetGradient() {
+  const t = localStorage.getItem('lynk-theme') || 'dark';
+  localStorage.removeItem('lynk-custom-gradient');
+  const [g1,g2,g3] = _THEMES[t] || _THEMES.dark;
+  document.documentElement.style.setProperty('--grad-1', g1);
+  document.documentElement.style.setProperty('--grad-2', g2);
+  document.documentElement.style.setProperty('--grad-3', g3);
+  localStorage.setItem('lynk-g1', g1);
+  localStorage.setItem('lynk-g2', g2);
+  localStorage.setItem('lynk-g3', g3);
+  document.getElementById('picker-g1').value = g1;
+  document.getElementById('picker-g2').value = g2;
+  document.getElementById('picker-g3').value = g3;
+  updateGradientPreview();
+}
+
+function updateGradientPreview() {
+  const g1 = document.getElementById('picker-g1').value;
+  const g2 = document.getElementById('picker-g2').value;
+  const g3 = document.getElementById('picker-g3').value;
+  const prev = document.getElementById('gradient-preview');
+  if (prev) prev.style.background = `linear-gradient(135deg,${g1},${g2},${g3})`;
+}
+
+function setFontSize(size) {
+  const map = { small: '14px', normal: '16px', large: '18px' };
+  document.documentElement.style.fontSize = map[size] || '16px';
+  localStorage.setItem('lynk-font-size', size);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Init gradient pickers
+  const g1 = localStorage.getItem('lynk-g1') || '#a855f7';
+  const g2 = localStorage.getItem('lynk-g2') || '#06b6d4';
+  const g3 = localStorage.getItem('lynk-g3') || '#3b82f6';
+  document.getElementById('picker-g1').value = g1;
+  document.getElementById('picker-g2').value = g2;
+  document.getElementById('picker-g3').value = g3;
+  document.getElementById('picker-g1').addEventListener('input', updateGradientPreview);
+  document.getElementById('picker-g2').addEventListener('input', updateGradientPreview);
+  document.getElementById('picker-g3').addEventListener('input', updateGradientPreview);
+  updateGradientPreview();
+  // Mark active theme
+  const t = localStorage.getItem('lynk-theme') || 'dark';
+  document.querySelector(`[data-theme-btn="${t}"]`)?.classList.add('selected');
+});
+</script>
+<script type="module" src="js/settings.js"></script>
+<script>
+window.addEventListener('load',function(){var l=document.getElementById('page-loader');if(l){l.classList.add('pl-done');setTimeout(function(){l.remove()},450);}});
+</script>
+</body>
+</html>

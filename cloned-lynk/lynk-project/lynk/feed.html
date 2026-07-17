@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Feed — LYNK By Legends</title>
+  <link rel="icon" href="assets/logo.jpg" type="image/jpeg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/custom.css" />
+</head>
+<body>
+
+<!-- ===== NAVBAR ===== -->
+<nav class="lynk-nav h-16 flex items-center px-6 justify-between">
+  <a href="index.html" class="flex flex-col leading-none">
+    <span class="logo-text">LYNK</span>
+    <span class="logo-sub">By Legends</span>
+  </a>
+  <div class="flex-1 max-w-sm mx-6">
+    <input type="text" id="search-input" class="lynk-input text-sm py-2" placeholder="🔍 Search LYNK..." />
+  </div>
+  <div class="flex items-center gap-3">
+    <button id="theme-toggle" class="lynk-btn lynk-btn-ghost p-2 rounded-full"><span id="theme-icon">☀️</span></button>
+    <a href="chat.html" class="lynk-btn lynk-btn-ghost p-2 rounded-full relative" data-tooltip="Messages">
+      💬
+      <span id="msg-badge" class="hidden absolute -top-1 -right-1 w-4 h-4 rounded-full text-white text-xs flex items-center justify-center lynk-gradient">!</span>
+    </a>
+    <a href="profile.html" id="nav-avatar-wrap" class="relative">
+      <img id="nav-avatar" src="https://ui-avatars.com/api/?name=User&background=a855f7&color=fff" class="lynk-avatar w-9 h-9 cursor-pointer" alt="Profile" />
+      <span class="online-dot"></span>
+    </a>
+  </div>
+</nav>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="lynk-sidebar pt-4 pb-20">
+  <div class="px-4 mb-4">
+    <div class="flex items-center gap-3 p-3 rounded-xl mb-1" style="background:var(--bg-card-hover)">
+      <img id="sidebar-avatar" src="https://ui-avatars.com/api/?name=User&background=a855f7&color=fff" class="lynk-avatar w-10 h-10" />
+      <div class="overflow-hidden">
+        <p class="font-semibold text-sm truncate" id="sidebar-name">Loading...</p>
+        <p class="text-xs truncate" style="color:var(--text-muted)" id="sidebar-dept"></p>
+      </div>
+    </div>
+  </div>
+  <nav class="flex flex-col gap-0.5">
+    <a href="feed.html" class="lynk-sidebar-link active">🏠 <span>Home Feed</span></a>
+    <a href="profile.html" class="lynk-sidebar-link">👤 <span>My Profile</span></a>
+    <a href="chat.html" class="lynk-sidebar-link">💬 <span>Messages</span></a>
+    <div class="px-4 mt-4 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Communities</div>
+    <div id="community-links" class="flex flex-col gap-0.5">
+      <a href="#" class="lynk-sidebar-link">🏛️ <span id="faculty-link">My Faculty</span></a>
+      <a href="#" class="lynk-sidebar-link">📚 <span id="dept-link">My Department</span></a>
+    </div>
+    <div class="px-4 mt-4 mb-1 text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Settings</div>
+    <a href="#" onclick="showCustomizer()" class="lynk-sidebar-link">🎨 <span>Customize LYNK</span></a>
+    <a href="admin.html" id="admin-link" class="lynk-sidebar-link hidden">🛡️ <span>Admin Panel</span></a>
+    <a href="#" onclick="signOut()" class="lynk-sidebar-link" style="color:#ef4444">🚪 <span>Sign Out</span></a>
+  </nav>
+</aside>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main class="main-content">
+  <div class="max-w-2xl mx-auto px-4 py-6">
+
+    <!-- Compose Post -->
+    <div class="lynk-card p-5 mb-5">
+      <div class="flex gap-3 items-start">
+        <img id="compose-avatar" src="https://ui-avatars.com/api/?name=User&background=a855f7&color=fff" class="lynk-avatar w-10 h-10 flex-shrink-0" />
+        <div class="flex-1">
+          <textarea id="post-content" class="lynk-input resize-none text-sm" rows="3" placeholder="What's on your mind? Share with your campus..."></textarea>
+          <!-- Media preview -->
+          <div id="media-preview" class="mt-2 hidden">
+            <div class="relative inline-block">
+              <img id="media-preview-img" src="" class="rounded-xl max-h-40 object-cover" />
+              <button onclick="clearMedia()" class="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">✕</button>
+            </div>
+          </div>
+          <!-- Poll builder -->
+          <div id="poll-builder" class="mt-3 hidden">
+            <p class="text-xs font-semibold mb-2" style="color:var(--text-muted)">POLL OPTIONS</p>
+            <div class="flex flex-col gap-2" id="poll-options">
+              <input type="text" class="lynk-input text-sm py-2" placeholder="Option 1" id="poll-opt-0" />
+              <input type="text" class="lynk-input text-sm py-2" placeholder="Option 2" id="poll-opt-1" />
+            </div>
+            <button onclick="addPollOption()" class="text-xs mt-2 lynk-gradient-text font-semibold">+ Add option</button>
+          </div>
+          <!-- Actions row -->
+          <div class="flex items-center justify-between mt-3">
+            <div class="flex gap-2">
+              <label class="lynk-btn lynk-btn-ghost text-sm py-1.5 px-3 cursor-pointer">
+                📷 Photo
+                <input type="file" accept="image/*,video/*" class="hidden" onchange="handleMediaUpload(this)" />
+              </label>
+              <button onclick="togglePoll()" class="lynk-btn lynk-btn-ghost text-sm py-1.5 px-3" id="poll-toggle-btn">📊 Poll</button>
+            </div>
+            <div class="flex items-center gap-2">
+              <select id="post-visibility" class="lynk-input text-xs py-1.5 w-auto">
+                <option value="public">🌍 Public</option>
+                <option value="friends">👥 Friends</option>
+                <option value="faculty">🏛️ Faculty</option>
+              </select>
+              <button onclick="submitPost()" id="btn-post" class="lynk-btn lynk-btn-primary text-sm py-1.5 px-5 rounded-xl">Post</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- People You May Know (mobile — hidden on xl where sidebar shows) -->
+    <div class="xl:hidden mb-5">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-semibold text-sm">👥 People You May Know</h3>
+        <button onclick="loadSuggestions()" class="text-xs lynk-gradient-text">Refresh</button>
+      </div>
+      <div id="mobile-suggestions-list" class="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+        <div class="flex-shrink-0 w-28 lynk-card p-3 animate-pulse">
+          <div class="w-12 h-12 rounded-full mx-auto mb-2" style="background:var(--border)"></div>
+          <div class="h-2 rounded w-3/4 mx-auto mb-1" style="background:var(--border)"></div>
+          <div class="h-2 rounded w-1/2 mx-auto" style="background:var(--border)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feed Filter Tabs -->
+    <div class="flex gap-1 mb-4 p-1 rounded-xl" style="background:var(--bg-card)">
+      <button class="lynk-tab active flex-1 text-sm" onclick="setFilter('all', this)">All</button>
+      <button class="lynk-tab flex-1 text-sm" onclick="setFilter('faculty', this)">Faculty</button>
+      <button class="lynk-tab flex-1 text-sm" onclick="setFilter('friends', this)">Friends</button>
+      <button class="lynk-tab flex-1 text-sm" onclick="setFilter('trending', this)">🔥 Trending</button>
+    </div>
+
+    <!-- Feed Posts Container -->
+    <div id="feed-container" class="flex flex-col gap-4">
+      <!-- Skeleton loaders -->
+      <div class="lynk-card p-5 animate-pulse">
+        <div class="flex gap-3">
+          <div class="w-10 h-10 rounded-full" style="background:var(--border)"></div>
+          <div class="flex-1">
+            <div class="h-3 rounded w-1/3 mb-2" style="background:var(--border)"></div>
+            <div class="h-3 rounded w-1/4 mb-4" style="background:var(--border)"></div>
+            <div class="h-4 rounded w-full mb-2" style="background:var(--border)"></div>
+            <div class="h-4 rounded w-3/4" style="background:var(--border)"></div>
+          </div>
+        </div>
+      </div>
+      <div class="lynk-card p-5 animate-pulse">
+        <div class="flex gap-3">
+          <div class="w-10 h-10 rounded-full" style="background:var(--border)"></div>
+          <div class="flex-1">
+            <div class="h-3 rounded w-1/2 mb-2" style="background:var(--border)"></div>
+            <div class="h-3 rounded w-1/3 mb-4" style="background:var(--border)"></div>
+            <div class="h-4 rounded w-full mb-2" style="background:var(--border)"></div>
+            <div class="h-4 rounded w-2/3" style="background:var(--border)"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Load more -->
+    <div class="text-center mt-6">
+      <button id="load-more-btn" onclick="loadMorePosts()" class="lynk-btn lynk-btn-secondary px-8 py-3 rounded-xl hidden">Load More</button>
+    </div>
+  </div>
+</main>
+
+<!-- ===== RIGHT SIDEBAR (desktop) ===== -->
+<aside class="fixed right-0 top-16 w-72 h-[calc(100vh-64px)] overflow-y-auto p-4 hidden xl:block" style="border-left:1px solid var(--border)">
+  <!-- Suggested Friends -->
+  <div class="lynk-card p-4 mb-4">
+    <h3 class="font-semibold text-sm mb-3">👥 People You May Know</h3>
+    <div id="suggestions-list" class="flex flex-col gap-3">
+      <div class="text-xs" style="color:var(--text-muted)">Loading suggestions...</div>
+    </div>
+  </div>
+  <!-- Trending Communities -->
+  <div class="lynk-card p-4 mb-4">
+    <h3 class="font-semibold text-sm mb-3">🔥 Trending Communities</h3>
+    <div id="trending-communities" class="flex flex-col gap-2">
+      <div class="text-xs" style="color:var(--text-muted)">Loading...</div>
+    </div>
+  </div>
+  <!-- Customize widget -->
+  <div class="lynk-card p-4">
+    <h3 class="font-semibold text-sm mb-3">🎨 Brand Colors</h3>
+    <div class="flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <span class="text-xs" style="color:var(--text-secondary)">Start</span>
+        <input type="color" id="picker-g1" value="#a855f7" class="w-8 h-8 rounded cursor-pointer border-0" />
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="text-xs" style="color:var(--text-secondary)">Mid</span>
+        <input type="color" id="picker-g2" value="#06b6d4" class="w-8 h-8 rounded cursor-pointer border-0" />
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="text-xs" style="color:var(--text-secondary)">End</span>
+        <input type="color" id="picker-g3" value="#3b82f6" class="w-8 h-8 rounded cursor-pointer border-0" />
+      </div>
+      <div class="h-4 rounded-full lynk-gradient"></div>
+      <button onclick="resetGradient()" class="text-xs" style="color:var(--text-muted)">Reset to default</button>
+    </div>
+  </div>
+</aside>
+
+<!-- ===== POST DETAIL MODAL ===== -->
+<div id="post-modal" class="lynk-modal-overlay hidden">
+  <div class="lynk-card w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+    <div class="p-5 border-b flex items-center justify-between" style="border-color:var(--border)">
+      <h3 class="font-semibold">Post</h3>
+      <button onclick="closePostModal()" class="lynk-btn lynk-btn-ghost p-1">✕</button>
+    </div>
+    <div id="post-modal-content" class="p-5"></div>
+    <!-- Comments -->
+    <div class="px-5 pb-5">
+      <h4 class="font-semibold text-sm mb-3">Comments</h4>
+      <div id="comments-list" class="flex flex-col gap-3 mb-4 max-h-48 overflow-y-auto"></div>
+      <div class="flex gap-2">
+        <img id="comment-avatar" src="" class="lynk-avatar w-8 h-8 flex-shrink-0" />
+        <input id="comment-input" type="text" class="lynk-input text-sm py-2" placeholder="Write a comment..." />
+        <button onclick="submitComment()" class="lynk-btn lynk-btn-primary px-3 py-2 rounded-xl text-sm">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CUSTOMIZER MODAL ===== -->
+<div id="customizer-modal" class="lynk-modal-overlay hidden">
+  <div class="lynk-card p-6 w-full max-w-sm mx-4">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-bold text-lg">🎨 Customize LYNK</h3>
+      <button onclick="hideCustomizer()" class="lynk-btn lynk-btn-ghost p-1">✕</button>
+    </div>
+    <div class="flex flex-col gap-4">
+      <div>
+        <label class="text-sm font-medium mb-2 block" style="color:var(--text-secondary)">Theme</label>
+        <div class="flex gap-2">
+          <button onclick="setTheme('dark')" class="lynk-btn lynk-btn-secondary flex-1 py-2 rounded-xl">🌙 Dark</button>
+          <button onclick="setTheme('light')" class="lynk-btn lynk-btn-secondary flex-1 py-2 rounded-xl">☀️ Light</button>
+        </div>
+      </div>
+      <div>
+        <label class="text-sm font-medium mb-2 block" style="color:var(--text-secondary)">Gradient Start</label>
+        <div class="flex items-center gap-3">
+          <input type="color" id="modal-picker-g1" value="#a855f7" class="w-10 h-10 rounded cursor-pointer border-0 flex-shrink-0" />
+          <div class="flex-1 h-2 rounded-full lynk-gradient"></div>
+        </div>
+      </div>
+      <div>
+        <label class="text-sm font-medium mb-2 block" style="color:var(--text-secondary)">Gradient Mid</label>
+        <input type="color" id="modal-picker-g2" value="#06b6d4" class="w-10 h-10 rounded cursor-pointer border-0" />
+      </div>
+      <div>
+        <label class="text-sm font-medium mb-2 block" style="color:var(--text-secondary)">Gradient End</label>
+        <input type="color" id="modal-picker-g3" value="#3b82f6" class="w-10 h-10 rounded cursor-pointer border-0" />
+      </div>
+      <div class="h-8 rounded-xl lynk-gradient"></div>
+      <button onclick="resetGradient()" class="lynk-btn lynk-btn-ghost text-sm py-2 rounded-xl">Reset to Default</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ONBOARDING MODAL ===== -->
+<div id="onboarding-modal" class="lynk-modal-overlay hidden" style="z-index:9999">
+  <div class="lynk-card w-full max-w-md mx-4 overflow-hidden">
+
+    <!-- Progress bar -->
+    <div class="h-1 lynk-gradient" id="onboard-progress" style="width:33%;transition:width 0.4s ease"></div>
+
+    <!-- Step 1: Welcome -->
+    <div id="onboard-step-1" class="p-8 text-center">
+      <div class="text-5xl mb-4">🎉</div>
+      <h2 class="text-2xl font-black mb-2">Welcome to LYNK!</h2>
+      <p class="text-sm mb-2" style="color:var(--text-secondary)">You're in — let's set up your campus identity.</p>
+      <p class="text-xs mb-6" style="color:var(--text-muted)">Takes less than 30 seconds. You can skip any step.</p>
+
+      <div class="lynk-card p-4 mb-6 text-left flex items-center gap-4">
+        <img id="onboard-avatar" src="" class="lynk-avatar w-14 h-14 flex-shrink-0" />
+        <div>
+          <p id="onboard-name" class="font-bold"></p>
+          <p id="onboard-handle" class="text-sm lynk-gradient-text"></p>
+          <p id="onboard-type" class="text-xs mt-0.5" style="color:var(--text-muted)"></p>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button onclick="onboardNext(2)" class="lynk-btn lynk-btn-primary flex-1 py-3 rounded-xl font-semibold">
+          Let's go! →
+        </button>
+        <button onclick="dismissOnboarding()" class="lynk-btn lynk-btn-ghost py-3 px-4 rounded-xl text-sm" style="color:var(--text-muted)">
+          Skip
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: University -->
+    <div id="onboard-step-2" class="p-8 hidden">
+      <div class="text-4xl mb-3">🏛️</div>
+      <h2 class="text-xl font-black mb-1">Your University</h2>
+      <p class="text-sm mb-5" style="color:var(--text-secondary)">Pick your university so LYNK can connect you with your campus community.</p>
+
+      <div class="flex flex-col gap-4">
+        <div>
+          <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">University</label>
+          <select id="onboard-uni" class="lynk-input" onchange="onboardLoadFaculties(this.value)">
+            <option value="">-- Select your university --</option>
+          </select>
+          <p id="onboard-no-schools" class="hidden text-xs mt-1.5" style="color:var(--text-muted)">
+            ⚠️ No universities added yet — ask your admin to add schools first.
+          </p>
+        </div>
+
+        <div id="onboard-faculty-wrap" class="hidden">
+          <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Faculty</label>
+          <select id="onboard-faculty" class="lynk-input" onchange="onboardLoadDepts(this.value)">
+            <option value="">-- Select faculty --</option>
+          </select>
+        </div>
+
+        <div id="onboard-dept-wrap" class="hidden">
+          <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Department</label>
+          <select id="onboard-dept" class="lynk-input">
+            <option value="">-- Select department --</option>
+          </select>
+        </div>
+
+        <div id="onboard-position-wrap" class="hidden">
+          <label class="text-sm font-medium mb-1.5 block" style="color:var(--text-secondary)">Your Position / Rank</label>
+          <input id="onboard-position" type="text" class="lynk-input" placeholder="e.g. Sub-dean, Lecturer I, Professor" />
+        </div>
+      </div>
+
+      <div class="flex gap-3 mt-6">
+        <button onclick="onboardBack(1)" class="lynk-btn lynk-btn-ghost py-3 px-4 rounded-xl">← Back</button>
+        <button onclick="onboardNext(3)" class="lynk-btn lynk-btn-primary flex-1 py-3 rounded-xl font-semibold">Continue →</button>
+        <button onclick="dismissOnboarding()" class="lynk-btn lynk-btn-ghost py-3 px-4 rounded-xl text-sm" style="color:var(--text-muted)">Skip</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Done -->
+    <div id="onboard-step-3" class="p-8 text-center hidden">
+      <div class="text-5xl mb-4">🚀</div>
+      <h2 class="text-2xl font-black mb-2">You're all set!</h2>
+      <p class="text-sm mb-6" style="color:var(--text-secondary)">Your profile is ready. Start exploring your campus community on LYNK.</p>
+
+      <div id="onboard-summary" class="lynk-card p-4 mb-6 text-left text-sm flex flex-col gap-2"></div>
+
+      <button onclick="finishOnboarding()" class="lynk-btn lynk-btn-primary w-full py-3 rounded-xl font-semibold text-base">
+        Enter LYNK 🎓
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script type="module" src="js/feed.js"></script>
+<script>
+  function showCustomizer() { document.getElementById('customizer-modal').classList.remove('hidden'); }
+  function hideCustomizer() { document.getElementById('customizer-modal').classList.add('hidden'); }
+  function setTheme(t) { document.documentElement.setAttribute('data-theme', t); localStorage.setItem('lynk-theme', t); }
+  function resetGradient() {
+    const defaults = { g1: '#a855f7', g2: '#06b6d4', g3: '#3b82f6' };
+    ['g1','g2','g3'].forEach(k => {
+      document.getElementById(`picker-${k}`)?.setAttribute('value', defaults[k]);
+      document.getElementById(`modal-picker-${k}`)?.setAttribute('value', defaults[k]);
+      document.documentElement.style.setProperty(`--grad-${k.slice(-1)}`, defaults[k]);
+      localStorage.setItem(`lynk-${k}`, defaults[k]);
+    });
+  }
+  function togglePoll() {
+    const pb = document.getElementById('poll-builder');
+    pb.classList.toggle('hidden');
+    document.getElementById('poll-toggle-btn').classList.toggle('active');
+  }
+  function addPollOption() {
+    const container = document.getElementById('poll-options');
+    const count = container.children.length;
+    if (count >= 6) return;
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'lynk-input text-sm py-2';
+    inp.placeholder = `Option ${count + 1}`;
+    inp.id = `poll-opt-${count}`;
+    container.appendChild(inp);
+  }
+  function clearMedia() {
+    document.getElementById('media-preview').classList.add('hidden');
+    document.getElementById('media-preview-img').src = '';
+    window._postMediaFile = null;
+  }
+</script>
+</body>
+</html>
