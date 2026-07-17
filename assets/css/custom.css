@@ -443,7 +443,7 @@ body {
   position: fixed; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); right: 18px;
   z-index: 960; width: 54px; height: 54px; border-radius: 50%;
   background: linear-gradient(135deg, var(--grad-1), var(--grad-3));
-  border: none; cursor: pointer; display: none;
+  border: none; cursor: pointer; display: flex;
   align-items: center; justify-content: center; color: #fff;
   box-shadow: 0 4px 18px rgba(168,85,247,0.5);
   transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), box-shadow 0.2s;
@@ -459,7 +459,7 @@ body {
   transform-origin: top right; transform: scale(0.85) translateY(-8px);
   opacity: 0; pointer-events: none;
   transition: transform 0.22s cubic-bezier(.34,1.56,.64,1), opacity 0.18s ease;
-  display: none;
+  display: grid;
 }
 .explore-dropdown.open { transform: scale(1) translateY(0); opacity: 1; pointer-events: auto; }
 .explore-dropdown-grid {
@@ -479,8 +479,8 @@ body {
 }
 .explore-fab-overlay.open { display: block; }
 @media (max-width: 768px) {
+  /* Mobile already has the compass button in the top navbar — hide the FAB */
   .explore-fab { display: none; }
-  .explore-dropdown { display: grid; }
 }
 
 /* ===== MOBILE DRAWER OVERLAY ===== */
@@ -504,7 +504,7 @@ body {
   }
   .lynk-sidebar.drawer-open { transform: translateX(0); }
   .main-content { margin-left: 0; padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
-  .main-content > div { padding-top: 8px !important; }
+  .main-content > div { padding-top: 0 !important; }
   .lynk-bottom-nav { display: flex; }
   #hamburger-btn { display: flex; align-items: center; }
 }
