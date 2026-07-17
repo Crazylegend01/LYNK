@@ -268,38 +268,39 @@ async function callAI(message, mode) {
 
   const systemPrompt = systemPrompts[mode] || systemPrompts.chat;
 
-  try {
-    // Try each provider in priority order based on what keys are loaded
-    const openaiKey = aiSettings?.openaiKey;
-    if (openaiKey && openaiKey.startsWith('sk-')) {
-      return await callOpenAI(message, systemPrompt, openaiKey);
-    }
+  // Build a prioritised list of providers based on which keys are actually loaded.
+  // NOTE: Claude (Anthropic) is intentionally excluded here — their API blocks direct
+  // browser requests (CORS policy). It must be called from a server-side proxy.
+  const queue = [];
+  if (aiSettings?.openaiKey?.startsWith('sk-'))
+    queue.push({ name: 'OpenAI',  fn: () => callOpenAI(message, systemPrompt, aiSettings.openaiKey) });
+  if (aiSettings?.groqKey?.startsWith('gsk_'))
+    queue.push({ name: 'Groq',    fn: () => callGroq(message, systemPrompt, aiSettings.groqKey) });
+  if (aiSettings?.geminiKey)
+    queue.push({ name: 'Gemini',  fn: () => callGemini(message, systemPrompt, aiSettings.geminiKey) });
+  if (aiSettings?.grokXAIKey?.startsWith('xai-'))
+    queue.push({ name: 'Grok xAI', fn: () => callGrokXAI(message, systemPrompt, aiSettings.grokXAIKey) });
 
-    const groqKey = aiSettings?.grokKey;
-    if (groqKey && groqKey.startsWith('gsk_')) {
-      return await callGroq(message, systemPrompt, groqKey);
-    }
-
-    const geminiKey = aiSettings?.geminiKey;
-    if (geminiKey) {
-      return await callGemini(message, systemPrompt, geminiKey);
-    }
-
-    const claudeKey = aiSettings?.claudeKey;
-    if (claudeKey && claudeKey.startsWith('sk-ant-')) {
-      return await callClaude(message, systemPrompt, claudeKey);
-    }
-
-    const grokKey = aiSettings?.grokXAIKey;
-    if (grokKey && grokKey.startsWith('xai-')) {
-      return await callGrokXAI(message, systemPrompt, grokKey);
-    }
-
-    return generateLocalResponse(message, mode);
-  } catch (err) {
-    console.warn('AI API error:', err.message);
-    return generateLocalResponse(message, mode);
+  if (queue.length === 0) {
+    console.warn('LYNK AI: no API keys loaded for current user — check Firestore settings/ai_keys and rules.');
+    return '⚠️ **LYNK AI is not configured.** Please ask an admin to add API keys in the admin panel, then refresh this page.';
   }
+
+  // Try each provider in order; move to the next if one fails
+  const errors = [];
+  for (const provider of queue) {
+    try {
+      const result = await provider.fn();
+      return result;
+    } catch (err) {
+      console.warn(`LYNK AI: ${provider.name} failed —`, err.message);
+      errors.push(`${provider.name}: ${err.message}`);
+    }
+  }
+
+  // All providers failed
+  console.error('LYNK AI: all providers failed.', errors);
+  return `⚠️ **LYNK AI couldn't reach any provider right now.** This is usually a temporary API issue or an invalid key.\n\n*Details (for admin):* ${errors.join(' | ')}`;
 }
 
 async function callOpenAI(message, systemPrompt, apiKey) {

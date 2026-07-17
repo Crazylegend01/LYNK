@@ -214,11 +214,26 @@ service cloud.firestore {
     }
 
     // ===== SETTINGS =====
-    // Payment key must be readable by any signed-in user so checkout works.
-    // AI keys and other settings remain admin-only.
+    // payments — readable by signed-in users (checkout).
+    // ai_keys  — readable by signed-in users (client-side AI calls).
+    // everything else — admin only.
     match /settings/{docId} {
-      allow read: if isAdmin() || (isSignedIn() && docId == 'payments');
+      allow read: if isAdmin()
+        || (isSignedIn() && docId == 'payments')
+        || (isSignedIn() && docId == 'ai_keys');
       allow write: if isAdmin();
+    }
+
+    // ===== PENDING SCHOOL REQUESTS =====
+    match /pendingSchoolRequests/{reqId} {
+      allow create: if isSignedIn(); // user submits their own school
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ===== MAIL QUEUE (approval/rejection emails) =====
+    match /mailQueue/{docId} {
+      allow create: if isAdmin();
+      allow read, update, delete: if isAdmin();
     }
 
     // ===== REPORTS =====

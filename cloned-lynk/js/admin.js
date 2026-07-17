@@ -809,7 +809,7 @@ window.approveSchoolRequest = async (reqId) => {
 
     // In-app notification for the user
     await addDoc(collection(db, 'notifications'), {
-      userId:    req.userId,
+      toUid:     req.userId,
       type:      'school_approved',
       title:     '🎉 School Verified!',
       body:      `Your school "${req.schoolName}" has been verified. You can now sign in and access LYNK!`,
@@ -866,7 +866,7 @@ window.rejectSchoolRequest = async (reqId) => {
 
     // In-app notification
     await addDoc(collection(db, 'notifications'), {
-      userId:    req.userId,
+      toUid:     req.userId,
       type:      'school_rejected',
       title:     '❌ School Not Verified',
       body:      `Your school "${req.schoolName}" could not be verified. Reason: ${reason || 'Does not meet criteria.'}. Please sign in and select an existing school or re-submit.`,
