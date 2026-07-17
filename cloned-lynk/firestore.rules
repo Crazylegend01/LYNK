@@ -33,6 +33,13 @@ service cloud.firestore {
         (isOwner(userId) && !isChangingAdminFields()) ||
         (isAdmin() && !isChangingAdminFields());
       allow delete: if isSuperAdmin();
+      // Per-user notification subcollection
+      match /notifications/{notifId} {
+        allow read: if isSignedIn() && request.auth.uid == userId;
+        allow create: if isSignedIn();
+        allow update: if isSignedIn() && request.auth.uid == userId;
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+      }
     }
 
     // ===== POSTS =====
@@ -79,14 +86,6 @@ service cloud.firestore {
       allow create: if isSignedIn() && isNotSuspended();
       allow update: if isSignedIn() && resource.data.toUid == request.auth.uid;
       allow delete: if isSignedIn() && (resource.data.toUid == request.auth.uid || isAdmin());
-    }
-
-    // ===== USER NOTIFICATIONS (subcollection) =====
-    match /users/{userId}/notifications/{notifId} {
-      allow read: if isSignedIn() && request.auth.uid == userId;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && request.auth.uid == userId;
-      allow delete: if isSignedIn() && request.auth.uid == userId;
     }
 
     // ===== COMMUNITIES =====
@@ -155,6 +154,11 @@ service cloud.firestore {
       allow update: if isSignedIn() && (resource.data.sellerId == request.auth.uid || isAdmin());
       allow delete: if isSignedIn() && (resource.data.sellerId == request.auth.uid || isAdmin());
     }
+    // marketplace (legacy single-doc alias)
+    match /marketplace/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
     // Saved/bookmarked listings — per user
     match /savedListings/{savedId} {
       allow read: if isSignedIn() && resource.data.uid == request.auth.uid;
@@ -166,6 +170,11 @@ service cloud.firestore {
     match /pushQueue/{docId} {
       allow create: if isSignedIn();
       allow read, update, delete: if isAdmin();
+    }
+
+    // ===== FCM TOKENS =====
+    match /fcmTokens/{docId} {
+      allow read, write: if isSignedIn() && request.auth.uid == docId;
     }
 
     // ===== SPONSORED POSTS =====
@@ -190,6 +199,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ===== PENDING SCHOOL REQUESTS =====
+    // Users submit their own custom school; only admins can read/manage them.
+    match /pendingSchoolRequests/{reqId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isAdmin();
+    }
+
     // ===== PAYMENT LOGS =====
     match /paymentLogs/{logId} {
       allow read: if isAdmin() || resource.data.uid == request.auth.uid;
@@ -202,21 +218,24 @@ service cloud.firestore {
       allow read: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
       allow write: if isAdmin();
     }
+    match /premiumSubscriptions/{docId} {
+      allow read: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow write: if isAdmin();
+    }
 
     // ===== AI USAGE =====
     match /aiUsage/{docId} {
       allow read, write: if isSignedIn() && docId.matches(request.auth.uid + '_.*');
     }
-
     match /aiUsageLogs/{docId} {
       allow create: if isSignedIn();
       allow read: if isAdmin();
     }
 
     // ===== SETTINGS =====
-    // payments — readable by signed-in users (checkout).
-    // ai_keys  — readable by signed-in users (client-side AI calls).
-    // everything else — admin only.
+    // payments  — readable by any signed-in user (checkout flow).
+    // ai_keys   — readable by any signed-in user (client-side AI calls need the key).
+    // All other settings docs remain admin-only.
     match /settings/{docId} {
       allow read: if isAdmin()
         || (isSignedIn() && docId == 'payments')
@@ -224,16 +243,9 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // ===== PENDING SCHOOL REQUESTS =====
-    match /pendingSchoolRequests/{reqId} {
-      allow create: if isSignedIn(); // user submits their own school
-      allow read, update, delete: if isAdmin();
-    }
-
-    // ===== MAIL QUEUE (approval/rejection emails) =====
+    // ===== MAIL QUEUE (approval / rejection emails sent by admin actions) =====
     match /mailQueue/{docId} {
-      allow create: if isAdmin();
-      allow read, update, delete: if isAdmin();
+      allow create, read, update, delete: if isAdmin();
     }
 
     // ===== REPORTS =====
@@ -255,7 +267,7 @@ service cloud.firestore {
     match /adminConfig/{docId} {
       allow read, write: if isAdmin();
     }
-    // snake_case alias used by admin.js (admin_config collection)
+    // snake_case alias used by admin.js
     match /admin_config/{docId} {
       allow read, write: if isAdmin();
     }
