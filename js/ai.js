@@ -210,10 +210,13 @@ async function deductCredits(wordCount) {
 window.sendAIMessage = async () => {
   const input   = document.getElementById('ai-input');
   const sendBtn = document.getElementById('ai-send-btn');
-  const message = input?.value.trim();
+  const message = input?.value.trim() || '';
   if (!message && !uploadedFileContent) return;
 
-  const wordCount = (message || '').split(/\s+/).filter(Boolean).length || 1;
+  // Guard: don't allow double-sends while one is in flight
+  if (sendBtn?.disabled || sendBtn?.classList.contains('loading')) return;
+
+  const wordCount = message.split(/\s+/).filter(Boolean).length || 1;
   if (!isPremium) {
     if (userCredits <= 0) { showCreditWarning(wordCount, 0); return; }
     if (wordCount > userCredits) { showCreditWarning(wordCount, userCredits); return; }
@@ -223,34 +226,45 @@ window.sendAIMessage = async () => {
     ? `${message}\n\n--- UPLOADED DOCUMENT ---\n${uploadedFileContent.slice(0, 8000)}`
     : message;
 
-  input.value = '';
-  autoResizeAI(input);
+  if (input) { input.value = ''; autoResizeAI(input); }
   clearCreditWarning();
-  updateLiveWordCount(input);
+  if (input) updateLiveWordCount(input);
   uploadedFileContent = '';
-  if (sendBtn) sendBtn.classList.add('loading');
+  document.getElementById('ai-file-name')?.classList.add('hidden');
 
-  appendUserMessage(message);
-  chatHistory.push({ role: 'user', content: fullMessage });
-  showTypingIndicator();
-
-  const response = await callAI(fullMessage, currentMode);
-  hideTypingIndicator();
-  if (sendBtn) sendBtn.classList.remove('loading');
-  await appendBotMessageStream(response);
-  chatHistory.push({ role: 'assistant', content: response });
-
-  if (!isPremium) await deductCredits(wordCount);
+  // Lock the button — always unlocked in finally
+  if (sendBtn) { sendBtn.classList.add('loading'); sendBtn.disabled = true; }
 
   try {
-    await addDoc(collection(db, 'aiUsageLogs'), {
-      uid: currentUser.uid,
-      mode: currentMode,
-      messageLength: fullMessage.length,
-      responseLength: response.length,
-      createdAt: serverTimestamp()
-    });
-  } catch {}
+    appendUserMessage(message);
+    chatHistory.push({ role: 'user', content: fullMessage });
+    showTypingIndicator();
+
+    const response = await callAI(fullMessage, currentMode);
+    hideTypingIndicator();
+    await appendBotMessageStream(response);
+    chatHistory.push({ role: 'assistant', content: response });
+
+    if (!isPremium) await deductCredits(wordCount);
+
+    try {
+      await addDoc(collection(db, 'aiUsageLogs'), {
+        uid: currentUser?.uid,
+        mode: currentMode,
+        messageLength: fullMessage.length,
+        responseLength: response.length,
+        createdAt: serverTimestamp()
+      });
+    } catch {}
+  } catch (err) {
+    console.error('LYNK AI sendAIMessage error:', err);
+    hideTypingIndicator();
+    await appendBotMessageStream(`⚠️ **Something went wrong.** Please try again.\n\n*Error: ${err.message}*`);
+  } finally {
+    // Always restore button — no matter what happened above
+    if (sendBtn) { sendBtn.classList.remove('loading'); sendBtn.disabled = false; }
+    updateUsageUI();
+  }
 };
 
 async function callAI(message, mode) {
