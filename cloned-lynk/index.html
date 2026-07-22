@@ -16,17 +16,23 @@
     // Otherwise send to splash first so users see the intro animation.
     const fromSplash = new URLSearchParams(location.search).has('landing');
     if (!fromSplash) {
-      // Check auth quickly — if logged in, jump to feed; else show splash
-      import('./js/firebase-config.js').then(({ auth }) => {
-        import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js').then(({ onAuthStateChanged }) => {
-          const unsub = onAuthStateChanged(auth, (user) => {
-            unsub();
-            window.location.replace(user ? 'feed.html' : 'splash.html');
-          });
-          // Safety timeout if Firebase stalls
-          setTimeout(() => window.location.replace('splash.html'), 3000);
-        });
-      });
+      // Check auth — if logged in jump to feed, else show splash.
+      // Timeout is 8s: long-polling + cold-start can take 4-6s on slow networks.
+      let redirected = false;
+      const doRedirect = (dest) => { if (!redirected) { redirected = true; window.location.replace(dest); } };
+      const stall = setTimeout(() => doRedirect('splash.html'), 8000);
+      import('./js/firebase-config.js')
+        .then(({ auth }) =>
+          import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js')
+            .then(({ onAuthStateChanged }) => {
+              const unsub = onAuthStateChanged(auth, (user) => {
+                unsub();
+                clearTimeout(stall);
+                doRedirect(user ? 'feed.html' : 'splash.html');
+              });
+            })
+        )
+        .catch(() => { clearTimeout(stall); doRedirect('splash.html'); });
     }
   </script>
 </head>

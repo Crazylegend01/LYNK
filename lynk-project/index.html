@@ -1,26 +1,46 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
-  <script>!function(){var t=localStorage.getItem("lynk-theme")||"system",r=t==="system"?(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t;document.documentElement.setAttribute("data-theme",r)}();</script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="google-adsense-account" content="ca-pub-4316159694380125">
   <title>LYNK By Legends — Connect · Learn · Grow</title>
   <meta name="description" content="The premier university social network. Connect with peers, discover communities, and grow together." />
   <link rel="icon" href="assets/logo.jpg" type="image/jpeg" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/custom.css" />
-  <!-- Redirect to splash screen on first visit -->
-  <script>window.location.replace('splash.html');</script>
+  <script type="module">
+    // If arriving from splash (landing=1), just show the page.
+    // If already logged in, skip landing and go straight to the feed.
+    // Otherwise send to splash first so users see the intro animation.
+    const fromSplash = new URLSearchParams(location.search).has('landing');
+    if (!fromSplash) {
+      // Check auth — if logged in jump to feed, else show splash.
+      // Timeout is 8s: long-polling + cold-start can take 4-6s on slow networks.
+      let redirected = false;
+      const doRedirect = (dest) => { if (!redirected) { redirected = true; window.location.replace(dest); } };
+      const stall = setTimeout(() => doRedirect('splash.html'), 8000);
+      import('./js/firebase-config.js')
+        .then(({ auth }) =>
+          import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js')
+            .then(({ onAuthStateChanged }) => {
+              const unsub = onAuthStateChanged(auth, (user) => {
+                unsub();
+                clearTimeout(stall);
+                doRedirect(user ? 'feed.html' : 'splash.html');
+              });
+            })
+        )
+        .catch(() => { clearTimeout(stall); doRedirect('splash.html'); });
+    }
+  </script>
 </head>
 <body>
 
 <!-- ===== NAVBAR ===== -->
 <nav class="lynk-nav h-16 flex items-center px-6 justify-between">
-  <span class="flex flex-col leading-none">
-    <span class="logo-text">LYNK</span>
-    <span class="logo-sub">By Legends</span>
-  </span>
+  <span class="flex flex-col leading-none cursor-default"><span class="logo-text">LYNK</span><span class="logo-sub">By Legends</span></span>
   <div class="flex items-center gap-3">
     <button id="theme-toggle" class="lynk-btn lynk-btn-ghost p-2 rounded-full" aria-label="Toggle theme">
       <span id="theme-icon">☀️</span>
@@ -151,6 +171,13 @@
 <script type="module">
   import { ThemeManager } from './js/theme.js';
   ThemeManager.init();
+</script>
+<script>
+  // Save referral code from ?ref=CODE so auth page can pick it up
+  (function () {
+    const ref = new URLSearchParams(location.search).get('ref');
+    if (ref) localStorage.setItem('lynk_ref_code', ref.toUpperCase());
+  })();
 </script>
 </body>
 </html>

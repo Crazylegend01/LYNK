@@ -4,7 +4,10 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import {
+  getFirestore, initializeFirestore,
+  CACHE_SIZE_UNLIMITED
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js";
 import { isSupported, getAnalytics } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js";
 
@@ -21,27 +24,33 @@ const firebaseConfig = {
 // Initialize Firebase app
 const app = initializeApp(firebaseConfig);
 
-// Auth — persist session in localStorage so token refresh survives page reloads
+// Auth — persist session so token refresh survives page reloads
 export const auth = getAuth(app);
 setPersistence(auth, browserLocalPersistence).catch(() => {});
 
-// Firestore — use experimentalForceLongPolling to avoid QUIC/WebSocket failures
-// (fixes ERR_QUIC_PROTOCOL_ERROR and ERR_CONNECTION_CLOSED at securetoken.googleapis.com)
-export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-  experimentalAutoDetectLongPolling: true,
-  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
-});
+// Firestore — experimentalForceLongPolling fixes QUIC/WebSocket errors.
+// No persistent cache here: persistentLocalCache requires IndexedDB and exclusive
+// tab locks, which throws in private browsing and many mobile browsers, breaking
+// the entire module chain and freezing the loading screen.
+let _db;
+try {
+  _db = initializeFirestore(app, {
+    experimentalForceLongPolling: true,
+    experimentalAutoDetectLongPolling: true,
+  });
+} catch (e) {
+  // Already initialized or browser restriction — fall back to default instance
+  _db = getFirestore(app);
+}
+export const db = _db;
 
 // Storage
 export const storage = getStorage(app);
 
 // Analytics — guard with isSupported() to prevent ERR_TIMED_OUT on blocked networks
 export let analytics = null;
-isSupported().then((supported) => {
-  if (supported) {
-    analytics = getAnalytics(app);
-  }
-}).catch(() => {});
+isSupported()
+  .then((ok) => { if (ok) analytics = getAnalytics(app); })
+  .catch(() => {});
 
 export default app;
