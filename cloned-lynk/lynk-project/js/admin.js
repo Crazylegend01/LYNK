@@ -7,8 +7,8 @@ import { ThemeManager } from './theme.js';
 import {
   collection, doc, getDoc, getDocs, updateDoc, setDoc, deleteDoc, addDoc,
   query, where, orderBy, limit, getCountFromServer, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
 ThemeManager.init();
 
@@ -1028,7 +1028,7 @@ async function loadPaymentLogs() {
   if (!el) return;
   try {
     const { getDocs: _gd, collection: _col, query: _q, orderBy: _ob, limit: _lim } =
-      await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+      await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js");
     const snap = await _gd(_q(_col(db, 'paymentLogs'), _ob('createdAt','desc'), _lim(20)));
     if (snap.empty) { el.innerHTML = '<p class="text-sm text-center py-6" style="color:var(--text-muted)">No transactions yet.</p>'; return; }
     el.innerHTML = `<table class="w-full text-sm"><thead><tr class="text-left" style="color:var(--text-muted)"><th class="pb-2">User</th><th class="pb-2">Plan</th><th class="pb-2">Amount</th><th class="pb-2">Status</th><th class="pb-2">Date</th></tr></thead><tbody id="payment-logs-tbody"></tbody></table>`;

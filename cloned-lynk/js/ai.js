@@ -7,8 +7,8 @@ import { ThemeManager } from './theme.js';
 import {
   doc, getDoc, setDoc, updateDoc, addDoc, collection,
   serverTimestamp, increment, query, where, getDocs, orderBy, limit
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { initFCM, notifyAILimitReached } from './notifications-fcm.js';
 
 ThemeManager.init();
@@ -23,18 +23,18 @@ let isPremium = false;
 let userCredits = 0;
 let isAdminUser = false;
 let flutterwaveKey = null;
-const NEW_USER_CREDITS   = 100;   // first-time welcome credits
-const REFILL_CREDITS     = 100;   // top-up amount every 15 days
-const REFILL_DAYS        = 15;    // refill cadence in days
+const NEW_USER_CREDITS   = 100;
+const REFILL_CREDITS     = 100;
+const REFILL_DAYS        = 15;
 
 const MODE_CONFIG = {
-  chat: { title: 'Ask Anything', subtitle: 'Your AI-powered study assistant', icon: '🤖' },
-  summarize: { title: 'Summarize Notes', subtitle: 'Upload notes or paste text to get a summary', icon: '📄' },
-  flashcards: { title: 'Flashcard Generator', subtitle: 'Generate flashcards from your study material', icon: '🃏' },
-  quiz: { title: 'Practice Quiz', subtitle: 'Generate quiz questions from your notes', icon: '❓' },
-  career: { title: 'Career Assistant', subtitle: 'CV writing, interview prep, and career guidance', icon: '💼' },
-  studyplan: { title: 'Study Planner', subtitle: 'Create a personalised study schedule', icon: '📅' },
-  writing: { title: 'Writing Assistant', subtitle: 'Get help with essays, reports, and academic writing', icon: '✍️' },
+  chat:       { title: 'Ask Anything',       subtitle: 'Your AI-powered study assistant',                icon: '🤖' },
+  summarize:  { title: 'Summarize Notes',    subtitle: 'Upload notes or paste text to get a summary',   icon: '📄' },
+  flashcards: { title: 'Flashcard Generator',subtitle: 'Generate flashcards from your study material',  icon: '🃏' },
+  quiz:       { title: 'Practice Quiz',      subtitle: 'Generate quiz questions from your notes',        icon: '❓' },
+  career:     { title: 'Career Assistant',   subtitle: 'CV writing, interview prep, and career guidance',icon: '💼' },
+  studyplan:  { title: 'Study Planner',      subtitle: 'Create a personalised study schedule',           icon: '📅' },
+  writing:    { title: 'Writing Assistant',  subtitle: 'Get help with essays, reports, and academic writing', icon: '✍️' },
 };
 
 onAuthStateChanged(auth, async (user) => {
@@ -63,24 +63,23 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 async function checkPremiumStatus() {
-  // Admins have unlimited access — flag separately so credit logic can skip them
   if (currentUserData.role === 'admin' || currentUserData.adminRole) {
-    isPremium    = true;
-    isAdminUser  = true;
-    userCredits  = Infinity;
+    isPremium   = true;
+    isAdminUser = true;
+    userCredits = Infinity;
     return;
   }
-  const snap = await getDoc(doc(db, 'premiumSubscriptions', currentUser.uid));
-  if (snap.exists()) {
-    const d = snap.data();
-    isPremium = d.status === 'active' && d.expiresAt?.toDate?.() > new Date();
-  }
+  try {
+    const snap = await getDoc(doc(db, 'premiumSubscriptions', currentUser.uid));
+    if (snap.exists()) {
+      const d = snap.data();
+      isPremium = d.status === 'active' && d.expiresAt?.toDate?.() > new Date();
+    }
+  } catch (e) { console.warn('Premium check:', e.message); }
 }
 
 async function loadAISettings() {
   aiSettings = {};
-
-  // PRIMARY: read from settings/ai_keys — synced by admin panel, readable by all auth users
   try {
     const pubSnap = await getDoc(doc(db, 'settings', 'ai_keys'));
     if (pubSnap.exists()) {
@@ -92,16 +91,14 @@ async function loadAISettings() {
         if (d.grok_key.startsWith('gsk_')) aiSettings.groqKey    = d.grok_key;
         else                               aiSettings.grokXAIKey = d.grok_key;
       }
-      if (Object.keys(aiSettings).length > 0) return; // loaded successfully
+      if (Object.keys(aiSettings).length > 0) return;
     }
   } catch (e) { console.warn('AI public key read:', e.message); }
 
-  // FALLBACK: try admin_config directly (works if Firestore rules allow user reads)
   try {
     const settingSnap = await getDoc(doc(db, 'admin_config', 'ai_settings'));
     const defaultProvider = settingSnap.exists() ? (settingSnap.data().defaultProvider || 'openai') : 'openai';
     const providers = [defaultProvider, ...['openai','gemini','claude','grok'].filter(p => p !== defaultProvider)];
-
     for (const provider of providers) {
       try {
         const snap = await getDoc(doc(db, 'admin_config', 'ai_' + provider));
@@ -118,37 +115,27 @@ async function loadAISettings() {
           else                        aiSettings.grokXAIKey = key;
           break;
         }
-      } catch (e) { console.warn('AI provider fallback read failed:', provider, e.message); }
+      } catch (e) { console.warn('AI provider fallback:', provider, e.message); }
     }
   } catch (e) { console.warn('AI settings fallback failed:', e.message); }
 }
 
 async function loadCredits() {
-  // Admins have unlimited credits — skip Firestore read entirely
   if (isAdminUser) {
     try { localStorage.setItem('lynk_ai_credits', 'unlimited'); } catch {}
     return;
   }
-
   try {
     const today   = new Date().toISOString().slice(0, 10);
     const userRef = doc(db, 'users', currentUser.uid);
     const snap    = await getDoc(userRef);
     const data    = snap.data() || {};
-
-    let credits         = data.aiCredits ?? null;
-    const lastRefill    = data.aiCreditsLastRefill || null;
-
+    let credits        = data.aiCredits ?? null;
+    const lastRefill   = data.aiCreditsLastRefill || null;
     if (credits === null || !data.aiCreditsEverReceived) {
-      // First-time user — award welcome credits
       credits = NEW_USER_CREDITS;
-      await updateDoc(userRef, {
-        aiCredits:            NEW_USER_CREDITS,
-        aiCreditsLastRefill:  today,
-        aiCreditsEverReceived: true,
-      });
+      await updateDoc(userRef, { aiCredits: NEW_USER_CREDITS, aiCreditsLastRefill: today, aiCreditsEverReceived: true });
     } else {
-      // Refill every 15 days
       const daysSince = lastRefill
         ? Math.floor((Date.now() - new Date(lastRefill).getTime()) / 86400000)
         : 999;
@@ -157,11 +144,9 @@ async function loadCredits() {
         await updateDoc(userRef, { aiCredits: credits, aiCreditsLastRefill: today });
       }
     }
-
     userCredits = credits;
     try { localStorage.setItem('lynk_ai_credits', credits); } catch {}
   } catch (e) {
-    // If Firestore read fails, give the user a safe default so they aren't locked out
     console.warn('loadCredits error:', e.message);
     if (userCredits <= 0) userCredits = NEW_USER_CREDITS;
   }
@@ -177,9 +162,7 @@ function updateUsageUI() {
   const lowText   = document.getElementById('ai-low-credit-text');
   const input     = document.getElementById('ai-input');
   const sendBtn   = document.getElementById('ai-send-btn');
-
   try { localStorage.setItem('lynk_ai_premium', isPremium ? '1' : '0'); } catch {}
-
   if (isPremium) {
     if (bar) { bar.style.width = '100%'; bar.style.background = 'linear-gradient(135deg,#22c55e,#10b981)'; }
     if (text)   text.textContent   = isAdminUser ? 'Admin — Unlimited' : 'Unlimited queries';
@@ -190,13 +173,11 @@ function updateUsageUI() {
     if (input)   input.disabled   = false;
     if (sendBtn) sendBtn.disabled = false;
   } else {
-    // Progress bar: treat 100 credits as "full"
     const pct = Math.min(100, (userCredits / 100) * 100);
     if (bar) { bar.style.width = pct + '%'; bar.style.background = ''; }
     if (text)   text.textContent   = `${userCredits.toLocaleString()} credits remaining`;
     if (badge)  badge.textContent  = `💳 ${userCredits.toLocaleString()} credits`;
     if (status) status.textContent = `${userCredits.toLocaleString()} credits left`;
-
     if (userCredits <= 0) {
       if (paywall)   paywall.classList.remove('hidden');
       if (lowBanner) lowBanner.classList.add('hidden');
@@ -221,7 +202,7 @@ function updateUsageUI() {
 async function deductCredits(wordCount) {
   const cost = Math.max(1, wordCount);
   userCredits = Math.max(0, userCredits - cost);
-  await updateDoc(doc(db, 'users', currentUser.uid), { aiCredits: userCredits });
+  try { await updateDoc(doc(db, 'users', currentUser.uid), { aiCredits: userCredits }); } catch {}
   updateUsageUI();
 }
 
@@ -232,7 +213,6 @@ window.sendAIMessage = async () => {
   const message = input?.value.trim();
   if (!message && !uploadedFileContent) return;
 
-  // Credit check (free users only)
   const wordCount = (message || '').split(/\s+/).filter(Boolean).length || 1;
   if (!isPremium) {
     if (userCredits <= 0) { showCreditWarning(wordCount, 0); return; }
@@ -257,52 +237,50 @@ window.sendAIMessage = async () => {
   const response = await callAI(fullMessage, currentMode);
   hideTypingIndicator();
   if (sendBtn) sendBtn.classList.remove('loading');
-  appendBotMessage(response);
+  await appendBotMessageStream(response);
   chatHistory.push({ role: 'assistant', content: response });
 
   if (!isPremium) await deductCredits(wordCount);
 
-  await addDoc(collection(db, 'aiUsageLogs'), {
-    uid: currentUser.uid,
-    mode: currentMode,
-    messageLength: fullMessage.length,
-    responseLength: response.length,
-    createdAt: serverTimestamp()
-  });
+  try {
+    await addDoc(collection(db, 'aiUsageLogs'), {
+      uid: currentUser.uid,
+      mode: currentMode,
+      messageLength: fullMessage.length,
+      responseLength: response.length,
+      createdAt: serverTimestamp()
+    });
+  } catch {}
 };
 
 async function callAI(message, mode) {
   const systemPrompts = {
-    chat: `You are LYNK AI, a helpful academic assistant for university students in Nigeria. You help with academic questions, explain concepts clearly, solve problems, and provide study advice. Be encouraging, clear, and thorough.`,
-    summarize: `You are LYNK AI. Summarize the provided text/notes into: 1) A concise summary, 2) Key points (bullet list), 3) Important terms/definitions, 4) Suggested revision questions. Be thorough but clear.`,
+    chat:       `You are LYNK AI, a helpful academic assistant for university students in Nigeria. Help with academic questions, explain concepts clearly, solve problems, and provide study advice. Be encouraging, clear, and thorough. Format responses with Markdown — use **bold**, bullet points, numbered lists, and code blocks where appropriate.`,
+    summarize:  `You are LYNK AI. Summarize the provided text/notes into: 1) A concise summary, 2) Key points (bullet list), 3) Important terms/definitions, 4) Suggested revision questions. Use Markdown formatting.`,
     flashcards: `You are LYNK AI. Generate 10 flashcards from the provided content. Format each as: FRONT: [question/term] | BACK: [answer/definition]. Separate each card with a newline.`,
-    quiz: `You are LYNK AI. Generate 10 multiple-choice questions from the provided content. For each question: Q: [question]\nA) [option] B) [option] C) [option] D) [option]\nAnswer: [letter]\nExplanation: [brief explanation]`,
-    career: `You are LYNK AI Career Assistant, specialized in helping Nigerian university students with career development, CV writing, interview preparation, and professional growth. Be practical and encouraging.`,
-    studyplan: `You are LYNK AI Study Planner. Create detailed, practical study plans for students. Break down topics by week and day. Include breaks, revision sessions, and practice tests.`,
-    writing: `You are LYNK AI Writing Assistant. Help students improve their academic writing — essays, reports, research papers, and emails. Check grammar, suggest improvements, and provide examples.`,
+    quiz:       `You are LYNK AI. Generate 10 multiple-choice questions. For each: Q: [question]\nA) [option] B) [option] C) [option] D) [option]\nAnswer: [letter]\nExplanation: [brief explanation]`,
+    career:     `You are LYNK AI Career Assistant, specialized in helping Nigerian university students with career development. Use Markdown to structure your response with headers and bullet points.`,
+    studyplan:  `You are LYNK AI Study Planner. Create detailed, practical study plans. Break down topics by week and day. Use Markdown tables and lists for clarity.`,
+    writing:    `You are LYNK AI Writing Assistant. Help students improve academic writing. Check grammar, suggest improvements, and provide examples. Use Markdown formatting.`,
   };
 
   const systemPrompt = systemPrompts[mode] || systemPrompts.chat;
 
-  // Build a prioritised list of providers based on which keys are actually loaded.
-  // NOTE: Claude (Anthropic) is intentionally excluded here — their API blocks direct
-  // browser requests (CORS policy). It must be called from a server-side proxy.
   const queue = [];
   if (aiSettings?.openaiKey?.startsWith('sk-'))
-    queue.push({ name: 'OpenAI',  fn: () => callOpenAI(message, systemPrompt, aiSettings.openaiKey) });
+    queue.push({ name: 'OpenAI',   fn: () => callOpenAI(message, systemPrompt, aiSettings.openaiKey) });
   if (aiSettings?.groqKey?.startsWith('gsk_'))
-    queue.push({ name: 'Groq',    fn: () => callGroq(message, systemPrompt, aiSettings.groqKey) });
+    queue.push({ name: 'Groq',     fn: () => callGroq(message, systemPrompt, aiSettings.groqKey) });
   if (aiSettings?.geminiKey)
-    queue.push({ name: 'Gemini',  fn: () => callGemini(message, systemPrompt, aiSettings.geminiKey) });
+    queue.push({ name: 'Gemini',   fn: () => callGemini(message, systemPrompt, aiSettings.geminiKey) });
   if (aiSettings?.grokXAIKey?.startsWith('xai-'))
     queue.push({ name: 'Grok xAI', fn: () => callGrokXAI(message, systemPrompt, aiSettings.grokXAIKey) });
 
   if (queue.length === 0) {
-    console.warn('LYNK AI: no API keys loaded for current user — check Firestore settings/ai_keys and rules.');
+    console.warn('LYNK AI: no API keys configured.');
     return '⚠️ **LYNK AI is not configured.** Please ask an admin to add API keys in the admin panel, then refresh this page.';
   }
 
-  // Try each provider in order; move to the next if one fails
   const errors = [];
   for (const provider of queue) {
     try {
@@ -314,8 +292,6 @@ async function callAI(message, mode) {
     }
   }
 
-  // All providers failed
-  console.error('LYNK AI: all providers failed.', errors);
   return `⚠️ **LYNK AI couldn't reach any provider right now.** This is usually a temporary API issue or an invalid key.\n\n*Details (for admin):* ${errors.join(' | ')}`;
 }
 
@@ -364,30 +340,6 @@ async function callGemini(message, systemPrompt, apiKey) {
   return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated.';
 }
 
-async function callClaude(message, systemPrompt, apiKey) {
-  const messages = [
-    ...chatHistory.slice(-6),
-    { role: 'user', content: message }
-  ];
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify({
-      model: 'claude-3-haiku-20240307',
-      system: systemPrompt,
-      messages,
-      max_tokens: 1500
-    })
-  });
-  if (!res.ok) throw new Error(`Claude ${res.status}`);
-  const data = await res.json();
-  return data.content?.[0]?.text || 'No response generated.';
-}
-
 async function callGrokXAI(message, systemPrompt, apiKey) {
   const messages = [
     { role: 'system', content: systemPrompt },
@@ -404,84 +356,125 @@ async function callGrokXAI(message, systemPrompt, apiKey) {
   return data.choices[0].message.content;
 }
 
-function generateLocalResponse(message, mode) {
-  // Extract a short topic label from the user's message
-  const words = message.trim().split(/\s+/);
-  const significantWords = words.filter(w => w.length > 3 && !/^(what|when|where|which|that|this|with|have|from|about|how|does|can|will|should|would|could|please|help|tell|explain|give|show|make)$/i.test(w));
-  const topic = significantWords.slice(0, 4).join(' ') || message.slice(0, 40) || 'this topic';
-
-  const responses = {
-    chat: [
-      `**Regarding "${topic}":**\n\nThis is an important concept worth breaking down carefully:\n\n📌 **Core idea:** Focus on the fundamental principles — what it is, how it works, and why it matters.\n📚 **For your studies:** Look for this in your course textbook or lecture notes for the precise definition your lecturer expects.\n🔗 **Practical application:** Try to link the concept to real examples you already understand.`,
-      `**On the topic of "${topic}":**\n\n1️⃣ **Identify the basics first** — what are the key terms involved?\n2️⃣ **Break it into parts** — most complex ideas consist of 2–4 simpler sub-concepts.\n3️⃣ **Apply it** — try one worked example or practice question.\n4️⃣ **Teach it back** — if you can explain it simply, you understand it.`,
-      `Great — let's work through **"${topic}"** step by step.\n\n**Step 1 — Define it:** Write down your own definition without looking. Compare with your notes.\n**Step 2 — Recall examples:** Can you think of at least two real-world cases where this applies?\n**Step 3 — Identify gaps:** Which part is still unclear? That's where to focus.\n\n📖 *Tip: Consistent 45-minute focused sessions beat cramming every time.*`,
-      `Thinking about **"${topic}"** — here's a structured approach:\n\n🔍 **Analyse:** What exactly is being asked? Break the question into sub-parts.\n🧠 **Recall:** What do you already know that's related?\n📐 **Apply:** Use that knowledge to address each sub-part.\n✅ **Check:** Does your answer actually answer what was asked?\n\nThis method works for any subject — engineering, sciences, arts, or social sciences.`,
-      `For **"${topic}"**, consider these angles:\n\n• **Definition** — formal and informal meanings\n• **Context** — which course/field is this from?\n• **Common mistakes** — what do students usually get wrong here?\n• **Exam angle** — how is this likely to be tested?\n\nIf you share more detail about your specific course or the question you're working on, I can give more targeted advice.`,
-    ],
-    summarize: "**Summary of Your Notes:**\n\n📌 **Key Points:**\n• Main concept 1 from your text\n• Main concept 2 from your text\n• Key terminology and definitions\n\n📝 **Core Ideas:**\nYour notes cover several important topics. The main theme revolves around understanding fundamental principles and their practical applications.\n\n❓ **Suggested Practice Questions:**\n1. What is the main concept discussed?\n2. How does this apply in practice?\n3. What are the key differences between the terms mentioned?",
-    flashcards: "FRONT: What is the primary purpose of this concept? | BACK: It serves to explain the relationship between variables in the system\n\nFRONT: Define the key term | BACK: A fundamental unit that describes a specific property or behavior\n\nFRONT: What are the main applications? | BACK: Used in analysis, research, and practical problem-solving",
-    quiz: "**Practice Quiz:**\n\nQ1: Which of the following best describes the concept?\nA) Option relating to theory\nB) Option relating to practice\nC) Option relating to application ✓\nD) None of the above\nAnswer: C\nExplanation: The practical application is the most direct use case.",
-    career: "**Career Guidance for Nigerian University Students:**\n\n🎯 **Top Tips:**\n\n1. **Build your portfolio early** — Start projects in your field\n2. **Network on LinkedIn** — Connect with professionals in Nigeria\n3. **Internships** — Apply to companies like MTN, Flutterwave, Andela, Access Bank\n4. **Certifications** — Get industry-relevant certificates (Google, Coursera, etc.)\n5. **Soft skills** — Communication and leadership matter a lot\n\nWhat specific area would you like help with? (CV, interview prep, job search, salary negotiation)",
-    studyplan: "**Personalized Study Plan:**\n\n📅 **2-Week Study Schedule:**\n\n**Week 1:** Foundation\n- Days 1-2: Review core concepts and textbook chapters\n- Days 3-4: Practice problems and exercises\n- Days 5-6: Group study and discussion\n- Day 7: Rest and light review\n\n**Week 2:** Deep Practice\n- Days 8-9: Past exam questions\n- Days 10-11: Weak areas focus\n- Days 12-13: Full mock exams\n- Day 14: Final review and rest\n\n💡 **Tips:** Study for 45-min sessions with 15-min breaks (Pomodoro technique). Stay hydrated!",
-    writing: "**Writing Assistance:**\n\nHere are key principles for strong academic writing:\n\n✏️ **Structure:** Introduction → Body → Conclusion\n📖 **Clarity:** Use simple, clear language. Avoid jargon unless necessary.\n🔗 **Coherence:** Connect ideas with transition words (However, Furthermore, Therefore)\n📚 **Citations:** Always reference your sources properly (APA, MLA, or Chicago style)\n✅ **Revision:** Always proofread — grammar, spelling, and flow\n\nShare your draft or topic and I'll provide specific feedback!",
-  };
-
-  const modeResponses = responses[mode] || responses.chat;
-  // If it's an array, pick randomly; if it's a string, return it directly
-  if (Array.isArray(modeResponses)) {
-    return modeResponses[Math.floor(Math.random() * modeResponses.length)];
-  }
-  return modeResponses;
+// ===== MARKDOWN RENDERER (uses marked.js loaded in HTML) =====
+function renderMarkdown(text) {
+  try {
+    if (typeof marked !== 'undefined') {
+      marked.setOptions({
+        breaks: true,
+        gfm: true,
+        sanitize: false,
+      });
+      return marked.parse(text);
+    }
+  } catch {}
+  // Fallback: basic formatting
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/```[\w]*\n?([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    .replace(/\n/g, '<br>');
 }
 
-// ===== UI HELPERS =====
+// ===== CHAT UI HELPERS =====
 function appendUserMessage(text) {
   const container = document.getElementById('ai-messages');
   const el = document.createElement('div');
-  el.className = 'ai-message-user fade-in self-end';
-  el.textContent = text;
+  el.className = 'ai-msg-user-wrap fade-in';
+  el.innerHTML = `
+    <div class="ai-msg-user">
+      <div class="ai-msg-avatar ai-msg-avatar-user">
+        <img src="${currentUserData?.photoURL || `https://ui-avatars.com/api/?name=U&background=a855f7&color=fff`}" alt="You" />
+      </div>
+      <div class="ai-msg-bubble ai-msg-bubble-user">${escHtml(text)}</div>
+    </div>`;
   container.appendChild(el);
   container.scrollTop = container.scrollHeight;
 }
 
-function appendBotMessage(text) {
-  const container = document.getElementById('ai-messages');
-  const wrapper = document.createElement('div');
-  wrapper.className = 'ai-bot-wrapper fade-in';
+// Streaming word-by-word effect
+function appendBotMessageStream(text) {
+  return new Promise((resolve) => {
+    const container = document.getElementById('ai-messages');
+    const wrapper = document.createElement('div');
+    wrapper.className = 'ai-msg-bot-wrap fade-in';
 
-  const formatted = text
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`(.+?)`/g, '<code>$1</code>')
-    .replace(/\n/g, '<br>');
+    const html = renderMarkdown(text);
+    // We'll do a character-level streaming effect on a span overlay
+    wrapper.innerHTML = `
+      <div class="ai-msg-bot">
+        <div class="ai-msg-avatar ai-msg-avatar-bot">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="ai-msg-bubble ai-msg-bubble-bot">
+          <div class="ai-msg-content" id="ai-stream-content-${Date.now()}"></div>
+          <div class="ai-msg-actions">
+            <button class="ai-copy-btn" title="Copy" data-text="${escAttr(text)}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Copy
+            </button>
+          </div>
+        </div>
+      </div>`;
 
-  wrapper.innerHTML = `
-    <div class="ai-message-bot">${formatted}</div>
-    <div class="ai-msg-actions">
-      <button class="ai-copy-btn" title="Copy response" onclick="copyAIMessage(this, ${JSON.stringify(text)})">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-        </svg>
-        Copy
-      </button>
-    </div>`;
+    container.appendChild(wrapper);
+    container.scrollTop = container.scrollHeight;
 
-  container.appendChild(wrapper);
-  container.scrollTop = container.scrollHeight;
+    // Wire up copy button
+    wrapper.querySelector('.ai-copy-btn')?.addEventListener('click', function() {
+      const rawText = this.getAttribute('data-text');
+      navigator.clipboard.writeText(rawText).then(() => {
+        this.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+        this.style.color = '#22c55e';
+        setTimeout(() => {
+          this.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy`;
+          this.style.color = '';
+        }, 2000);
+      }).catch(() => {
+        this.textContent = 'Failed';
+        setTimeout(() => { this.textContent = 'Copy'; }, 2000);
+      });
+    });
+
+    // Streaming animation: reveal the parsed HTML word by word
+    const contentEl = wrapper.querySelector('[id^="ai-stream-content-"]');
+    if (!contentEl) { resolve(); return; }
+
+    // Extract plain text tokens from the rendered HTML to drive the animation
+    // We render a hidden full version and progressively reveal characters
+    const words = text.split(/(\s+)/);
+    let currentText = '';
+    let idx = 0;
+    const WORD_DELAY = 18; // ms per word — fast, ChatGPT-like
+
+    function revealNext() {
+      if (idx >= words.length) {
+        // Final render with full markdown
+        contentEl.innerHTML = html;
+        container.scrollTop = container.scrollHeight;
+        resolve();
+        return;
+      }
+      currentText += words[idx++];
+      // For streaming preview, use simple markdown so it's fast
+      contentEl.innerHTML = renderMarkdown(currentText) + '<span class="ai-cursor">▍</span>';
+      container.scrollTop = container.scrollHeight;
+      setTimeout(revealNext, WORD_DELAY);
+    }
+    revealNext();
+  });
 }
 
 window.copyAIMessage = (btn, text) => {
   navigator.clipboard.writeText(text).then(() => {
-    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+    btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
     btn.style.color = '#22c55e';
     setTimeout(() => {
-      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy`;
+      btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy`;
       btn.style.color = '';
     }, 2000);
-  }).catch(() => {
-    btn.textContent = 'Failed';
-    setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
-  });
+  }).catch(() => { btn.textContent = 'Failed'; setTimeout(() => { btn.textContent = 'Copy'; }, 2000); });
 };
 
 let _aiTimerInterval = null;
@@ -491,12 +484,21 @@ function showTypingIndicator() {
   const container = document.getElementById('ai-messages');
   const el = document.createElement('div');
   el.id = 'ai-typing';
-  el.className = 'ai-typing-indicator fade-in';
+  el.className = 'ai-msg-bot-wrap fade-in';
   el.innerHTML = `
-    <div class="typing-dot"></div>
-    <div class="typing-dot"></div>
-    <div class="typing-dot"></div>
-    <span id="ai-timer-label" class="ai-typing-label">LYNK AI is thinking…</span>`;
+    <div class="ai-msg-bot">
+      <div class="ai-msg-avatar ai-msg-avatar-bot">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div class="ai-msg-bubble ai-msg-bubble-bot ai-typing-bubble">
+        <div class="ai-typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+        <span id="ai-timer-label" class="ai-typing-label">LYNK AI is thinking…</span>
+      </div>
+    </div>`;
   container.appendChild(el);
   container.scrollTop = container.scrollHeight;
   _aiTimerStart = Date.now();
@@ -531,11 +533,8 @@ function clearCreditWarning() {
 }
 
 window.updateLiveWordCount = (el) => {
-  const cost     = (el.value.trim().split(/\s+/).filter(Boolean)).length; // 1 word = 1 credit (internal)
-  const counter  = document.getElementById('ai-word-counter');
+  const cost     = (el.value.trim().split(/\s+/).filter(Boolean)).length;
   const credDisp = document.getElementById('ai-credits-display');
-  // Never show raw word count — users don't need to see it
-  if (counter) counter.textContent = '';
   if (credDisp) {
     if (isPremium) {
       credDisp.style.color = '#22c55e';
@@ -572,24 +571,15 @@ window.updateCreditPreview = () => {
 window.processBuyCredits = async () => {
   const amountEl = document.getElementById('buy-credits-amount');
   const amount = Math.max(200, parseInt(amountEl?.value) || 200);
-
-  if (!flutterwaveKey) {
-    alert('Error');
-    return;
-  }
-
+  if (!flutterwaveKey) { alert('Payment not configured. Please contact admin.'); return; }
   const txRef = `LYNK_CREDITS_${currentUser.uid}_${Date.now()}`;
-
   FlutterwaveCheckout({
     public_key: flutterwaveKey,
     tx_ref: txRef,
     amount,
     currency: 'NGN',
     payment_options: 'card,banktransfer,ussd',
-    customer: {
-      email: currentUser.email,
-      name: currentUserData.displayName || 'LYNK User',
-    },
+    customer: { email: currentUser.email, name: currentUserData.displayName || 'LYNK User' },
     customizations: {
       title: 'LYNK AI Credits',
       description: `${amount.toLocaleString()} AI Credits`,
@@ -598,18 +588,13 @@ window.processBuyCredits = async () => {
     callback: async (response) => {
       if (response.status === 'successful' || response.status === 'completed') {
         const newCredits = (userCredits || 0) + amount;
-        await updateDoc(doc(db, 'users', currentUser.uid), { aiCredits: newCredits });
-        await addDoc(collection(db, 'paymentLogs'), {
-          uid: currentUser.uid,
-          type: 'ai_credits',
-          amount,
-          credits: amount,
-          currency: 'NGN',
-          txRef,
-          transactionId: response.transaction_id,
-          status: 'success',
-          createdAt: serverTimestamp(),
-        });
+        try {
+          await updateDoc(doc(db, 'users', currentUser.uid), { aiCredits: newCredits });
+          await addDoc(collection(db, 'paymentLogs'), {
+            uid: currentUser.uid, type: 'ai_credits', amount, credits: amount, currency: 'NGN',
+            txRef, transactionId: response.transaction_id, status: 'success', createdAt: serverTimestamp()
+          });
+        } catch {}
         userCredits = newCredits;
         updateUsageUI();
         document.getElementById('buy-credits-modal')?.classList.add('hidden');
@@ -632,13 +617,22 @@ window.clearChat = () => {
   uploadedFileContent = '';
   const container = document.getElementById('ai-messages');
   container.innerHTML = `
-    <div class="ai-message-bot fade-in">
-      <p class="font-semibold mb-2">👋 Hi! I'm LYNK AI. How can I help you today?</p>
-      <div class="flex flex-wrap gap-2 mt-2">
-        <span class="ai-tool-chip" onclick="sendQuickPrompt('Explain a concept to me')">💡 Explain concepts</span>
-        <span class="ai-tool-chip" onclick="switchAIMode('summarize')">📄 Summarize notes</span>
-        <span class="ai-tool-chip" onclick="switchAIMode('flashcards')">🃏 Make flashcards</span>
-        <span class="ai-tool-chip" onclick="switchAIMode('career')">💼 Career advice</span>
+    <div class="ai-msg-bot-wrap fade-in">
+      <div class="ai-msg-bot">
+        <div class="ai-msg-avatar ai-msg-avatar-bot">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="ai-msg-bubble ai-msg-bubble-bot">
+          <div class="ai-msg-content">
+            <p class="font-semibold mb-2">👋 Hi! I'm LYNK AI. How can I help you today?</p>
+            <div class="flex flex-wrap gap-2 mt-2">
+              <span class="ai-tool-chip" onclick="sendQuickPrompt('Explain a concept to me')">💡 Explain concepts</span>
+              <span class="ai-tool-chip" onclick="switchAIMode('summarize')">📄 Summarize notes</span>
+              <span class="ai-tool-chip" onclick="switchAIMode('flashcards')">🃏 Make flashcards</span>
+              <span class="ai-tool-chip" onclick="switchAIMode('career')">💼 Career advice</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>`;
 };
@@ -655,21 +649,16 @@ window.sendQuickPrompt = (prompt) => {
 window.switchAIMode = (mode) => {
   currentMode = mode;
   uploadedFileContent = '';
-
-  // Update sidebar
   Object.keys(MODE_CONFIG).forEach(m => {
     const btn = document.getElementById(`mode-${m}`);
     if (btn) btn.classList.toggle('active', m === mode);
   });
-
   const config = MODE_CONFIG[mode] || MODE_CONFIG.chat;
-  const title = document.getElementById('ai-mode-title');
+  const title    = document.getElementById('ai-mode-title');
   const subtitle = document.getElementById('ai-mode-subtitle');
-  if (title) title.textContent = config.title;
+  if (title)    title.textContent    = config.title;
   if (subtitle) subtitle.textContent = config.subtitle;
 
-  // Show/hide panels
-  // chat-view is never hidden — it holds the input textarea and ai-messages
   const views = ['flashcards-view', 'quiz-view', 'career-view', 'studyplan-view'];
   views.forEach(v => document.getElementById(v)?.classList.add('hidden'));
   document.getElementById('ai-upload-panel')?.classList.add('hidden');
@@ -689,8 +678,6 @@ window.switchAIMode = (mode) => {
     if (mode === 'summarize' || mode === 'writing') {
       document.getElementById('ai-upload-panel').classList.remove('hidden');
     }
-
-    // Update quick prompts based on mode
     updateQuickPrompts(mode);
   }
 };
@@ -699,34 +686,30 @@ function updateQuickPrompts(mode) {
   const prompts = {
     summarize: [
       { label: '📄 Summarize my notes', prompt: 'Please summarize the notes I uploaded and extract the key points.' },
-      { label: '🔑 Extract key terms', prompt: 'Extract and define all key terms and concepts from my notes.' },
-      { label: '❓ Generate questions', prompt: 'Generate 10 revision questions from my notes to test my understanding.' },
+      { label: '🔑 Extract key terms',   prompt: 'Extract and define all key terms and concepts from my notes.' },
+      { label: '❓ Generate questions',  prompt: 'Generate 10 revision questions from my notes to test my understanding.' },
     ],
     writing: [
-      { label: '📝 Essay outline', prompt: 'Help me create an essay outline for my topic.' },
+      { label: '📝 Essay outline',    prompt: 'Help me create an essay outline for my topic.' },
       { label: '✅ Check my grammar', prompt: 'Check the grammar and clarity of this text:' },
-      { label: '📚 Improve my writing', prompt: 'How can I make this paragraph more academic?' },
+      { label: '📚 Improve writing',  prompt: 'How can I make this paragraph more academic?' },
     ],
     chat: [
       { label: '🌱 Photosynthesis', prompt: 'Explain the concept of photosynthesis' },
-      { label: '📐 Math Help', prompt: 'Help me solve a quadratic equation step by step' },
-      { label: '📄 CV Writing', prompt: 'Write a professional introduction for my CV' },
-      { label: '❓ Quiz Me', prompt: "Create 5 practice questions on Newton's laws" },
+      { label: '📐 Math Help',      prompt: 'Help me solve a quadratic equation step by step' },
+      { label: '📄 CV Writing',     prompt: 'Write a professional introduction for my CV' },
+      { label: '❓ Quiz Me',        prompt: "Create 5 practice questions on Newton's laws" },
     ],
   };
-
   const container = document.getElementById('quick-prompts');
   const modePrompts = prompts[mode] || prompts.chat;
   container.innerHTML = modePrompts.map(p =>
-    `<button class="ai-tool-chip" onclick="sendQuickPrompt('${p.prompt.replace(/'/g, "\\'")}'">${p.label}</button>`
+    `<button class="ai-tool-chip" onclick="sendQuickPrompt('${p.prompt.replace(/'/g, "\\'")}')">${p.label}</button>`
   ).join('');
 }
 
 window.handleAIKeydown = (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendAIMessage();
-  }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAIMessage(); }
 };
 
 window.autoResizeAI = (el) => {
@@ -738,10 +721,8 @@ window.handleInlineFileUpload = async (input) => {
   const file = input.files[0];
   if (!file) return;
   const fileNameEl = document.getElementById('ai-file-name');
-
   if (file.type === 'text/plain') {
-    const text = await file.text();
-    uploadedFileContent = text;
+    uploadedFileContent = await file.text();
     if (fileNameEl) { fileNameEl.textContent = `📎 ${file.name} ready`; fileNameEl.classList.remove('hidden'); }
   } else if (file.type === 'application/pdf') {
     uploadedFileContent = `[PDF file uploaded: ${file.name}]`;
@@ -751,13 +732,13 @@ window.handleInlineFileUpload = async (input) => {
     if (fileNameEl) { fileNameEl.textContent = `📎 ${file.name} ready`; fileNameEl.classList.remove('hidden'); }
   }
 };
-
 window.handleAIFileUpload = window.handleInlineFileUpload;
 
 // ===== FLASHCARDS =====
 window.generateFlashcards = async () => {
   if (!uploadedFileContent) {
-    appendBotMessage('Please upload your notes or type your content in the chat below first!');
+    appendUserMessage('');
+    await appendBotMessageStream('Please upload your notes or type your content in the chat below first!');
     document.getElementById('chat-view').classList.remove('hidden');
     document.getElementById('flashcards-view').classList.add('hidden');
     return;
@@ -766,36 +747,29 @@ window.generateFlashcards = async () => {
   showTypingIndicator();
   const response = await callAI(prompt, 'flashcards');
   hideTypingIndicator();
-
   const cards = response.split('\n').filter(line => line.includes('FRONT:') && line.includes('BACK:'));
   const container = document.getElementById('flashcards-container');
-
   if (cards.length === 0) {
-    container.innerHTML = `<div class="col-span-full ai-message-bot">${response.replace(/\n/g, '<br>')}</div>`;
+    container.innerHTML = `<div class="col-span-full ai-msg-bubble ai-msg-bubble-bot"><div class="ai-msg-content">${renderMarkdown(response)}</div></div>`;
     return;
   }
-
   container.innerHTML = '';
   cards.forEach((card, i) => {
     const parts = card.split(' | ');
     const front = parts[0]?.replace('FRONT:', '').trim();
-    const back = parts[1]?.replace('BACK:', '').trim();
+    const back  = parts[1]?.replace('BACK:', '').trim();
     container.insertAdjacentHTML('beforeend', `
       <div class="flashcard fade-in" onclick="this.classList.toggle('flipped')" title="Click to flip">
         <div class="flashcard-inner">
-          <div class="flashcard-front">
-            <div>
-              <p class="text-xs font-semibold mb-2" style="color:var(--grad-1)">CARD ${i + 1} — QUESTION</p>
-              <p class="text-sm font-medium">${escHtml(front)}</p>
-              <p class="text-xs mt-3" style="color:var(--text-muted)">Tap to reveal answer</p>
-            </div>
-          </div>
-          <div class="flashcard-back">
-            <div>
-              <p class="text-xs font-semibold mb-2" style="color:var(--grad-2)">ANSWER</p>
-              <p class="text-sm">${escHtml(back)}</p>
-            </div>
-          </div>
+          <div class="flashcard-front"><div>
+            <p class="text-xs font-semibold mb-2" style="color:var(--grad-1)">CARD ${i + 1} — QUESTION</p>
+            <p class="text-sm font-medium">${escHtml(front)}</p>
+            <p class="text-xs mt-3" style="color:var(--text-muted)">Tap to reveal answer</p>
+          </div></div>
+          <div class="flashcard-back"><div>
+            <p class="text-xs font-semibold mb-2" style="color:var(--grad-2)">ANSWER</p>
+            <p class="text-sm">${escHtml(back)}</p>
+          </div></div>
         </div>
       </div>`);
   });
@@ -804,12 +778,12 @@ window.generateFlashcards = async () => {
 // ===== CAREER ACTIONS =====
 window.careerAction = async (action) => {
   const prompts = {
-    cv: 'Help me write a professional CV for a Nigerian university student. Ask me for my details first, then create a structured CV template.',
-    interview: 'Give me the top 20 interview questions and model answers for job interviews at Nigerian companies like MTN, Access Bank, Flutterwave, Andela, and multinational corporations in Nigeria.',
-    roadmap: `Create a detailed career roadmap for a ${currentUserData.department || 'university'} student. Include skills to acquire, certifications to get, internship opportunities, and job prospects in Nigeria and internationally.`,
+    cv:         'Help me write a professional CV for a Nigerian university student. Ask me for my details first, then create a structured CV template.',
+    interview:  'Give me the top 20 interview questions and model answers for job interviews at Nigerian companies like MTN, Access Bank, Flutterwave, Andela, and multinationals.',
+    roadmap:    `Create a detailed career roadmap for a ${currentUserData.department || 'university'} student. Include skills, certifications, internship opportunities, and job prospects.`,
     internship: 'Give me practical tips for finding and securing internships as a Nigerian university student. Include company names, application tips, and how to stand out.',
-    skills: `Analyze the most in-demand skills for ${currentUserData.department || 'university'} graduates in Nigeria in 2025-2026. List technical and soft skills, and how to develop them.`,
-    salary: `What is the typical salary range for fresh graduates with a ${currentUserData.department || 'university'} degree in Nigeria? Break it down by industry and location.`,
+    skills:     `Analyze the most in-demand skills for ${currentUserData.department || 'university'} graduates in Nigeria in 2025-2026.`,
+    salary:     `What is the typical salary range for fresh graduates with a ${currentUserData.department || 'university'} degree in Nigeria? Break it down by industry and location.`,
   };
   document.getElementById('career-view').classList.add('hidden');
   document.getElementById('chat-view').classList.remove('hidden');
@@ -819,23 +793,22 @@ window.careerAction = async (action) => {
 // ===== STUDY PLAN =====
 window.generateStudyPlan = async () => {
   const subject = document.getElementById('studyplan-subject').value.trim();
-  const weeks = document.getElementById('studyplan-weeks').value;
-  const level = document.getElementById('studyplan-level').value;
-  const goals = document.getElementById('studyplan-goals').value.trim();
-
+  const weeks   = document.getElementById('studyplan-weeks').value;
+  const level   = document.getElementById('studyplan-level').value;
+  const goals   = document.getElementById('studyplan-goals').value.trim();
   if (!subject) { alert('Please enter your subject(s)'); return; }
-
-  const prompt = `Create a detailed ${weeks}-week study plan for: ${subject}. Level: ${level}. ${goals ? 'Goals/notes: ' + goals : ''}. Include daily tasks, topics to cover, practice exercises, and revision sessions. Format it clearly with weeks and days.`;
-
+  const prompt = `Create a detailed ${weeks}-week study plan for: ${subject}. Level: ${level}. ${goals ? 'Goals/notes: ' + goals : ''} Include daily tasks, topics, practice exercises, and revision sessions. Format with Markdown tables and lists.`;
   const resultEl = document.getElementById('studyplan-result');
   resultEl.innerHTML = '<div class="text-center py-4" style="color:var(--text-muted)"><div class="spinner w-6 h-6 border-4 rounded-full mx-auto mb-2" style="border-color:var(--grad-1);border-top-color:transparent"></div>Generating your study plan...</div>';
-
   const response = await callAI(prompt, 'studyplan');
-  resultEl.innerHTML = `<div class="ai-message-bot">${response.replace(/\n/g, '<br>').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')}</div>`;
+  resultEl.innerHTML = `<div class="ai-msg-bubble ai-msg-bubble-bot"><div class="ai-msg-content">${renderMarkdown(response)}</div></div>`;
 };
 
 function escHtml(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function escAttr(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 window.signOut = async () => {

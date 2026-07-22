@@ -9,8 +9,8 @@ import {
   collection, addDoc, getDocs, getDoc, doc, setDoc, updateDoc, deleteDoc,
   query, orderBy, limit, startAfter, where, serverTimestamp,
   arrayUnion, arrayRemove, increment, onSnapshot
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { uploadToCloudinary, optimizeCloudinaryUrl } from './cloudinary.js';
 import { rankPosts, buildRankingContext } from './algorithm.js';
 

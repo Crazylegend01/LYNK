@@ -8,7 +8,7 @@ import { initNotifications, sendNotification, showToast } from './notifications.
 import {
   collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc,
   query, where, orderBy, limit, serverTimestamp, increment, deleteField
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { uploadToCloudinary } from './cloudinary.js';
 import {
   onAuthStateChanged,
@@ -16,7 +16,7 @@ import {
   deleteUser,
   reauthenticateWithCredential,
   EmailAuthProvider
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
 ThemeManager.init();
 

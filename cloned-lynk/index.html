@@ -18,7 +18,7 @@
     if (!fromSplash) {
       // Check auth quickly — if logged in, jump to feed; else show splash
       import('./js/firebase-config.js').then(({ auth }) => {
-        import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js').then(({ onAuthStateChanged }) => {
+        import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js').then(({ onAuthStateChanged }) => {
           const unsub = onAuthStateChanged(auth, (user) => {
             unsub();
             window.location.replace(user ? 'feed.html' : 'splash.html');

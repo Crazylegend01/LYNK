@@ -7,8 +7,8 @@ import { ThemeManager } from './theme.js';
 import {
   collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
   query, where, orderBy, limit, serverTimestamp, increment, arrayUnion, arrayRemove, Timestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { initFCM, notifyEventReminder, showToast } from './notifications-fcm.js';
 
 ThemeManager.init();
@@ -166,7 +166,7 @@ window.rsvpEvent = async (eventId, going) => {
       attendees: arrayUnion(currentUser.uid)
     }).catch(() => {});
     // Save RSVP record
-    import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js").then(({ doc: d, setDoc: sd, serverTimestamp: st }) => {
+    import("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js").then(({ doc: d, setDoc: sd, serverTimestamp: st }) => {
       sd(d(db, 'eventRsvps', rsvpId), {
         eventId, uid: currentUser.uid,
         displayName: currentUserData.displayName || '',
@@ -194,7 +194,7 @@ window.rsvpEvent = async (eventId, going) => {
     if (btn) { btn.textContent = '✓ Going'; btn.className = 'lynk-btn lynk-btn-secondary text-xs py-2 px-3'; }
   } else {
     await updateDoc(doc(db, 'events', eventId), { rsvpCount: increment(-1) });
-    import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js").then(({ doc: d, deleteDoc: dd }) => {
+    import("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js").then(({ doc: d, deleteDoc: dd }) => {
       import('./firebase-config.js').then(({ db }) => dd(d(db, 'eventRsvps', rsvpId)));
     });
     if (btn) { btn.textContent = 'RSVP'; btn.className = 'lynk-btn lynk-btn-primary text-xs py-2 px-3'; }

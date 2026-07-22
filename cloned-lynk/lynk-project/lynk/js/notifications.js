@@ -9,8 +9,8 @@ import { auth, db } from './firebase-config.js';
 import {
   collection, doc, addDoc, updateDoc, onSnapshot, query,
   where, orderBy, limit, serverTimestamp, writeBatch, getDocs
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js";
 import app from './firebase-config.js';
 
 // ===== VAPID KEY =====

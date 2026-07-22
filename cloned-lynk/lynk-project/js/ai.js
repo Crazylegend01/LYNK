@@ -7,8 +7,8 @@ import { ThemeManager } from './theme.js';
 import {
   doc, getDoc, setDoc, updateDoc, addDoc, collection,
   serverTimestamp, increment, query, where, getDocs, orderBy, limit
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { initFCM, notifyAILimitReached } from './notifications-fcm.js';
 
 ThemeManager.init();

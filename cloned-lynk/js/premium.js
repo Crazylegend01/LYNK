@@ -7,8 +7,8 @@ import { ThemeManager } from './theme.js';
 import {
   doc, getDoc, setDoc, addDoc, collection, serverTimestamp, updateDoc,
   query, where, orderBy, limit, getDocs
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { onAuthStateChanged, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
 ThemeManager.init();
 

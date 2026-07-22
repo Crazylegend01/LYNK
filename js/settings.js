@@ -7,12 +7,12 @@ import { ThemeManager } from './theme.js';
 import { initNotifications, showToast } from './notifications.js';
 import {
   doc, getDoc, updateDoc, setDoc, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import {
   onAuthStateChanged, signOut as firebaseSignOut,
   updatePassword, reauthenticateWithCredential, EmailAuthProvider,
   sendEmailVerification
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
 ThemeManager.init();
 

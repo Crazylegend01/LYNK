@@ -5,9 +5,9 @@
 import { db } from './firebase-config.js';
 import {
   doc, setDoc, serverTimestamp, addDoc, collection
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js";
 
 const FCM_VAPID_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SvmO5l-4EhPJKGjXHvU-GzJxRzT3MIz6eLY-FBGv3mGHRoZ7Rfk1k0';
 
